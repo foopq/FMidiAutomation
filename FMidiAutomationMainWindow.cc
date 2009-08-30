@@ -14,6 +14,10 @@ void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdoubl
     gdouble offsetX = -(event->x - mousePressDownX);
 //    gdouble offsetY = -(event->y - mousePressDownY);
 
+    if ((offsetX < 0) && (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) && (graphState.zeroithTickPixel >= (drawingAreaWidth/2))) {
+        return;
+    }//if
+
     gdouble curOffset = graphState.offset;
     graphState.offset = graphState.baseOffset + offsetX;
 
