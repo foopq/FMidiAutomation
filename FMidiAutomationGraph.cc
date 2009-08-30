@@ -282,7 +282,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 
-std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
+//std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
 
     //Determine frame ticks
     int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
@@ -311,7 +311,8 @@ std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " <<
                 upperLineText.push_back(std::make_pair(x, tmpSS.str()));
             }//if
         } else {
-            int tickCount = (int)(((float)(x + offset)) / ((float)(-ticksPerPixel)) + 0.5f);
+            float tickCountBase = ((float)(x + offset)) / ((float)(-ticksPerPixel));
+            int tickCount = (int)(fabs(tickCountBase) + 0.5f);
 
             if (1 == ticksPerPixel) {
                 tickCount = (int)(((float)(x + offset)) / ((float)(ticksPerPixel)) + 0.5f);
@@ -321,7 +322,6 @@ std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " <<
             if (absTickCountModded < 0) {
                 absTickCountModded = -absTickCountModded;
             }//if
-
 
             if (0 == absTickCountModded) {
                 tickCount = tickCount - (tickCount % tickCountGroupSize);
@@ -334,14 +334,26 @@ std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " <<
 
                 verticalLines.push_back(std::make_pair(x, SecondLine));
 
+                if ((1 != ticksPerPixel) && ((tickCountBase + 0.5f) < 0)) {
+                    tickCount = -tickCount;
+                }//if
+
                 std::ostringstream tmpSS;
                 tmpSS << tickCount;
                 upperLineText.push_back(std::make_pair(x, tmpSS.str()));
 
-std::cout << "x: " << x << " - offset: " << offset << " - tickCount: " << tickCount << " absTickCountModded: " << absTickCountModded << std::endl;
+//std::cout << "x: " << x << " - offset: " << offset << " - tickCount: " << tickCount << " absTickCountModded: " << absTickCountModded << " --- " << tmpSS.str() << std::endl;
             }//if
         }//if
     }//for
+
+    //Ugly kluge
+    if (ticksPerPixel < 0) {
+        if ((verticalLines.empty() == false) && (verticalLines[0].first == 0) && (verticalLines[0].second == SecondLine)) {
+            verticalLines.erase(verticalLines.begin());
+            upperLineText.erase(upperLineText.begin());
+        }//if
+    }//if
     
 }//refreshVerticalLines
 
