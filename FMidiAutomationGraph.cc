@@ -211,14 +211,9 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 //    context->paint();
  
     //Darken negative areas, if any
-    int tickCountStart = 0 * graphState.ticksPerPixel + graphState.offset * graphState.ticksPerPixel;
-    int tickCountEnd = drawingAreaWidth * graphState.ticksPerPixel + graphState.offset * graphState.ticksPerPixel;
-
-    if ((tickCountStart < 0) && (tickCountEnd > 0)) {
-        int zeroPixel = -graphState.offset;
-
+    if (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) {
         context->reset_clip();
-        context->rectangle(0, 61, zeroPixel, drawingAreaHeight - 61);
+        context->rectangle(0, 61, graphState.zeroithTickPixel, drawingAreaHeight - 61);
         context->clip();
 
         context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
@@ -267,6 +262,7 @@ GraphState::GraphState()
     barsSubdivisionAmount = 1;
     ticksPerPixel = 2;
     inMotion = false;
+    zeroithTickPixel = std::numeric_limits<int>::min();
 }//constructor
 
 GraphState::~GraphState()
@@ -285,6 +281,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 //std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
 
     //Determine frame ticks
+    zeroithTickPixel = std::numeric_limits<int>::max();
     int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
     for (unsigned int x = 0; x < areaWidth; ++x) {
         if (ticksPerPixel > 1) {
@@ -305,6 +302,10 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 lastRecordedTickCount = tickCount;
 
                 verticalLines.push_back(std::make_pair(x, SecondLine));
+
+                if ((0 == tickCount) && (x > 0)) {
+                    zeroithTickPixel = x - 1;
+                }//if
 
                 std::ostringstream tmpSS;
                 tmpSS << tickCount;
@@ -336,6 +337,10 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 
                 if ((1 != ticksPerPixel) && ((tickCountBase + 0.5f) < 0)) {
                     tickCount = -tickCount;
+                }//if
+
+                if ((0 == tickCount) && (x > 0)) {
+                    zeroithTickPixel = x - 1;
                 }//if
 
                 std::ostringstream tmpSS;

@@ -40,6 +40,7 @@ struct GraphState
     double baseOffset; //when actively scrolling
     bool inMotion; //when actively scrolling
 
+    int zeroithTickPixel;
     double offset;
     int barsSubdivisionAmount;
     int ticksPerPixel; //negative means N pixels per tick
