@@ -282,9 +282,12 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 
+std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
+
     //Determine frame ticks
+    int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
     for (unsigned int x = 0; x < areaWidth; ++x) {
-        if (ticksPerPixel > 0) {
+        if (ticksPerPixel > 1) {
             int tickCount = x * ticksPerPixel + offset * ticksPerPixel;
 
             int absTickCountModded = tickCount % tickCountGroupSize;
@@ -293,15 +296,50 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             }//if
 
             if (absTickCountModded < ticksPerPixel) { //XXX: <=??
+                tickCount = tickCount - (tickCount % 1000);
+
+                if (tickCount == lastRecordedTickCount) {
+                    continue;
+                }//if
+        
+                lastRecordedTickCount = tickCount;
+
                 verticalLines.push_back(std::make_pair(x, SecondLine));
 
-                tickCount = tickCount - (tickCount % 1000);
                 std::ostringstream tmpSS;
                 tmpSS << tickCount;
                 upperLineText.push_back(std::make_pair(x, tmpSS.str()));
             }//if
         } else {
+            int tickCount = (int)(((float)(x + offset)) / ((float)(-ticksPerPixel)) + 0.5f);
 
+            if (1 == ticksPerPixel) {
+                tickCount = (int)(((float)(x + offset)) / ((float)(ticksPerPixel)) + 0.5f);
+            }//if
+
+            int absTickCountModded = tickCount % tickCountGroupSize;
+            if (absTickCountModded < 0) {
+                absTickCountModded = -absTickCountModded;
+            }//if
+
+
+            if (0 == absTickCountModded) {
+                tickCount = tickCount - (tickCount % tickCountGroupSize);
+
+                if (tickCount == lastRecordedTickCount) {
+                    continue;
+                }//if
+        
+                lastRecordedTickCount = tickCount;
+
+                verticalLines.push_back(std::make_pair(x, SecondLine));
+
+                std::ostringstream tmpSS;
+                tmpSS << tickCount;
+                upperLineText.push_back(std::make_pair(x, tmpSS.str()));
+
+std::cout << "x: " << x << " - offset: " << offset << " - tickCount: " << tickCount << " absTickCountModded: " << absTickCountModded << std::endl;
+            }//if
         }//if
     }//for
     

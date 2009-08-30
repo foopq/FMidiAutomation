@@ -47,7 +47,7 @@ void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState)
     if (direction == GDK_SCROLL_UP) { //zoom in
         curPos = std::min(curPos + 1, ((int)scrollLevels.size()) - 1);
     } else {
-        curPos = std::max(curPos - 1, 20);
+        curPos = std::max(curPos - 1, 0);
     }//if
 
     graphState.ticksPerPixel = scrollLevels[curPos];
