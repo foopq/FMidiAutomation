@@ -281,6 +281,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 //std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
 
     //Determine frame ticks
+    verticalPixelTickValues.clear();
     zeroithTickPixel = std::numeric_limits<int>::max();
     int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
     for (unsigned int x = 0; x < areaWidth; ++x) {
@@ -291,6 +292,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             if (absTickCountModded < 0) {
                 absTickCountModded = -absTickCountModded;
             }//if
+
+            verticalPixelTickValues.push_back(tickCount);
 
             if (absTickCountModded < ticksPerPixel) { //XXX: <=??
                 tickCount = tickCount - (tickCount % 1000);
@@ -318,6 +321,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             if (1 == ticksPerPixel) {
                 tickCount = (int)(((float)(x + offset)) / ((float)(ticksPerPixel)) + 0.5f);
             }//if
+
+            verticalPixelTickValues.push_back(tickCount);
 
             int absTickCountModded = tickCount % tickCountGroupSize;
             if (absTickCountModded < 0) {

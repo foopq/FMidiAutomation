@@ -64,6 +64,7 @@ Globals::Globals()
     versionStr = "FMidiAutomation - version 1.0.0 - August 8th 2009";
     topBarFontSize = 12;
     topBarFont = "Arial";
+    darkTheme = true;
 };//constructor
 
 Globals::~Globals()
@@ -131,6 +132,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     leftMouseCurrentlyPressed = false;
 
     on_menuNew();
+
+    setThemeColours();
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -138,6 +141,89 @@ FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
     //Nothing
 }//destructor
     
+void FMidiAutomationMainWindow::setThemeColours()
+{
+    Globals &globals = Globals::Instance();
+
+    Gdk::Color fgColour;
+    Gdk::Color bgColour;
+    Gdk::Color textColour;
+
+    if (true == globals.darkTheme) {
+        fgColour.set_rgb(52429, 42429, 52429);
+        bgColour.set_rgb(10000, 10000, 10000);
+        textColour.set_rgb(55982, 55982, 55982);
+    }//if
+
+    Gtk::Widget *tmpWidget;
+
+    uiXml->get_widget("viewport2", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
+    uiXml->get_widget("viewport6", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
+    uiXml->get_widget("viewport5", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
+    uiXml->get_widget("viewport4", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
+    uiXml->get_widget("viewport1", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
+
+    uiXml->get_widget("menubar", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+
+    Gtk::MenuItem *menuItem;
+    uiXml->get_widget("menuitem1", menuItem);
+    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menuitem2", menuItem);
+    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menuitem3", menuItem);
+    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menuitem4", menuItem);
+    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+
+    Gtk::Menu *menu;
+    uiXml->get_widget("menu1", menu);
+    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    uiXml->get_widget("menu2", menu);
+    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    uiXml->get_widget("menu3", menu);
+    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
+//    uiXml->get_widget("menu4", menu);
+//    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
+
+    Gtk::ImageMenuItem *imageMenuItem;
+    uiXml->get_widget("menu_new", imageMenuItem);
+    imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menu_open", imageMenuItem);
+    imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menu_save", imageMenuItem);
+    imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menu_saveas", imageMenuItem);
+    imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menu_quit", imageMenuItem);
+    imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    uiXml->get_widget("menu_about", imageMenuItem);
+    imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+
+
+    Gtk::SeparatorMenuItem *separatorMenuItem;
+    uiXml->get_widget("separatormenuitem1", separatorMenuItem);
+    separatorMenuItem->modify_bg(Gtk::STATE_NORMAL, bgColour);
+
+
+
+}//setThemeColours
+
 Gtk::Window *FMidiAutomationMainWindow::MainWindow()
 {
     return mainWindow;

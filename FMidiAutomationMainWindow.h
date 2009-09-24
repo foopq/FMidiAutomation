@@ -25,6 +25,7 @@ struct Globals
 
     std::string topBarFont;
     unsigned int topBarFontSize;
+    bool darkTheme;
 };//Globals
 
 enum LineType
@@ -47,6 +48,9 @@ struct GraphState
     std::vector<std::pair<unsigned int, LineType> > verticalLines;
     std::vector<std::pair<unsigned int, std::string> > upperLineText;
     std::vector<std::pair<unsigned int, std::string> > lowerLineText;
+
+    std::vector<unsigned int> verticalPixelTickValues;
+    std::vector<float> horizontalPixelValues;
 
     GraphState();
     ~GraphState();
@@ -111,6 +115,7 @@ class FMidiAutomationMainWindow
     bool mouseMoved(GdkEventMotion *event);
     bool handleScroll(GdkEventScroll *event);
 
+    void setThemeColours();
        
 public:    
     FMidiAutomationMainWindow();
