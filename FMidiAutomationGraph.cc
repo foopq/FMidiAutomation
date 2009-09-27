@@ -6,6 +6,7 @@
 #include <sstream>
 #include "FMidiAutomationMainWindow.h"
 #include <boost/array.hpp>
+#include <boost/foreach.hpp>
 
 namespace
 {
@@ -97,7 +98,7 @@ void drawTopBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, u
 
     context->reset_clip();
 
-    context->rectangle(0, 31, areaWidth, 30);
+    context->rectangle(0, 30, areaWidth, 30);
     context->clip();
 
     context->set_source_rgba(0.1, 0.1, 0.1, 0.8);
@@ -144,6 +145,39 @@ void drawTopBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, u
 
     context->stroke();
 }//drawTopBar
+
+void drawCurrentTimePointer(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+//    Globals &globals = Globals::Instance();
+
+    unsigned int timePointerPixel = 0;
+
+    std::vector<int>::iterator bound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), graphState.curPointerTick);
+    timePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), bound);
+
+    if ((0 == timePointerPixel) && ((*bound) > graphState.curPointerTick)) {
+        return;
+    }//if
+
+    //Saves a little trouble with edge cases and scrolling/zooming
+    if (areaWidth == timePointerPixel) {
+        return;
+    }//if
+
+    context->reset_clip();
+    context->set_source_rgba(1.0, 0.0, 0.0, 1.0);
+    context->set_line_width(1.0);
+    context->move_to(timePointerPixel, 30);
+    context->line_to(timePointerPixel, areaHeight);
+    context->stroke();
+
+    context->save();
+    context->arc(timePointerPixel, 35, 5, 0, 2.0*M_PI);
+    context->fill_preserve();
+    context->stroke();
+
+
+}//drawCurrentTimePointer
 
 int determineTickCountGroupSize(int ticksPerPixel)
 {
@@ -222,6 +256,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 
 
     drawTopBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
 
     /*
     int tmpw;
@@ -263,6 +298,7 @@ GraphState::GraphState()
     ticksPerPixel = 2;
     inMotion = false;
     zeroithTickPixel = std::numeric_limits<int>::min();
+    curPointerTick = 0;
 }//constructor
 
 GraphState::~GraphState()

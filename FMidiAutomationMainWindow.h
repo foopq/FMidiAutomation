@@ -49,8 +49,11 @@ struct GraphState
     std::vector<std::pair<unsigned int, std::string> > upperLineText;
     std::vector<std::pair<unsigned int, std::string> > lowerLineText;
 
-    std::vector<unsigned int> verticalPixelTickValues;
+    std::vector<int> verticalPixelTickValues;
     std::vector<float> horizontalPixelValues;
+
+    //Time at which the pointer is at
+    int curPointerTick;
 
     GraphState();
     ~GraphState();

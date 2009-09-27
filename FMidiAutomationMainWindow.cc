@@ -392,14 +392,24 @@ bool FMidiAutomationMainWindow::key_released(GdkEventKey *event)
 
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
-    if ((event->button == 1) && (event->y > 60)) {
+    if (event->button == 1) {
         leftMouseCurrentlyPressed = true;
         mousePressDownX = event->x;
         mousePressDownY = event->y;
 
-        graphState.inMotion = true;
-        graphState.baseOffset = graphState.offset;
-    }//if
+        if (event->y > 60) {
+            graphState.inMotion = true;
+            graphState.baseOffset = graphState.offset;
+        }//if
+
+        if ((event->y > 30) && (event->y <= 60)) {
+            if ((false == ctrlCurrentlyPressed) ) {
+                graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
+                graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+                graphDrawingArea->queue_draw();
+            }//if
+        }//if
+    }//if (event->button == 1) {
 
     return true;
 }//mouseButtonPressed
@@ -429,6 +439,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
     }//if
 
     if (true == ctrlCurrentlyPressed) {
+        //We are scrolling the canvas
         gdouble curOffset = graphState.offset;
 
         handleGraphTimeScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth);
@@ -437,9 +448,15 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
             graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
             graphDrawingArea->queue_draw();
         }//if
-
+    } else {
+        //Did we set the current time pointer
+        if ((event->y > 30) && (event->y <= 60) && (event->x >= 0) && (event->x < drawingAreaWidth)) {
+            graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
+            graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+            graphDrawingArea->queue_draw();
+        }//if
     }//if
-   
+  
     return true;
 }//mouseMoved
 
@@ -453,7 +470,7 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
         lastHandledTime = event->time;
     }//if
 
-////    if (true == ctrlCurrentlyPressed) {
+    if (true == ctrlCurrentlyPressed) {
         int curTicksPerPixel = graphState.ticksPerPixel;
 
         handleGraphTimeZoom(event->direction, graphState);
@@ -462,7 +479,7 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
             graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
             graphDrawingArea->queue_draw();
         }//if
-////    }//if
+    }//if
 
     return true;
 }//handleScroll
