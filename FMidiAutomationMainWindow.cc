@@ -32,7 +32,7 @@ void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdoubl
     }//if
 }//handleGraphTimeScroll
 
-void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState)
+void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState, int drawingAreaWidth)
 {
     //This is a kinda brain-dead way of doing things..
     const boost::array<int, 40> scrollLevels = 
@@ -54,7 +54,26 @@ void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState)
         curPos = std::max(curPos - 1, 0);
     }//if
 
-    graphState.ticksPerPixel = scrollLevels[curPos];
+    if (graphState.ticksPerPixel != scrollLevels[curPos]) {
+        graphState.ticksPerPixel = scrollLevels[curPos];
+
+        int medianTickValue = graphState.verticalPixelTickValues[drawingAreaWidth / 2];
+
+        if (graphState.ticksPerPixel > 1) {
+            int fullWindowTicks = drawingAreaWidth * graphState.ticksPerPixel;
+            int halfWindowTicks = fullWindowTicks / 2;
+            int halfWindowsToSkip = medianTickValue / halfWindowTicks;
+            int remaningTicks = medianTickValue % halfWindowTicks;
+
+            graphState.offset = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / graphState.ticksPerPixel) - (drawingAreaWidth / 2);
+        } else {
+            int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
+            int halfWindowTicks = fullWindowTicks / 2;
+            int baseOffset = abs(graphState.ticksPerPixel) * medianTickValue;
+
+            graphState.offset = baseOffset - (drawingAreaWidth / 2); // - halfWindowTicks;
+        }//if
+    }//if
 }//handleGraphTimeZoom
 
 }//anonymous namespace
@@ -473,7 +492,7 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
     if (true == ctrlCurrentlyPressed) {
         int curTicksPerPixel = graphState.ticksPerPixel;
 
-        handleGraphTimeZoom(event->direction, graphState);
+        handleGraphTimeZoom(event->direction, graphState, drawingAreaWidth);
 
         if (curTicksPerPixel != graphState.ticksPerPixel) {
             graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);

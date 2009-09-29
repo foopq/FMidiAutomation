@@ -42,7 +42,7 @@ struct GraphState
     bool inMotion; //when actively scrolling
 
     int zeroithTickPixel;
-    double offset;
+    double offset; //scroll offset
     int barsSubdivisionAmount;
     int ticksPerPixel; //negative means N pixels per tick
     std::vector<std::pair<unsigned int, LineType> > verticalLines;

@@ -317,6 +317,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 //std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
 
     //Determine frame ticks
+    bool toggle = true;
     verticalPixelTickValues.clear();
     zeroithTickPixel = std::numeric_limits<int>::max();
     int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
@@ -384,9 +385,13 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                     zeroithTickPixel = x - 1;
                 }//if
 
-                std::ostringstream tmpSS;
-                tmpSS << tickCount;
-                upperLineText.push_back(std::make_pair(x, tmpSS.str()));
+                if ((ticksPerPixel >= -42) || (true == toggle)) {
+                    std::ostringstream tmpSS;
+                    tmpSS << tickCount;
+                    upperLineText.push_back(std::make_pair(x, tmpSS.str()));
+                }//if
+
+                toggle = !toggle;
 
 //std::cout << "x: " << x << " - offset: " << offset << " - tickCount: " << tickCount << " absTickCountModded: " << absTickCountModded << " --- " << tmpSS.str() << std::endl;
             }//if
