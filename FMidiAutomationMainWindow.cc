@@ -411,34 +411,89 @@ bool FMidiAutomationMainWindow::key_released(GdkEventKey *event)
 
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
-    if (event->button == 1) {
-        leftMouseCurrentlyPressed = true;
-        mousePressDownX = event->x;
-        mousePressDownY = event->y;
+    switch (event->button) {
+        case 1: //Left
+        {
+            graphState.selectedEntity = Nobody;
+            leftMouseCurrentlyPressed = true;
+            mousePressDownX = event->x;
+            mousePressDownY = event->y;
 
-        if (event->y > 60) {
-            graphState.inMotion = true;
-            graphState.baseOffset = graphState.offset;
-        }//if
-
-        if ((event->y > 30) && (event->y <= 60)) {
-            if ((false == ctrlCurrentlyPressed) ) {
-                graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
-                graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
-                graphDrawingArea->queue_draw();
+            if (event->y > 60) {
+                graphState.inMotion = true;
+                graphState.baseOffset = graphState.offset;
+            } else {
+                if (event->y > 30) {
+                    if (abs(event->x - graphState.leftMarkerTickXPixel) <= 5) {
+                        graphState.selectedEntity = LeftTickBar;
+                    }//if
+                    if (abs(event->x - graphState.rightMarkerTickXPixel) <= 5) {
+                        graphState.selectedEntity = RightTickBar;
+                    }//if
+                    if (abs(event->x - graphState.curPointerTickXPixel) <= 5) {
+                        graphState.selectedEntity = PointerTickBar;
+                    }//if
+                }//if
             }//if
-        }//if
-    }//if (event->button == 1) {
+
+        break;
+        }
+
+        case 3: //Right
+        {
+            mousePressDownX = event->x;
+            mousePressDownY = event->y;
+
+        break;
+        }
+
+        default:
+            break;
+    }//switch
 
     return true;
 }//mouseButtonPressed
 
 bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
 {
-    if (event->button == 1) {
-        leftMouseCurrentlyPressed = false;
-        graphState.inMotion = false;
-    }//if
+    switch (event->button) {
+        case 1: //Left
+        {
+            graphState.selectedEntity = Nobody;
+            leftMouseCurrentlyPressed = false;
+            graphState.inMotion = false;
+
+            if ((event->y > 30) && (event->y <= 60) && (event->y == mousePressDownY) && (abs(event->x -mousePressDownX) <= 5)) {
+                if ((false == ctrlCurrentlyPressed) ) {
+                    graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
+                    graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+                    graphDrawingArea->queue_draw();
+                } else {
+                    if ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > graphState.verticalPixelTickValues[event->x])) {
+                        graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
+                        graphState.leftMarkerTick = std::max(graphState.leftMarkerTick, 0);
+                        graphDrawingArea->queue_draw();
+                    }//if
+                }//if
+            }//if
+        break;
+        }
+
+        case 3: //Right
+        {
+            if ((event->y > 30) && (event->y <= 60) && (event->y == mousePressDownY) && (abs(event->x - mousePressDownX) <= 5)) {
+                if ((graphState.leftMarkerTick == -1) || (graphState.leftMarkerTick < graphState.verticalPixelTickValues[event->x])) {
+                    graphState.rightMarkerTick = graphState.verticalPixelTickValues[event->x];
+                    graphState.rightMarkerTick = std::max(graphState.rightMarkerTick, 0);
+                    graphDrawingArea->queue_draw();
+                }//if
+            }//if
+        break;
+        }
+
+        default:
+            break;
+    }//switch
 
     return true;
 }//mouseButtonReleased
@@ -451,29 +506,53 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 
     static guint32 lastHandledTime = 0; //XXX: This is safe to do, right? Only one thread ever gets here?
 
-    if ((event->time - lastHandledTime) < 100) {
+    if ((event->time - lastHandledTime) < 20) {
         return false;
     } else {
         lastHandledTime = event->time;
     }//if
 
     if (true == ctrlCurrentlyPressed) {
-        //We are scrolling the canvas
-        gdouble curOffset = graphState.offset;
+        if (event->y > 60) {
+           //We are scrolling the canvas
+            gdouble curOffset = graphState.offset;
 
-        handleGraphTimeScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth);
+            handleGraphTimeScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth);
 
-        if (graphState.offset != curOffset) {
-            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-            graphDrawingArea->queue_draw();
+            if (graphState.offset != curOffset) {
+                graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+                graphDrawingArea->queue_draw();
+            }//if
         }//if
     } else {
-        //Did we set the current time pointer
-        if ((event->y > 30) && (event->y <= 60) && (event->x >= 0) && (event->x < drawingAreaWidth)) {
-            graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
-            graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
-            graphDrawingArea->queue_draw();
+        if (graphState.selectedEntity == PointerTickBar) {
+            //Did we set the current time pointer
+            if ((event->x >= 0) && (event->x < drawingAreaWidth)) {
+                graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
+                graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+                graphDrawingArea->queue_draw();
+            }//if
         }//if
+
+        else if (graphState.selectedEntity == LeftTickBar) {
+            //Did we set the current time pointer
+            if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.rightMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] < graphState.rightMarkerTick))) {
+                graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
+                graphState.leftMarkerTick = std::max(graphState.leftMarkerTick, 0);
+                graphDrawingArea->queue_draw();
+            }//if
+        }//if
+
+        else if (graphState.selectedEntity == RightTickBar) {
+            //Did we set the current time pointer
+            if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.leftMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] > graphState.leftMarkerTick))) {
+                graphState.rightMarkerTick = graphState.verticalPixelTickValues[event->x];
+                graphState.rightMarkerTick = std::max(graphState.rightMarkerTick, 0);
+                graphDrawingArea->queue_draw();
+            }//if
+        }//if
+
+
     }//if
   
     return true;

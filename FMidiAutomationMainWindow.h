@@ -36,6 +36,14 @@ enum LineType
     SecondLine
 };//LineType
 
+enum SelectedEntity
+{
+    PointerTickBar,
+    LeftTickBar,
+    RightTickBar,
+    Nobody
+};//SelectedEntity
+
 struct GraphState
 {    
     double baseOffset; //when actively scrolling
@@ -52,8 +60,16 @@ struct GraphState
     std::vector<int> verticalPixelTickValues;
     std::vector<float> horizontalPixelValues;
 
+    SelectedEntity selectedEntity;
+
     //Time at which the pointer is at
     int curPointerTick;
+    int curPointerTickXPixel; //how far over is it?   
+
+    int leftMarkerTick;
+    int rightMarkerTick;
+    int leftMarkerTickXPixel;
+    int rightMarkerTickXPixel;
 
     GraphState();
     ~GraphState();

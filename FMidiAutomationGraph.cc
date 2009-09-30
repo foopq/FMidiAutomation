@@ -146,6 +146,80 @@ void drawTopBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, u
     context->stroke();
 }//drawTopBar
 
+void drawLeftMarker(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+//    Globals &globals = Globals::Instance();
+
+    if (graphState.leftMarkerTick == -1) {
+        return;
+    }//if
+
+    unsigned int timePointerPixel = 0;
+
+    std::vector<int>::iterator bound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), graphState.leftMarkerTick);
+    timePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), bound);
+
+    if ((0 == timePointerPixel) && ((*bound) > graphState.curPointerTick)) {
+        return;
+    }//if
+
+    //Saves a little trouble with edge cases and scrolling/zooming
+    if (areaWidth == timePointerPixel) {
+        return;
+    }//if
+
+    context->reset_clip();
+    context->set_source_rgba(0.9, 0.7, 0.0, 1.0);
+    context->set_line_width(1.0);
+    context->move_to(timePointerPixel, 30);
+    context->line_to(timePointerPixel, areaHeight);
+    context->stroke();
+
+    context->save();
+    context->arc(timePointerPixel, 35, 5, 0.5*M_PI, 1.5*M_PI);
+    context->fill_preserve();
+    context->stroke();
+
+    graphState.leftMarkerTickXPixel = timePointerPixel;
+}//drawLeftMarker
+
+void drawRightMarker(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+//    Globals &globals = Globals::Instance();
+
+    if (graphState.rightMarkerTick == -1) {
+        return;
+    }//if
+
+    unsigned int timePointerPixel = 0;
+
+    std::vector<int>::iterator bound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), graphState.rightMarkerTick);
+    timePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), bound);
+
+    if ((0 == timePointerPixel) && ((*bound) > graphState.curPointerTick)) {
+        return;
+    }//if
+
+    //Saves a little trouble with edge cases and scrolling/zooming
+    if (areaWidth == timePointerPixel) {
+        return;
+    }//if
+
+    context->reset_clip();
+    context->set_source_rgba(0.9, 0.7, 0.0, 1.0);
+    context->set_line_width(1.0);
+    context->move_to(timePointerPixel, 30);
+    context->line_to(timePointerPixel, areaHeight);
+    context->stroke();
+
+    context->save();
+    context->arc(timePointerPixel, 35, 5, -0.5*M_PI, 0.5*M_PI);
+    context->fill_preserve();
+    context->stroke();
+
+    graphState.rightMarkerTickXPixel = timePointerPixel;
+}//drawRightMarker
+
 void drawCurrentTimePointer(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
 //    Globals &globals = Globals::Instance();
@@ -176,7 +250,7 @@ void drawCurrentTimePointer(Cairo::RefPtr<Cairo::Context> context, GraphState &g
     context->fill_preserve();
     context->stroke();
 
-
+    graphState.curPointerTickXPixel = timePointerPixel;
 }//drawCurrentTimePointer
 
 int determineTickCountGroupSize(int ticksPerPixel)
@@ -256,6 +330,8 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 
 
     drawTopBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    drawLeftMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    drawRightMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
 
     /*
@@ -299,6 +375,12 @@ GraphState::GraphState()
     inMotion = false;
     zeroithTickPixel = std::numeric_limits<int>::min();
     curPointerTick = 0;
+    curPointerTickXPixel = 0;
+    selectedEntity = Nobody;
+    leftMarkerTick = -1;
+    rightMarkerTick = -1;
+    leftMarkerTickXPixel = -1;
+    rightMarkerTickXPixel = -1;
 }//constructor
 
 GraphState::~GraphState()
