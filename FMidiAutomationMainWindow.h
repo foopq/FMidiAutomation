@@ -91,6 +91,13 @@ class FMidiAutomationMainWindow
     Gtk::ImageMenuItem *menuSaveAs;
     Gtk::ImageMenuItem *menuNew;
     Gtk::ImageMenuItem *menuQuit;
+    Gtk::Entry *leftTickEntryBox;
+    Gtk::Entry *rightTickEntryBox;
+    Gtk::Entry *cursorTickEntryBox;
+    Gtk::Entry *leftBarEntryBox;
+    Gtk::Entry *rightBarEntryBox;
+    Gtk::Entry *cursorBarEntryBox;
+    Gtk::Button *focusStealingButton;
 
     int drawingAreaWidth;
     int drawingAreaHeight;
@@ -133,6 +140,10 @@ class FMidiAutomationMainWindow
     bool mouseButtonReleased(GdkEventButton *event);
     bool mouseMoved(GdkEventMotion *event);
     bool handleScroll(GdkEventScroll *event);
+
+    bool handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event);
+    bool handleKeyEntryOnRightTickEntryBox(GdkEventKey *event);
+    bool handleKeyEntryOnCursorTickEntryBox(GdkEventKey *event);
 
     void setThemeColours();
        

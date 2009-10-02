@@ -5,6 +5,7 @@
 #include "FMidiAutomationMainWindow.h"
 #include "FMidiAutomationData.h"
 #include <boost/array.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace
 {
@@ -67,8 +68,8 @@ void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState, i
 
             graphState.offset = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / graphState.ticksPerPixel) - (drawingAreaWidth / 2);
         } else {
-            int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
-            int halfWindowTicks = fullWindowTicks / 2;
+            //int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
+            //int halfWindowTicks = fullWindowTicks / 2;
             int baseOffset = abs(graphState.ticksPerPixel) * medianTickValue;
 
             graphState.offset = baseOffset - (drawingAreaWidth / 2); // - halfWindowTicks;
@@ -80,7 +81,7 @@ void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState, i
 
 Globals::Globals()
 {
-    versionStr = "FMidiAutomation - version 1.0.0 - August 8th 2009";
+    versionStr = "FMidiAutomation - version 1.0.0 - October 2009";
     topBarFontSize = 12;
     topBarFont = "Arial";
     darkTheme = true;
@@ -152,6 +153,20 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     on_menuNew();
 
+    uiXml->get_widget("leftTickEntryBox", leftTickEntryBox);
+    uiXml->get_widget("rightTickEntryBox", rightTickEntryBox);
+    uiXml->get_widget("cursorTickEntryBox", cursorTickEntryBox);
+    uiXml->get_widget("leftBarEntryBox", leftBarEntryBox);
+    uiXml->get_widget("rightBarEntryBox", rightBarEntryBox);
+    uiXml->get_widget("cursorBarEntryBox", cursorBarEntryBox);
+
+    leftTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox));
+    rightTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox));
+    cursorTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnCursorTickEntryBox));
+
+    uiXml->get_widget("focusStealingButton", focusStealingButton);
+    focusStealingButton->grab_focus();
+
     setThemeColours();
 }//constructor
 
@@ -166,12 +181,16 @@ void FMidiAutomationMainWindow::setThemeColours()
 
     Gdk::Color fgColour;
     Gdk::Color bgColour;
+    Gdk::Color editBoxBgColour;
     Gdk::Color textColour;
+    Gdk::Color darkTextColour;
 
     if (true == globals.darkTheme) {
         fgColour.set_rgb(52429, 42429, 52429);
         bgColour.set_rgb(10000, 10000, 10000);
+        editBoxBgColour.set_rgb(25000, 25000, 25000);
         textColour.set_rgb(55982, 55982, 55982);
+        darkTextColour.set_rgb(45982, 45982, 45982);
     }//if
 
     Gtk::Widget *tmpWidget;
@@ -195,6 +214,11 @@ void FMidiAutomationMainWindow::setThemeColours()
     uiXml->get_widget("viewport1", tmpWidget);
     tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
     tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
+    uiXml->get_widget("viewport3", tmpWidget);
+    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+
 
 
     uiXml->get_widget("menubar", tmpWidget);
@@ -234,12 +258,38 @@ void FMidiAutomationMainWindow::setThemeColours()
     uiXml->get_widget("menu_about", imageMenuItem);
     imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
 
-
     Gtk::SeparatorMenuItem *separatorMenuItem;
     uiXml->get_widget("separatormenuitem1", separatorMenuItem);
     separatorMenuItem->modify_bg(Gtk::STATE_NORMAL, bgColour);
 
+    Gtk::Label *label;
+    uiXml->get_widget("label1", label);
+    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
+    uiXml->get_widget("label2", label);
+    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
+    uiXml->get_widget("label3", label);
+    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
 
+    focusStealingButton->modify_bg(Gtk::STATE_NORMAL, bgColour);
+
+    leftTickEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+    leftTickEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    leftTickEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    rightTickEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+    rightTickEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    rightTickEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    cursorTickEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+    cursorTickEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    cursorTickEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    leftBarEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+    leftBarEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    leftBarEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    rightBarEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+    rightBarEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    rightBarEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    cursorBarEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+    cursorBarEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    cursorBarEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
 
 }//setThemeColours
 
@@ -247,6 +297,66 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
 {
     return mainWindow;
 }//MainWindow
+
+bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event)
+{
+    if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
+        return false;
+    }//if
+
+    try {
+        int pos = boost::lexical_cast<int>(leftTickEntryBox->get_text());
+        if ((pos >= 0) && ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > pos))) {
+            graphState.leftMarkerTick = pos;
+            graphDrawingArea->queue_draw();
+            return true;
+        } else {
+            return false;
+        }//if
+    } catch(...) {
+        return false;
+    }//try/catch
+}//handleKeyEntryOnLeftTickEntryBox
+
+bool FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox(GdkEventKey *event)
+{
+    if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
+        return false;
+    }//if
+
+    try {
+        int pos = boost::lexical_cast<int>(rightTickEntryBox->get_text());
+        if ((pos >= 0) && ((graphState.leftMarkerTick == -1) || (graphState.leftMarkerTick < pos))) {
+            graphState.rightMarkerTick = pos;
+            graphDrawingArea->queue_draw();
+            return true;
+        } else {
+            return false;
+        }//if
+    } catch(...) {
+        return false;
+    }//try/catch
+}//handleKeyEntryOnRightTickEntryBox
+
+bool FMidiAutomationMainWindow::handleKeyEntryOnCursorTickEntryBox(GdkEventKey *event)
+{
+    if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
+        return false;
+    }//if
+
+    try {
+        int pos = boost::lexical_cast<int>(cursorTickEntryBox->get_text());
+        if (pos >= 0) {
+            graphState.curPointerTick = pos;
+            graphDrawingArea->queue_draw();
+            return true;
+        } else {
+            return false;
+        }//if
+    } catch(...) {
+        return false;
+    }//try/catch
+}//handleKeyEntryOnCursorTickEntryBox
 
 void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 {
@@ -411,6 +521,8 @@ bool FMidiAutomationMainWindow::key_released(GdkEventKey *event)
 
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
+    focusStealingButton->grab_focus();
+
     switch (event->button) {
         case 1: //Left
         {
@@ -467,11 +579,13 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
                 if ((false == ctrlCurrentlyPressed) ) {
                     graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
                     graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+                    cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
                     graphDrawingArea->queue_draw();
                 } else {
                     if ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > graphState.verticalPixelTickValues[event->x])) {
                         graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
                         graphState.leftMarkerTick = std::max(graphState.leftMarkerTick, 0);
+                        leftTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.leftMarkerTick));
                         graphDrawingArea->queue_draw();
                     }//if
                 }//if
@@ -485,6 +599,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
                 if ((graphState.leftMarkerTick == -1) || (graphState.leftMarkerTick < graphState.verticalPixelTickValues[event->x])) {
                     graphState.rightMarkerTick = graphState.verticalPixelTickValues[event->x];
                     graphState.rightMarkerTick = std::max(graphState.rightMarkerTick, 0);
+                    rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.rightMarkerTick));
                     graphDrawingArea->queue_draw();
                 }//if
             }//if
@@ -530,6 +645,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
             if ((event->x >= 0) && (event->x < drawingAreaWidth)) {
                 graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
                 graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+                cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
                 graphDrawingArea->queue_draw();
             }//if
         }//if
@@ -539,6 +655,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
             if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.rightMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] < graphState.rightMarkerTick))) {
                 graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
                 graphState.leftMarkerTick = std::max(graphState.leftMarkerTick, 0);
+                leftTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.leftMarkerTick));
                 graphDrawingArea->queue_draw();
             }//if
         }//if
@@ -548,6 +665,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
             if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.leftMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] > graphState.leftMarkerTick))) {
                 graphState.rightMarkerTick = graphState.verticalPixelTickValues[event->x];
                 graphState.rightMarkerTick = std::max(graphState.rightMarkerTick, 0);
+                rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.rightMarkerTick));
                 graphDrawingArea->queue_draw();
             }//if
         }//if
