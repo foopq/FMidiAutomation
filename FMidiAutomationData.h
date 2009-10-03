@@ -12,13 +12,13 @@
 
 
 struct Tempo
-{
-
+{    
     unsigned int bpm;
     unsigned int beatsPerBar;
+    unsigned int barSubDivisions;
 
     Tempo() {}
-    Tempo(unsigned int bpm, unsigned int beatsPerBar);
+    Tempo(unsigned int bpm, unsigned int beatsPerBar, unsigned int barSubDivisions);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;

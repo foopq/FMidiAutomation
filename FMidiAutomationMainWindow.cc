@@ -167,7 +167,25 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("focusStealingButton", focusStealingButton);
     focusStealingButton->grab_focus();
 
+    uiXml->get_widget("bpmEntry", bpmEntry);
+    uiXml->get_widget("beatsPerBarEntry", beatsPerBarEntry);
+    uiXml->get_widget("barSubdivisionsEntry", barSubdivisionsEntry);
+
+    Gtk::Viewport *bpmFrame;
+    uiXml->get_widget("viewport8", bpmFrame);
+    bpmFrame->signal_button_press_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClick) );
+    bpmEntry->signal_grab_focus().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClickBase) );
+    beatsPerBarEntry->signal_grab_focus().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClickBase) );
+    barSubdivisionsEntry->signal_grab_focus().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClickBase) );
+
+    Gtk::Label *statusBar;
+    uiXml->get_widget("statusLabel", statusBar);
+    statusBar->set_text("Welcome to FMidiAutomation");
+
     setThemeColours();
+
+    datas.reset(new FMidiAutomationData);
+    datas->tempoChanges.insert(std::make_pair(0U, Tempo(120, 4, 4)));
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -184,6 +202,9 @@ void FMidiAutomationMainWindow::setThemeColours()
     Gdk::Color editBoxBgColour;
     Gdk::Color textColour;
     Gdk::Color darkTextColour;
+    Gdk::Color black;
+
+    black.set_rgb(0, 0, 0);
 
     if (true == globals.darkTheme) {
         fgColour.set_rgb(52429, 42429, 52429);
@@ -195,54 +216,53 @@ void FMidiAutomationMainWindow::setThemeColours()
 
     Gtk::Widget *tmpWidget;
 
-    uiXml->get_widget("viewport2", tmpWidget);
-    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+    for (int x = 1; x <= 10; ++x) {
+        //if ((x < 11) && (x != 1)) {
+        //    Gtk::ToolButton *toolbutton;
+        //    uiXml->get_widget(std::string("toolbutton") + boost::lexical_cast<std::string>(x), toolbutton);
+        //    toolbutton->get_label_widget()->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
+        //}//if
 
-    uiXml->get_widget("viewport6", tmpWidget);
-    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+        if (x < 11) {
+            std::string viewportStr("viewport");
+            viewportStr = viewportStr + boost::lexical_cast<std::string>(x);
 
-    uiXml->get_widget("viewport5", tmpWidget);
-    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+            uiXml->get_widget(viewportStr, tmpWidget);
+            tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
+            tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+        }//if
 
-    uiXml->get_widget("viewport4", tmpWidget);
-    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+        if (x < 3) {
+            Gtk::Toolbar *toolbar;
+            uiXml->get_widget(std::string("toolbar") + boost::lexical_cast<std::string>(x), toolbar);
+            toolbar->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        }//if
 
-    uiXml->get_widget("viewport1", tmpWidget);
-    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+        if (x < 5) {
+            Gtk::MenuItem *menuItem;
+            uiXml->get_widget(std::string("menuitem") + boost::lexical_cast<std::string>(x), menuItem);
+            menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+        }//if
 
-    uiXml->get_widget("viewport3", tmpWidget);
-    tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    tmpWidget->modify_fg(Gtk::STATE_NORMAL, fgColour);
+        if (x < 4) {
+            Gtk::Menu *menu;
+            uiXml->get_widget(std::string("menu") + boost::lexical_cast<std::string>(x), menu);
+            menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        }//if
 
+        if ((x < 9) && (x != 4)) {
+            Gtk::Label *label;
+            uiXml->get_widget(std::string("label") + boost::lexical_cast<std::string>(x), label);
+            label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
+        }//if
+    }//for
 
+    Gtk::Label *label;
+    uiXml->get_widget("statusLabel", label);
+    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
 
     uiXml->get_widget("menubar", tmpWidget);
     tmpWidget->modify_bg(Gtk::STATE_NORMAL, bgColour);
-
-    Gtk::MenuItem *menuItem;
-    uiXml->get_widget("menuitem1", menuItem);
-    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
-    uiXml->get_widget("menuitem2", menuItem);
-    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
-    uiXml->get_widget("menuitem3", menuItem);
-    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
-    uiXml->get_widget("menuitem4", menuItem);
-    menuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
-
-    Gtk::Menu *menu;
-    uiXml->get_widget("menu1", menu);
-    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    uiXml->get_widget("menu2", menu);
-    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    uiXml->get_widget("menu3", menu);
-    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
-//    uiXml->get_widget("menu4", menu);
-//    menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
 
     Gtk::ImageMenuItem *imageMenuItem;
     uiXml->get_widget("menu_new", imageMenuItem);
@@ -261,14 +281,6 @@ void FMidiAutomationMainWindow::setThemeColours()
     Gtk::SeparatorMenuItem *separatorMenuItem;
     uiXml->get_widget("separatormenuitem1", separatorMenuItem);
     separatorMenuItem->modify_bg(Gtk::STATE_NORMAL, bgColour);
-
-    Gtk::Label *label;
-    uiXml->get_widget("label1", label);
-    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
-    uiXml->get_widget("label2", label);
-    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
-    uiXml->get_widget("label3", label);
-    label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
 
     focusStealingButton->modify_bg(Gtk::STATE_NORMAL, bgColour);
 
@@ -291,12 +303,53 @@ void FMidiAutomationMainWindow::setThemeColours()
     cursorBarEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
     cursorBarEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
 
+    bpmEntry->modify_base(Gtk::STATE_NORMAL, bgColour);
+    bpmEntry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    bpmEntry->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    beatsPerBarEntry->modify_base(Gtk::STATE_NORMAL, bgColour);
+    beatsPerBarEntry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    beatsPerBarEntry->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    barSubdivisionsEntry->modify_base(Gtk::STATE_NORMAL, bgColour);
+    barSubdivisionsEntry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    barSubdivisionsEntry->modify_bg(Gtk::STATE_NORMAL, fgColour);
+
+    Gtk::Frame *bpmFrame;
+    uiXml->get_widget("bpmFrame", bpmFrame);
+    bpmFrame->modify_bg(Gtk::STATE_NORMAL, black);
 }//setThemeColours
 
 Gtk::Window *FMidiAutomationMainWindow::MainWindow()
 {
     return mainWindow;
 }//MainWindow
+
+void FMidiAutomationMainWindow::unsetAllCurveFrames()
+{
+    focusStealingButton->grab_focus();
+
+    Gdk::Color black;
+    black.set_rgb(0, 0, 0);
+
+    Gtk::Frame *bpmFrame;
+    uiXml->get_widget("bpmFrame", bpmFrame);
+    bpmFrame->modify_bg(Gtk::STATE_NORMAL, black);
+}//unsetAllCurveFrames
+
+bool FMidiAutomationMainWindow::handleBPMFrameClick(GdkEventButton *event)
+{
+    handleBPMFrameClickBase();
+    return false;
+}//handleBPMFrameClick
+
+void FMidiAutomationMainWindow::handleBPMFrameClickBase()
+{
+    Gdk::Color yellow;
+    yellow.set_rgb(65535, 65535, 0);
+
+    Gtk::Frame *bpmFrame;
+    uiXml->get_widget("bpmFrame", bpmFrame);
+    bpmFrame->modify_bg(Gtk::STATE_NORMAL, yellow);
+}//handleBPMFrameClickBase
 
 bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event)
 {
@@ -375,7 +428,7 @@ void FMidiAutomationMainWindow::on_menuQuit()
 void FMidiAutomationMainWindow::on_menuNew()
 {
     datas.reset(new FMidiAutomationData);
-    datas->tempoChanges.insert(std::make_pair(0U, Tempo(90, 4)));
+    datas->tempoChanges.insert(std::make_pair(0U, Tempo(120, 4, 4)));
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()
@@ -386,7 +439,7 @@ void FMidiAutomationMainWindow::on_menuSave()
         std::ofstream outputStream(filename.c_str());
         assert(outputStream.good());
         if (false == outputStream.good()) {
-                return;
+            return;
         }//if
 
         boost::archive::xml_oarchive outputArchive(outputStream);
@@ -521,7 +574,7 @@ bool FMidiAutomationMainWindow::key_released(GdkEventKey *event)
 
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
-    focusStealingButton->grab_focus();
+    unsetAllCurveFrames();
 
     switch (event->button) {
         case 1: //Left

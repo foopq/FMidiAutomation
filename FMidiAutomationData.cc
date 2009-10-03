@@ -1,10 +1,11 @@
 #include "FMidiAutomationData.h"
 #include "boost/serialization/map.hpp" 
 
-Tempo::Tempo(unsigned int bpm_, unsigned int beatsPerBar_)
+Tempo::Tempo(unsigned int bpm_, unsigned int beatsPerBar_, unsigned int barSubDivisions_)
 {
     bpm = bpm_;
     beatsPerBar = beatsPerBar_;
+    barSubDivisions = barSubDivisions_;
 }//constructor
 
 template<class Archive>
@@ -12,6 +13,7 @@ void Tempo::serialize(Archive &ar, const unsigned int version)
 {
     ar & BOOST_SERIALIZATION_NVP(bpm);
     ar & BOOST_SERIALIZATION_NVP(beatsPerBar);
+    ar & BOOST_SERIALIZATION_NVP(barSubDivisions);
 }//serialize
 
 

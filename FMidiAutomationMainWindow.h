@@ -98,6 +98,9 @@ class FMidiAutomationMainWindow
     Gtk::Entry *rightBarEntryBox;
     Gtk::Entry *cursorBarEntryBox;
     Gtk::Button *focusStealingButton;
+    Gtk::Entry *bpmEntry;
+    Gtk::Entry *beatsPerBarEntry;
+    Gtk::Entry *barSubdivisionsEntry;
 
     int drawingAreaWidth;
     int drawingAreaHeight;
@@ -144,6 +147,10 @@ class FMidiAutomationMainWindow
     bool handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnRightTickEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnCursorTickEntryBox(GdkEventKey *event);
+
+    bool handleBPMFrameClick(GdkEventButton *event);
+    void handleBPMFrameClickBase();
+    void unsetAllCurveFrames();
 
     void setThemeColours();
        
