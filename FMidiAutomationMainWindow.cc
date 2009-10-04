@@ -6,6 +6,7 @@
 #include "FMidiAutomationData.h"
 #include <boost/array.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 
 namespace
 {
@@ -104,8 +105,6 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("mainWindow", mainWindow);
     uiXml->get_widget("trackListWindow", trackListWindow);
     
-    uiXml->get_widget("addButton", tmpAddButton);
-    uiXml->get_widget("removeButton", tmpRemoveButton);
     uiXml->get_widget("graphDrawingArea", graphDrawingArea);
     
     backingImage.reset(new Gtk::Image());
@@ -141,10 +140,6 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     mainWindow->signal_key_press_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::key_pressed));
     mainWindow->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::key_released));
-
-    
-    tmpAddButton->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleTmpAddButton) );
-    tmpRemoveButton->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleTmpRemoveButton) );
 
     shiftCurrentlyPressed = false;
     ctrlCurrentlyPressed = false;
@@ -185,7 +180,13 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     setThemeColours();
 
     datas.reset(new FMidiAutomationData);
-    datas->tempoChanges.insert(std::make_pair(0U, Tempo(120, 4, 4)));
+    datas->tempoChanges.insert(std::make_pair(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4))));
+
+    Gtk::ToolButton *button;
+    uiXml->get_widget("addButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddPressed) );
+    uiXml->get_widget("deleteButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeletePressed) );
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -323,6 +324,72 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
     return mainWindow;
 }//MainWindow
 
+void FMidiAutomationMainWindow::handleAddPressed()
+{
+    Globals &globals = Globals::Instance();
+
+    if (true == globals.tempoGlobals.tempoDataSelected) {
+        try {
+            float bpm = boost::lexical_cast<float>(bpmEntry->get_text()) * 100;
+            unsigned int beatsPerBar = boost::lexical_cast<unsigned int>(beatsPerBarEntry->get_text());
+            unsigned int barSubDivisions = boost::lexical_cast<unsigned int>(barSubdivisionsEntry->get_text());
+
+            if ((bpm <= 0) || (beatsPerBar <= 0) || (barSubDivisions <=0)) {
+                return;
+            }//if
+
+            bool foundSelected = false;
+            typedef std::pair<int, boost::shared_ptr<Tempo> > TempoMarkerPair;
+            BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, datas->tempoChanges) {
+                if (true == tempoMarkerPair.second->currentlySelected) {
+                    boost::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
+                    tempo->bpm = (unsigned int)bpm;
+                    tempo->beatsPerBar = beatsPerBar;
+                    tempo->barSubDivisions = barSubDivisions;
+                    foundSelected = true;
+                    break;
+                }//if
+            }//foreach
+
+            if (false == foundSelected) {
+                //Essentially clear the selection state of the tempo changes
+                (void)checkForTempoSelection(-100, datas->tempoChanges);
+        
+                if (datas->tempoChanges.find(graphState.curPointerTick) == datas->tempoChanges.end()) {
+                    boost::shared_ptr<Tempo> tempo(new Tempo);
+                    tempo->bpm = (unsigned int)bpm;
+                    tempo->beatsPerBar = beatsPerBar;
+                    tempo->barSubDivisions = barSubDivisions;
+                    tempo->currentlySelected = true;
+
+                    datas->tempoChanges[graphState.curPointerTick] = tempo;
+                }//if
+            }//if
+
+            graphDrawingArea->queue_draw();
+        } catch (...) {
+            //Nothing
+        }//try/catch
+    }//if
+}//handleAddPressed
+
+void FMidiAutomationMainWindow::handleDeletePressed()
+{
+    Globals &globals = Globals::Instance();
+
+    if (true == globals.tempoGlobals.tempoDataSelected) {
+        std::map<int, boost::shared_ptr<Tempo> >::iterator mapIter = datas->tempoChanges.begin();
+        ++mapIter;
+        for (/*nothing*/; mapIter != datas->tempoChanges.end(); ++mapIter) {
+            if (true == mapIter->second->currentlySelected) {
+                datas->tempoChanges.erase(mapIter);
+                graphDrawingArea->queue_draw();
+                break;
+            }//if
+        }//for
+    }//if
+}//handleDeletePressed
+
 void FMidiAutomationMainWindow::unsetAllCurveFrames()
 {
     focusStealingButton->grab_focus();
@@ -333,6 +400,9 @@ void FMidiAutomationMainWindow::unsetAllCurveFrames()
     Gtk::Frame *bpmFrame;
     uiXml->get_widget("bpmFrame", bpmFrame);
     bpmFrame->modify_bg(Gtk::STATE_NORMAL, black);
+
+    Globals &globals = Globals::Instance();
+    globals.tempoGlobals.tempoDataSelected = true;
 }//unsetAllCurveFrames
 
 bool FMidiAutomationMainWindow::handleBPMFrameClick(GdkEventButton *event)
@@ -343,12 +413,16 @@ bool FMidiAutomationMainWindow::handleBPMFrameClick(GdkEventButton *event)
 
 void FMidiAutomationMainWindow::handleBPMFrameClickBase()
 {
+    Globals &globals = Globals::Instance();
+
     Gdk::Color yellow;
     yellow.set_rgb(65535, 65535, 0);
 
     Gtk::Frame *bpmFrame;
     uiXml->get_widget("bpmFrame", bpmFrame);
     bpmFrame->modify_bg(Gtk::STATE_NORMAL, yellow);
+
+    globals.tempoGlobals.tempoDataSelected = true;
 }//handleBPMFrameClickBase
 
 bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event)
@@ -358,8 +432,9 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *ev
     }//if
 
     try {
-        int pos = boost::lexical_cast<int>(leftTickEntryBox->get_text());
-        if ((pos >= 0) && ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > pos))) {
+        std::string entryText = leftTickEntryBox->get_text();
+        int pos = boost::lexical_cast<int>(entryText);
+        if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > pos)))) {
             graphState.leftMarkerTick = pos;
             graphDrawingArea->queue_draw();
             return true;
@@ -378,8 +453,9 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox(GdkEventKey *e
     }//if
 
     try {
+        std::string entryText = rightTickEntryBox->get_text();
         int pos = boost::lexical_cast<int>(rightTickEntryBox->get_text());
-        if ((pos >= 0) && ((graphState.leftMarkerTick == -1) || (graphState.leftMarkerTick < pos))) {
+        if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((graphState.leftMarkerTick == -1) || (graphState.leftMarkerTick < pos)))) {
             graphState.rightMarkerTick = pos;
             graphDrawingArea->queue_draw();
             return true;
@@ -401,6 +477,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnCursorTickEntryBox(GdkEventKey *
         int pos = boost::lexical_cast<int>(cursorTickEntryBox->get_text());
         if (pos >= 0) {
             graphState.curPointerTick = pos;
+            updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -428,7 +505,7 @@ void FMidiAutomationMainWindow::on_menuQuit()
 void FMidiAutomationMainWindow::on_menuNew()
 {
     datas.reset(new FMidiAutomationData);
-    datas->tempoChanges.insert(std::make_pair(0U, Tempo(120, 4, 4)));
+    datas->tempoChanges.insert(std::make_pair(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4))));
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()
@@ -574,8 +651,6 @@ bool FMidiAutomationMainWindow::key_released(GdkEventKey *event)
 
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
-    unsetAllCurveFrames();
-
     switch (event->button) {
         case 1: //Left
         {
@@ -587,16 +662,31 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
             if (event->y > 60) {
                 graphState.inMotion = true;
                 graphState.baseOffset = graphState.offset;
+
+                if (false == ctrlCurrentlyPressed) {
+                    unsetAllCurveFrames();
+                }//if
             } else {
-                if (event->y > 30) {
-                    if (abs(event->x - graphState.leftMarkerTickXPixel) <= 5) {
+                if ((event->y > 30) && (false == ctrlCurrentlyPressed)) {
+                    if ((graphState.leftMarkerTickXPixel >= 0) && (abs(event->x - graphState.leftMarkerTickXPixel) <= 5)) {
                         graphState.selectedEntity = LeftTickBar;
                     }//if
-                    if (abs(event->x - graphState.rightMarkerTickXPixel) <= 5) {
+                    else if ((graphState.rightMarkerTickXPixel >= 0) && (abs(event->x - graphState.rightMarkerTickXPixel) <= 5)) {
                         graphState.selectedEntity = RightTickBar;
                     }//if
-                    if (abs(event->x - graphState.curPointerTickXPixel) <= 5) {
+                    else if (abs(event->x - graphState.curPointerTickXPixel) <= 5) {
                         graphState.selectedEntity = PointerTickBar;
+                    }//if
+                    else if (checkForTempoSelection(event->x, datas->tempoChanges) == true) {
+                        graphState.selectedEntity = TempoChange;
+                        handleBPMFrameClickBase();
+                        updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+                        graphDrawingArea->queue_draw();
+                    }//if
+
+                    else {
+                        //Essentially clear the selection state of the tempo changes
+                        (void)checkForTempoSelection(-100, datas->tempoChanges);
                     }//if
                 }//if
             }//if
@@ -624,16 +714,18 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
     switch (event->button) {
         case 1: //Left
         {
-            graphState.selectedEntity = Nobody;
             leftMouseCurrentlyPressed = false;
             graphState.inMotion = false;
 
             if ((event->y > 30) && (event->y <= 60) && (event->y == mousePressDownY) && (abs(event->x -mousePressDownX) <= 5)) {
-                if ((false == ctrlCurrentlyPressed) ) {
-                    graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
-                    graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
-                    cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
-                    graphDrawingArea->queue_draw();
+                if (false == ctrlCurrentlyPressed) {
+                    if (graphState.selectedEntity != TempoChange) {
+                        graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
+                        graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+                        cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
+                        updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+                        graphDrawingArea->queue_draw();
+                    }//if
                 } else {
                     if ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > graphState.verticalPixelTickValues[event->x])) {
                         graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
@@ -699,6 +791,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
                 graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
                 graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
                 cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
+                updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
                 graphDrawingArea->queue_draw();
             }//if
         }//if
@@ -753,10 +846,3 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
     return true;
 }//handleScroll
 
-void FMidiAutomationMainWindow::handleTmpAddButton()
-{
-}//handleTmpAddButton
-
-void FMidiAutomationMainWindow::handleTmpRemoveButton()
-{
-}//handleTmpRemoveButton

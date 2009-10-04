@@ -9,24 +9,11 @@
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-
-
-struct Tempo
-{    
-    unsigned int bpm;
-    unsigned int beatsPerBar;
-    unsigned int barSubDivisions;
-
-    Tempo() {}
-    Tempo(unsigned int bpm, unsigned int beatsPerBar, unsigned int barSubDivisions);
-
-    template<class Archive> void serialize(Archive &ar, const unsigned int version);
-    friend class boost::serialization::access;
-};//Tempo
+#include "Tempo.h"
 
 struct FMidiAutomationData
 {
-    std::map<int, Tempo> tempoChanges;
+    std::map<int, boost::shared_ptr<Tempo> > tempoChanges; //int index is tick value (>= 0)
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
@@ -34,6 +21,5 @@ struct FMidiAutomationData
 };//FMidiAutomationData
 
 BOOST_CLASS_VERSION(FMidiAutomationData, 1);
-BOOST_CLASS_VERSION(Tempo, 1);
 
 #endif

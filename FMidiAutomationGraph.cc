@@ -328,8 +328,8 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         context->paint();
     }//if
 
-
     drawTopBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    drawTempoBar(context, graphState, datas, drawingAreaWidth);
     drawLeftMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawRightMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
@@ -364,6 +364,8 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     
     //graphDrawingArea->show();
     
+    updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+
     return true;
 }//updateGraph
 
@@ -401,6 +403,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     //Determine frame ticks
     bool toggle = true;
     verticalPixelTickValues.clear();
+    verticalPixelTickValues.reserve(areaWidth);
     zeroithTickPixel = std::numeric_limits<int>::max();
     int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
     for (unsigned int x = 0; x < areaWidth; ++x) {
@@ -479,6 +482,15 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             }//if
         }//if
     }//for
+
+    //Our vertical tick values might not be correct for negative ticks
+    if (zeroithTickPixel != std::numeric_limits<int>::max()) {
+        for (int pos = 0; pos < zeroithTickPixel; ++pos) {
+            if (verticalPixelTickValues[pos] > 0) {
+                verticalPixelTickValues[pos] = -verticalPixelTickValues[pos];
+            }//if
+        }//for
+    }//if
 
     //Ugly kluge
     if (ticksPerPixel < 0) {

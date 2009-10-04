@@ -12,7 +12,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
 
-
+struct TempoGlobals;
 
 struct Globals
 {
@@ -26,6 +26,8 @@ struct Globals
     std::string topBarFont;
     unsigned int topBarFontSize;
     bool darkTheme;
+
+    TempoGlobals tempoGlobals;
 };//Globals
 
 enum LineType
@@ -41,6 +43,7 @@ enum SelectedEntity
     PointerTickBar,
     LeftTickBar,
     RightTickBar,
+    TempoChange,
     Nobody
 };//SelectedEntity
 
@@ -79,9 +82,6 @@ struct GraphState
 
 class FMidiAutomationMainWindow
 {
-    Gtk::Button *tmpAddButton;
-    Gtk::Button *tmpRemoveButton;
- 
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Window *mainWindow;
     Gtk::ScrolledWindow *trackListWindow;
@@ -123,9 +123,6 @@ class FMidiAutomationMainWindow
 
     GraphState graphState;
     
-    void handleTmpAddButton();
-    void handleTmpRemoveButton();
-    
     void handleGraphResize(Gtk::Allocation&);
     
     void refreshGraphBackground();
@@ -151,6 +148,9 @@ class FMidiAutomationMainWindow
     bool handleBPMFrameClick(GdkEventButton *event);
     void handleBPMFrameClickBase();
     void unsetAllCurveFrames();
+
+    void handleAddPressed();
+    void handleDeletePressed();
 
     void setThemeColours();
        

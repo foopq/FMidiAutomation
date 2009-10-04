@@ -479,7 +479,7 @@
                                       <object class="GtkToolbar" id="toolbar2">
                                         <property name="visible">True</property>
                                         <child>
-                                          <object class="GtkToolButton" id="toolbutton9">
+                                          <object class="GtkToolButton" id="addButton">
                                             <property name="visible">True</property>
                                             <property name="use_underline">True</property>
                                             <property name="stock_id">gtk-add</property>
@@ -490,7 +490,7 @@
                                           </packing>
                                         </child>
                                         <child>
-                                          <object class="GtkToolButton" id="toolbutton10">
+                                          <object class="GtkToolButton" id="deleteButton">
                                             <property name="visible">True</property>
                                             <property name="use_underline">True</property>
                                             <property name="stock_id">gtk-delete</property>
@@ -698,20 +698,10 @@
                     <property name="visible">True</property>
                     <property name="layout_style">spread</property>
                     <child>
-                      <object class="GtkButton" id="addButton">
-                        <property name="label" translatable="yes">Add</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">0</property>
-                      </packing>
+                      <placeholder/>
                     </child>
                     <child>
-                      <object class="GtkButton" id="removeButton">
+                      <object class="GtkButton" id="zzremoveButton">
                         <property name="label" translatable="yes">button</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
