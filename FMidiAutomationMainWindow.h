@@ -133,6 +133,8 @@ class FMidiAutomationMainWindow
     void on_menuSaveAs();
     void on_menuNew();
     void on_menuQuit();
+    void on_menuUndo();
+    void on_menuRedo();
 
     bool key_pressed(GdkEventKey *event);
     bool key_released(GdkEventKey *event);

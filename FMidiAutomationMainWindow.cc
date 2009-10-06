@@ -4,6 +4,7 @@
 #include <fstream>
 #include "FMidiAutomationMainWindow.h"
 #include "FMidiAutomationData.h"
+#include "Command.h"
 #include <boost/array.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
@@ -137,6 +138,16 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     menuSaveAs->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSaveAs));
     menuNew->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuNew));
     menuQuit->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuQuit));
+
+    Gtk::ImageMenuItem *menuUndo;
+    Gtk::ImageMenuItem *menuRedo;
+    uiXml->get_widget("menu_redo", menuRedo);
+    uiXml->get_widget("menu_undo", menuUndo);
+
+    CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
+
+    menuUndo->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuUndo));
+    menuRedo->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuRedo));
 
     mainWindow->signal_key_press_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::key_pressed));
     mainWindow->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::key_released));
@@ -279,6 +290,15 @@ void FMidiAutomationMainWindow::setThemeColours()
     uiXml->get_widget("menu_about", imageMenuItem);
     imageMenuItem->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
 
+    Gtk::ImageMenuItem *menuUndo;
+    Gtk::ImageMenuItem *menuRedo;
+    uiXml->get_widget("menu_redo", menuRedo);
+    uiXml->get_widget("menu_undo", menuUndo);
+    menuUndo->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+    menuRedo->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
+
+    CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
+
     Gtk::SeparatorMenuItem *separatorMenuItem;
     uiXml->get_widget("separatormenuitem1", separatorMenuItem);
     separatorMenuItem->modify_bg(Gtk::STATE_NORMAL, bgColour);
@@ -343,9 +363,10 @@ void FMidiAutomationMainWindow::handleAddPressed()
             BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, datas->tempoChanges) {
                 if (true == tempoMarkerPair.second->currentlySelected) {
                     boost::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
-                    tempo->bpm = (unsigned int)bpm;
-                    tempo->beatsPerBar = beatsPerBar;
-                    tempo->barSubDivisions = barSubDivisions;
+
+                    boost::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions));
+                    CommandManager::Instance().setNewCommand(updateTempoChangeCommand);
+
                     foundSelected = true;
                     break;
                 }//if
@@ -362,7 +383,8 @@ void FMidiAutomationMainWindow::handleAddPressed()
                     tempo->barSubDivisions = barSubDivisions;
                     tempo->currentlySelected = true;
 
-                    datas->tempoChanges[graphState.curPointerTick] = tempo;
+                    boost::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas));
+                    CommandManager::Instance().setNewCommand(addTempoChangeCommand);
                 }//if
             }//if
 
@@ -380,9 +402,12 @@ void FMidiAutomationMainWindow::handleDeletePressed()
     if (true == globals.tempoGlobals.tempoDataSelected) {
         std::map<int, boost::shared_ptr<Tempo> >::iterator mapIter = datas->tempoChanges.begin();
         ++mapIter;
+
         for (/*nothing*/; mapIter != datas->tempoChanges.end(); ++mapIter) {
             if (true == mapIter->second->currentlySelected) {
-                datas->tempoChanges.erase(mapIter);
+                boost::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas));
+                CommandManager::Instance().setNewCommand(deleteTempoChangeCommand);
+
                 graphDrawingArea->queue_draw();
                 break;
             }//if
@@ -604,6 +629,18 @@ void FMidiAutomationMainWindow::on_menuOpen()
 
     graphDrawingArea->queue_draw();
 }//on_menuOpen
+
+void FMidiAutomationMainWindow::on_menuUndo()
+{
+    CommandManager::Instance().doUndo();
+    graphDrawingArea->queue_draw();
+}//on_menuUndo
+
+void FMidiAutomationMainWindow::on_menuRedo()
+{
+    CommandManager::Instance().doRedo();
+    graphDrawingArea->queue_draw();
+}//on_menuRedo
 
 bool FMidiAutomationMainWindow::key_pressed(GdkEventKey *event)
 {
