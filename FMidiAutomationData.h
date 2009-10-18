@@ -15,9 +15,11 @@ struct FMidiAutomationData
 {
     std::map<int, boost::shared_ptr<Tempo> > tempoChanges; //int index is tick value (>= 0)
 
+    void addTempoChange(int tick, boost::shared_ptr<Tempo> tempo);
+    void removeTempoChange(int tick);
+
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
-
 };//FMidiAutomationData
 
 BOOST_CLASS_VERSION(FMidiAutomationData, 1);

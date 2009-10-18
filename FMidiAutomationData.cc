@@ -1,6 +1,25 @@
 #include "FMidiAutomationData.h"
 #include "boost/serialization/map.hpp" 
 
+namespace
+{
+
+
+}//anonymous namespace
+
+
+void FMidiAutomationData::addTempoChange(int tick, boost::shared_ptr<Tempo> tempo)
+{
+    tempoChanges.insert(std::make_pair(tick, tempo));
+    updateTempoChangesUIData(tempoChanges);
+}//addTempoChange
+
+void FMidiAutomationData::removeTempoChange(int tick)
+{
+    tempoChanges.erase(tempoChanges.find(tick));
+    updateTempoChangesUIData(tempoChanges);
+}//removeTempoChange
+
 template<class Archive>
 void FMidiAutomationData::serialize(Archive &ar, const unsigned int version)
 {

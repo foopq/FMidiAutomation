@@ -1,7 +1,7 @@
 # Makefile
 
 # Compiler name
-CC=g++
+CXX=/bin/g++
 MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 
 # Libraries to be included

@@ -329,7 +329,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//if
 
     drawTopBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
-    drawTempoBar(context, graphState, datas, drawingAreaWidth);
+    drawTempoBar(context, graphState, datas, drawingAreaWidth, drawingAreaHeight, graphState.verticalPixelTickValues, graphState.ticksPerPixel);
     drawLeftMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawRightMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
@@ -394,7 +394,6 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 {
     verticalLines.clear();
     upperLineText.clear();
-    lowerLineText.clear();
 
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 

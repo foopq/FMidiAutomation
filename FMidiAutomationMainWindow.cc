@@ -8,6 +8,8 @@
 #include <boost/array.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 
 namespace
 {
@@ -86,6 +88,8 @@ Globals::Globals()
     versionStr = "FMidiAutomation - version 1.0.0 - October 2009";
     topBarFontSize = 12;
     topBarFont = "Arial";
+    bottomBarFontSize = 12;
+    bottomBarFont = "Arial";
     darkTheme = true;
 };//constructor
 
@@ -191,13 +195,16 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     setThemeColours();
 
     datas.reset(new FMidiAutomationData);
-    datas->tempoChanges.insert(std::make_pair(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4))));
+    datas->addTempoChange(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
 
     Gtk::ToolButton *button;
     uiXml->get_widget("addButton", button);
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddPressed) );
     uiXml->get_widget("deleteButton", button);
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeletePressed) );
+
+    Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
+    menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -364,7 +371,8 @@ void FMidiAutomationMainWindow::handleAddPressed()
                 if (true == tempoMarkerPair.second->currentlySelected) {
                     boost::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
 
-                    boost::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions));
+                    boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
+                    boost::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions, callback));
                     CommandManager::Instance().setNewCommand(updateTempoChangeCommand);
 
                     foundSelected = true;
@@ -383,7 +391,8 @@ void FMidiAutomationMainWindow::handleAddPressed()
                     tempo->barSubDivisions = barSubDivisions;
                     tempo->currentlySelected = true;
 
-                    boost::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas));
+                    boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
+                    boost::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas, callback));
                     CommandManager::Instance().setNewCommand(addTempoChangeCommand);
                 }//if
             }//if
@@ -405,7 +414,8 @@ void FMidiAutomationMainWindow::handleDeletePressed()
 
         for (/*nothing*/; mapIter != datas->tempoChanges.end(); ++mapIter) {
             if (true == mapIter->second->currentlySelected) {
-                boost::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas));
+                boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
+                boost::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas, callback));
                 CommandManager::Instance().setNewCommand(deleteTempoChangeCommand);
 
                 graphDrawingArea->queue_draw();
@@ -530,7 +540,7 @@ void FMidiAutomationMainWindow::on_menuQuit()
 void FMidiAutomationMainWindow::on_menuNew()
 {
     datas.reset(new FMidiAutomationData);
-    datas->tempoChanges.insert(std::make_pair(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4))));
+    datas->addTempoChange(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()

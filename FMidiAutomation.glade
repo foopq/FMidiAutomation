@@ -89,6 +89,7 @@
                               <object class="GtkImageMenuItem" id="menu_undo">
                                 <property name="label">gtk-undo</property>
                                 <property name="visible">True</property>
+                                <property name="accel_path">&lt;edit&gt;/undo</property>
                                 <property name="use_underline">True</property>
                                 <property name="use_stock">True</property>
                               </object>

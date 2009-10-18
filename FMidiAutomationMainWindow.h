@@ -25,6 +25,10 @@ struct Globals
 
     std::string topBarFont;
     unsigned int topBarFontSize;
+
+    std::string bottomBarFont;
+    unsigned int bottomBarFontSize;
+
     bool darkTheme;
 
     TempoGlobals tempoGlobals;
@@ -58,7 +62,6 @@ struct GraphState
     int ticksPerPixel; //negative means N pixels per tick
     std::vector<std::pair<unsigned int, LineType> > verticalLines;
     std::vector<std::pair<unsigned int, std::string> > upperLineText;
-    std::vector<std::pair<unsigned int, std::string> > lowerLineText;
 
     std::vector<int> verticalPixelTickValues;
     std::vector<float> horizontalPixelValues;
