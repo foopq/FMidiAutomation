@@ -501,4 +501,22 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     
 }//refreshVerticalLines
 
+void GraphState::setOffsetCenteredOnTick(int tick, int drawingAreaWidth)
+{
+    if (ticksPerPixel > 1) {
+        int fullWindowTicks = drawingAreaWidth * ticksPerPixel;
+        int halfWindowTicks = fullWindowTicks / 2;
+        int halfWindowsToSkip = tick / halfWindowTicks;
+        int remaningTicks = tick % halfWindowTicks;
+
+        offset = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / ticksPerPixel) - (drawingAreaWidth / 2);
+    } else {
+        //int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
+        //int halfWindowTicks = fullWindowTicks / 2;
+        int baseOffset = abs(ticksPerPixel) * tick;
+
+        offset = baseOffset - (drawingAreaWidth / 2); // - halfWindowTicks;
+    }//if
+}//setOffsetCenteredOnTick
+
 

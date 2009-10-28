@@ -10,9 +10,30 @@
 #include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/thread/mutex.hpp> 
+#include "jack.h"
+#include "Sequencer.h"
 
 namespace
 {
+
+Glib::ustring readEntryGlade()
+{
+    std::ifstream inputStream("FMidiAutomationEntry.glade");
+    assert(inputStream.good());
+    if (false == inputStream.good()) {
+        return "";
+    }//if
+
+    Glib::ustring retString;
+    std::string line;
+    while (std::getline(inputStream,line)) {
+        retString += line;
+    }//while
+
+    return retString;
+}//readEntryGlade
 
 void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
 {
@@ -63,21 +84,7 @@ void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState, i
         graphState.ticksPerPixel = scrollLevels[curPos];
 
         int medianTickValue = graphState.verticalPixelTickValues[drawingAreaWidth / 2];
-
-        if (graphState.ticksPerPixel > 1) {
-            int fullWindowTicks = drawingAreaWidth * graphState.ticksPerPixel;
-            int halfWindowTicks = fullWindowTicks / 2;
-            int halfWindowsToSkip = medianTickValue / halfWindowTicks;
-            int remaningTicks = medianTickValue % halfWindowTicks;
-
-            graphState.offset = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / graphState.ticksPerPixel) - (drawingAreaWidth / 2);
-        } else {
-            //int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
-            //int halfWindowTicks = fullWindowTicks / 2;
-            int baseOffset = abs(graphState.ticksPerPixel) * medianTickValue;
-
-            graphState.offset = baseOffset - (drawingAreaWidth / 2); // - halfWindowTicks;
-        }//if
+        graphState.setOffsetCenteredOnTick(medianTickValue, drawingAreaWidth);
     }//if
 }//handleGraphTimeZoom
 
@@ -169,6 +176,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("leftBarEntryBox", leftBarEntryBox);
     uiXml->get_widget("rightBarEntryBox", rightBarEntryBox);
     uiXml->get_widget("cursorBarEntryBox", cursorBarEntryBox);
+    uiXml->get_widget("transportTimeEntry", transportTimeEntry);
 
     leftTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox));
     rightTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox));
@@ -205,6 +213,25 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
     menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+
+//    Glib::signal_idle().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle) );
+    Glib::signal_timeout().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle), 20 );
+
+    uiXml->get_widget("rewButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleRewPressed) );
+    uiXml->get_widget("playButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handlePlayPressed) );
+    uiXml->get_widget("pauseButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handlePausePressed) );
+
+    datas->entryGlade = readEntryGlade();
+    Gtk::VBox *entryVBox;
+    uiXml->get_widget("entryVBox", entryVBox);
+    sequencer.reset(new Sequencer(datas->entryGlade, entryVBox));
+
+sequencer->addEntry();
+sequencer->addEntry();
+
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -235,7 +262,7 @@ void FMidiAutomationMainWindow::setThemeColours()
 
     Gtk::Widget *tmpWidget;
 
-    for (int x = 1; x <= 10; ++x) {
+    for (int x = 1; x <= 12; ++x) {
         //if ((x < 11) && (x != 1)) {
         //    Gtk::ToolButton *toolbutton;
         //    uiXml->get_widget(std::string("toolbutton") + boost::lexical_cast<std::string>(x), toolbutton);
@@ -269,7 +296,7 @@ void FMidiAutomationMainWindow::setThemeColours()
             menu->modify_bg(Gtk::STATE_NORMAL, bgColour);
         }//if
 
-        if ((x < 9) && (x != 4)) {
+        if (x < 8) {
             Gtk::Label *label;
             uiXml->get_widget(std::string("label") + boost::lexical_cast<std::string>(x), label);
             label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
@@ -330,6 +357,9 @@ void FMidiAutomationMainWindow::setThemeColours()
     cursorBarEntryBox->modify_base(Gtk::STATE_NORMAL, bgColour);
     cursorBarEntryBox->modify_text(Gtk::STATE_NORMAL, darkTextColour);
     cursorBarEntryBox->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    transportTimeEntry->modify_base(Gtk::STATE_NORMAL, bgColour);
+    transportTimeEntry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+    transportTimeEntry->modify_bg(Gtk::STATE_NORMAL, fgColour);
 
     bpmEntry->modify_base(Gtk::STATE_NORMAL, bgColour);
     bpmEntry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
@@ -351,9 +381,39 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
     return mainWindow;
 }//MainWindow
 
+void FMidiAutomationMainWindow::handleRewPressed()
+{
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    jackSingleton.setTime(0);
+
+    cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(0));
+    graphState.curPointerTick = 0;
+    updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+    graphState.setOffsetCenteredOnTick(0, drawingAreaWidth);
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphDrawingArea->queue_draw();
+}//handleRewPressed
+
+void FMidiAutomationMainWindow::handlePlayPressed()
+{
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    jackSingleton.setTransportState(JackTransportRolling);
+}//handlePlayPressed
+
+void FMidiAutomationMainWindow::handlePausePressed()
+{
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    jackSingleton.setTransportState(JackTransportStopped);
+}//handlePausePressed
+
 void FMidiAutomationMainWindow::handleAddPressed()
 {
     Globals &globals = Globals::Instance();
+
+    if (false == globals.tempoGlobals.tempoDataSelected) {
+        sequencer->addEntry();
+        trackListWindow->queue_draw();
+    }//if
 
     if (true == globals.tempoGlobals.tempoDataSelected) {
         try {
@@ -652,6 +712,21 @@ void FMidiAutomationMainWindow::on_menuRedo()
     graphDrawingArea->queue_draw();
 }//on_menuRedo
 
+void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
+{
+    graphState.curPointerTick = tick;
+    graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
+    cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
+    updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+
+    if (true == updateJack) {
+        JackSingleton &jackSingleton = JackSingleton::Instance();
+        jackSingleton.setTime(graphState.curPointerTick);
+    }//if
+
+    graphDrawingArea->queue_draw();
+}//updateCursorTick
+
 bool FMidiAutomationMainWindow::key_pressed(GdkEventKey *event)
 {
     switch (event->keyval) {
@@ -767,11 +842,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
             if ((event->y > 30) && (event->y <= 60) && (event->y == mousePressDownY) && (abs(event->x -mousePressDownX) <= 5)) {
                 if (false == ctrlCurrentlyPressed) {
                     if (graphState.selectedEntity != TempoChange) {
-                        graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
-                        graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
-                        cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
-                        updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
-                        graphDrawingArea->queue_draw();
+                        updateCursorTick(graphState.verticalPixelTickValues[event->x], true);
                     }//if
                 } else {
                     if ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > graphState.verticalPixelTickValues[event->x])) {
@@ -835,11 +906,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
         if (graphState.selectedEntity == PointerTickBar) {
             //Did we set the current time pointer
             if ((event->x >= 0) && (event->x < drawingAreaWidth)) {
-                graphState.curPointerTick = graphState.verticalPixelTickValues[event->x];
-                graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
-                cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
-                updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
-                graphDrawingArea->queue_draw();
+                updateCursorTick(graphState.verticalPixelTickValues[event->x], true);
             }//if
         }//if
 
@@ -862,8 +929,6 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
                 graphDrawingArea->queue_draw();
             }//if
         }//if
-
-
     }//if
   
     return true;
@@ -892,4 +957,37 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
 
     return true;
 }//handleScroll
+
+bool FMidiAutomationMainWindow::on_idle()
+{
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+
+    if (jackSingleton.getTransportState() == JackTransportRolling) {
+        static boost::posix_time::ptime lastTime(boost::posix_time::neg_infin);
+        boost::posix_time::ptime curTime = boost::posix_time::microsec_clock::universal_time();
+        boost::posix_time::time_duration diffDuration = curTime - lastTime;
+    //    if (diffDuration.total_milliseconds() < 20) {
+    //        return true;
+    //    } else {
+            lastTime = curTime;
+    //    }//if
+
+        int curFrame = jackSingleton.getTransportFrame();
+        if (graphState.curPointerTick != curFrame) {
+            graphState.setOffsetCenteredOnTick(curFrame, drawingAreaWidth);
+            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+            updateCursorTick(curFrame, false);
+
+//            cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(curFrame));
+
+//            graphState.curPointerTick = curFrame;
+//            updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+//            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+//            graphDrawingArea->queue_draw();
+        }//if
+    }//if
+
+    return true;
+}//on_idle
+
 

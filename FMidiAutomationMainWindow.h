@@ -11,8 +11,10 @@
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+#include <jack/transport.h>
 
 struct TempoGlobals;
+class Sequencer;
 
 struct Globals
 {
@@ -81,6 +83,7 @@ struct GraphState
     ~GraphState();
 
     void refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight);
+    void setOffsetCenteredOnTick(int tick, int drawingAreaWidth);
 };//GraphState
 
 class FMidiAutomationMainWindow
@@ -104,6 +107,7 @@ class FMidiAutomationMainWindow
     Gtk::Entry *bpmEntry;
     Gtk::Entry *beatsPerBarEntry;
     Gtk::Entry *barSubdivisionsEntry;
+    Gtk::Entry *transportTimeEntry;
 
     int drawingAreaWidth;
     int drawingAreaHeight;
@@ -125,6 +129,7 @@ class FMidiAutomationMainWindow
     boost::shared_ptr<FMidiAutomationData> datas;
 
     GraphState graphState;
+    boost::shared_ptr<Sequencer> sequencer;
     
     void handleGraphResize(Gtk::Allocation&);
     
@@ -157,15 +162,21 @@ class FMidiAutomationMainWindow
     void handleAddPressed();
     void handleDeletePressed();
 
+    void handleRewPressed();
+    void handlePlayPressed();
+    void handlePausePressed();
+
+    void updateCursorTick(int tick, bool updateJack);
+
     void setThemeColours();
+
+    bool on_idle();
        
 public:    
     FMidiAutomationMainWindow();
     ~FMidiAutomationMainWindow();
     
     Gtk::Window *MainWindow();
-    
-    
 };//FMidiAutomationMainWindow
 
 #endif

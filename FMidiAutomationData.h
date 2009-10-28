@@ -13,6 +13,7 @@
 
 struct FMidiAutomationData
 {
+    Glib::ustring entryGlade;
     std::map<int, boost::shared_ptr<Tempo> > tempoChanges; //int index is tick value (>= 0)
 
     void addTempoChange(int tick, boost::shared_ptr<Tempo> tempo);
