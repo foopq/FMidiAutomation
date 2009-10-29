@@ -460,7 +460,7 @@
                   <object class="GtkHPaned" id="hpaned2">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="position">222</property>
+                    <property name="position">320</property>
                     <property name="position_set">True</property>
                     <child>
                       <object class="GtkViewport" id="viewport5">
@@ -644,43 +644,27 @@
                                             <property name="resize_mode">queue</property>
                                             <property name="shadow_type">etched-out</property>
                                             <child>
-                                              <object class="GtkVBox" id="vbox4">
+                                              <object class="GtkScrolledWindow" id="entryScrolledWindow">
                                                 <property name="visible">True</property>
-                                                <property name="orientation">vertical</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="hscrollbar_policy">automatic</property>
+                                                <property name="vscrollbar_policy">automatic</property>
                                                 <child>
-                                                  <object class="GtkScrolledWindow" id="entryScrolledWindow">
+                                                  <object class="GtkViewport" id="viewport11">
                                                     <property name="visible">True</property>
-                                                    <property name="can_focus">True</property>
-                                                    <property name="hscrollbar_policy">automatic</property>
-                                                    <property name="vscrollbar_policy">automatic</property>
+                                                    <property name="resize_mode">queue</property>
                                                     <child>
-                                                      <object class="GtkViewport" id="viewport11">
+                                                      <object class="GtkVBox" id="entryVBox">
                                                         <property name="visible">True</property>
-                                                        <property name="resize_mode">queue</property>
+                                                        <property name="orientation">vertical</property>
+                                                        <property name="spacing">20</property>
+                                                        <property name="homogeneous">True</property>
                                                         <child>
-                                                          <object class="GtkVBox" id="entryVBox">
-                                                            <property name="visible">True</property>
-                                                            <property name="orientation">vertical</property>
-                                                            <child>
-                                                            <placeholder/>
-                                                            </child>
-                                                          </object>
+                                                          <placeholder/>
                                                         </child>
                                                       </object>
                                                     </child>
                                                   </object>
-                                                  <packing>
-                                                    <property name="position">0</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
-                                                  <object class="GtkLabel" id="label8">
-                                                    <property name="visible">True</property>
-                                                    <property name="label" translatable="yes">label</property>
-                                                  </object>
-                                                  <packing>
-                                                    <property name="position">1</property>
-                                                  </packing>
                                                 </child>
                                               </object>
                                             </child>

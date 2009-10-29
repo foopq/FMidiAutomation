@@ -1,9 +1,12 @@
 #include "Sequencer.h"
+#include <iostream>
 
 SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade)
 {
     uiXml = Gtk::Builder::create_from_string(entryGlade);
     uiXml->get_widget("entryViewport", mainWindow);
+
+    mainWindow->get_parent()->remove(*mainWindow);
 }//constructor
 
 Gtk::Widget *SequencerEntry::getHookWidget()
@@ -23,11 +26,18 @@ void Sequencer::addEntry()
     entries.push_back(newEntry);
 
     Gtk::Widget *entryHookWidget = newEntry->getHookWidget();
-    entryHookWidget->reparent(*parentWidget);
 
+//std::cout << "1" << std::endl;
+//    entryHookWidget->reparent(*parentWidget);
+
+
+//std::cout << "2" << std::endl;
     parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
 
-    parentWidget->set_size_request(-1, 300 * parentWidget->children().size());
+//std::cout << "3" << std::endl;
+
+//    parentWidget->set_size_request(-1, 20 * parentWidget->children().size());
+//std::cout << "4" << std::endl;
 }//addEntry
 
 void Sequencer::deleteEntry(unsigned int index)
