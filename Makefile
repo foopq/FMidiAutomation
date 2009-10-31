@@ -5,7 +5,7 @@ CXX=/bin/g++
 MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 
 # Libraries to be included
-LDLIBS=`pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 --libs` -lboost_filesystem -lboost_serialization -lboost_thread
+LDLIBS=`pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 --libs` -lboost_filesystem-mt -lboost_serialization-mt -lboost_thread-mt
 
 # Flagas
 CXXFLAGS=-Wall -g `pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 --cflags` -I.
@@ -36,7 +36,7 @@ include $(SRCS:.cc=.P)
 ##-include $(SRCS:.cc=.P)
 
 clean:
-	rm -f *.o *.P FMidiAutomationMainWindow
+	rm -f *.o *.P FMidiAutomation
 
 PHONY: clean
 

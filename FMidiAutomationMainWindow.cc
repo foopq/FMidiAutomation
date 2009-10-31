@@ -114,6 +114,7 @@ Globals &Globals::Instance()
 FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
     uiXml = Gtk::Builder::create_from_file("FMidiAutomation.glade");
+
     uiXml->get_widget("mainWindow", mainWindow);
     uiXml->get_widget("trackListWindow", trackListWindow);
     
@@ -229,7 +230,9 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox));
 
-sequencer->addEntry();
+
+
+
 sequencer->addEntry();
 
 }//constructor
@@ -396,6 +399,19 @@ void FMidiAutomationMainWindow::handleRewPressed()
 
 void FMidiAutomationMainWindow::handlePlayPressed()
 {
+Gtk::Viewport *tmpWin;
+uiXml->get_widget("viewport9", tmpWin);
+//std::cout << "win: " << parentWidget->get_window() << std::endl;
+
+int width;
+int height;
+//parentWidget->get_window()->get_size(width, height);
+width = tmpWin->get_width();
+height = tmpWin->get_height();
+std::cout << "w: " << width << "     h: " << height << std::endl;
+
+
+
     JackSingleton &jackSingleton = JackSingleton::Instance();
     jackSingleton.setTransportState(JackTransportRolling);
 }//handlePlayPressed

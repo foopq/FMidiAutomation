@@ -14,18 +14,23 @@ int main(int argc, char** argv)
 
     kit.run(*mainWindow->MainWindow());
 
-    /*
+/*    
     Glib::RefPtr<Gtk::Builder> uiXml;
-    Gtk::Window *mainWindow;
-    uiXml = Gtk::Builder::create_from_file("FMidiAutomation.glade");
-    uiXml->get_widget("entryWindow", mainWindow);
+//    Gtk::Window *mainWindow;
+    uiXml = Gtk::Builder::create_from_file("FMidiAutomationEntry.glade");
+//    uiXml->get_widget("entryWindow", mainWindow);
 
     Gtk::Window *mainWindow2;
     uiXml->get_widget("entryWindow", mainWindow2);
-    std::cout << mainWindow << " -- " << mainWindow2 << std::endl;
+//    std::cout << mainWindow << " -- " << mainWindow2 << std::endl;
 
-    kit.run(*mainWindow);
-    */
+mainWindow2->show();
+
+int height = mainWindow2->get_height();
+std::cout << "height: " << height << std::endl;
+
+    kit.run(*mainWindow2);
+*/    
 
 //    delete mainWindow;
 
