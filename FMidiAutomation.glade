@@ -505,6 +505,28 @@
                                             <property name="homogeneous">True</property>
                                           </packing>
                                         </child>
+                                        <child>
+                                          <object class="GtkToolButton" id="upButton">
+                                            <property name="visible">True</property>
+                                            <property name="use_underline">True</property>
+                                            <property name="stock_id">gtk-go-up</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="homogeneous">True</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkToolButton" id="downButton">
+                                            <property name="visible">True</property>
+                                            <property name="use_underline">True</property>
+                                            <property name="stock_id">gtk-go-down</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="homogeneous">True</property>
+                                          </packing>
+                                        </child>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>
@@ -657,7 +679,6 @@
                                                       <object class="GtkVBox" id="entryVBox">
                                                         <property name="visible">True</property>
                                                         <property name="orientation">vertical</property>
-                                                        <property name="spacing">5</property>
                                                         <child>
                                                           <placeholder/>
                                                         </child>

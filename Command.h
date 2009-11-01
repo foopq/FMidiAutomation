@@ -7,6 +7,8 @@
 
 struct Tempo;
 struct FMidiAutomationData;
+class Sequencer;
+class SequencerEntry;
 
 struct Command
 {
@@ -30,6 +32,31 @@ public:
     void doUndo();
     void setNewCommand(boost::shared_ptr<Command> command);
 };//CommandManager
+
+struct AddSequencerEntryCommand : public Command
+{
+    boost::shared_ptr<Sequencer> sequencer;
+    boost::shared_ptr<SequencerEntry> entry;
+
+    AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer);
+    ~AddSequencerEntryCommand();
+
+    void doAction();
+    void undoAction();
+};//AddSequencerEntryCommand
+
+struct DeleteSequencerEntryCommand : public Command
+{
+    boost::shared_ptr<Sequencer> sequencer;
+    boost::shared_ptr<SequencerEntry> entry;
+    unsigned int entryIndex;
+
+    DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer, boost::shared_ptr<SequencerEntry> entry);
+    ~DeleteSequencerEntryCommand();
+
+    void doAction();
+    void undoAction();
+};//DeleteSequencerEntryCommand
 
 struct AddTempoChangeCommand : public Command
 {

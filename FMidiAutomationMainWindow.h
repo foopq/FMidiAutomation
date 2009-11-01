@@ -166,6 +166,8 @@ class FMidiAutomationMainWindow
     void handlePlayPressed();
     void handlePausePressed();
 
+    bool handleEntryWindowScroll(Gtk::ScrollType, double);
+
     void updateCursorTick(int tick, bool updateJack);
 
     void setThemeColours();

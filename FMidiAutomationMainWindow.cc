@@ -214,6 +214,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
     menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuRedo->add_accelerator("activate", accelGroup, GDK_R, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
 
 //    Glib::signal_idle().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle) );
     Glib::signal_timeout().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle), 20 );
@@ -230,10 +231,9 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox));
 
-
-
-
-sequencer->addEntry();
+    Gtk::ScrolledWindow *entryScrollWindow;
+    uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
+    entryScrollWindow->get_vscrollbar()->signal_change_value().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEntryWindowScroll) );
 
 }//constructor
 
@@ -384,6 +384,12 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
     return mainWindow;
 }//MainWindow
 
+bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollType, double pos)
+{
+    sequencer->notifyOnScroll(pos);
+    return true;
+}//handleEntryWindowScroll
+
 void FMidiAutomationMainWindow::handleRewPressed()
 {
     JackSingleton &jackSingleton = JackSingleton::Instance();
@@ -399,19 +405,6 @@ void FMidiAutomationMainWindow::handleRewPressed()
 
 void FMidiAutomationMainWindow::handlePlayPressed()
 {
-Gtk::Viewport *tmpWin;
-uiXml->get_widget("viewport9", tmpWin);
-//std::cout << "win: " << parentWidget->get_window() << std::endl;
-
-int width;
-int height;
-//parentWidget->get_window()->get_size(width, height);
-width = tmpWin->get_width();
-height = tmpWin->get_height();
-std::cout << "w: " << width << "     h: " << height << std::endl;
-
-
-
     JackSingleton &jackSingleton = JackSingleton::Instance();
     jackSingleton.setTransportState(JackTransportRolling);
 }//handlePlayPressed
@@ -427,7 +420,8 @@ void FMidiAutomationMainWindow::handleAddPressed()
     Globals &globals = Globals::Instance();
 
     if (false == globals.tempoGlobals.tempoDataSelected) {
-        sequencer->addEntry();
+        boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer));
+        CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
         trackListWindow->queue_draw();
     }//if
 
@@ -498,6 +492,13 @@ void FMidiAutomationMainWindow::handleDeletePressed()
                 break;
             }//if
         }//for
+    } else {
+        boost::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
+
+        if (entry != NULL) {
+            boost::shared_ptr<Command> deleteSequencerEntryCommand(new DeleteSequencerEntryCommand(sequencer, entry));
+            CommandManager::Instance().setNewCommand(deleteSequencerEntryCommand);
+        }//if
     }//if
 }//handleDeletePressed
 

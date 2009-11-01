@@ -4,6 +4,7 @@
 #include "Tempo.h"
 #include "FMidiAutomationMainWindow.h"
 #include "FMidiAutomationData.h"
+#include "Sequencer.h"
 
 CommandManager &CommandManager::Instance()
 {
@@ -164,5 +165,52 @@ void DeleteTempoChangeCommand::undoAction()
     datas->addTempoChange(tick, tempo);
     updateTempoChangesUIData();
 }//undoAction
+
+AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_)
+{
+    sequencer = sequencer_;
+}//constructor
+
+AddSequencerEntryCommand::~AddSequencerEntryCommand()
+{
+    //Nothing
+}//destructor
+
+void AddSequencerEntryCommand::doAction()
+{
+    if (entry == NULL) {
+        entry = sequencer->addEntry(-1);
+    } else {
+        sequencer->addEntry(entry, -1);
+    }//if
+}//doAction
+
+void AddSequencerEntryCommand::undoAction()
+{
+    sequencer->deleteEntry(entry);
+}//undoAction
+
+DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_)
+{
+    sequencer = sequencer_;
+    entry = entry_;
+}//constructor
+
+DeleteSequencerEntryCommand::~DeleteSequencerEntryCommand()
+{
+    //Nothing
+}//destructor
+
+void DeleteSequencerEntryCommand::doAction()
+{
+    entryIndex = sequencer->getEntryIndex(entry);
+    sequencer->deleteEntry(entry);
+}//doAction
+
+void DeleteSequencerEntryCommand::undoAction()
+{
+    sequencer->addEntry(entry, entryIndex);
+}//undoAction
+
 
 
