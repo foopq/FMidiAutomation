@@ -232,6 +232,10 @@ void Sequencer::notifyOnScroll(double pos)
     }//foreach
 }//notifyOnScroll
 
+unsigned int Sequencer::getNumEntries() const
+{
+    return entries.size();
+}//getNumEntries
 
 void Sequencer::addEntry(boost::shared_ptr<SequencerEntry> entry, int index)
 {

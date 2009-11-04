@@ -33,6 +33,32 @@ public:
     void setNewCommand(boost::shared_ptr<Command> command);
 };//CommandManager
 
+struct SequencerEntryUpCommand : public Command
+{
+    boost::shared_ptr<Sequencer> sequencer;
+    boost::shared_ptr<SequencerEntry> entry;
+    unsigned int origIndex;
+
+    SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer, boost::shared_ptr<SequencerEntry> entry);
+    ~SequencerEntryUpCommand();
+
+    void doAction();
+    void undoAction();
+};//SequencerEntryUpCommand
+
+struct SequencerEntryDownCommand : public Command
+{
+    boost::shared_ptr<Sequencer> sequencer;
+    boost::shared_ptr<SequencerEntry> entry;
+    unsigned int origIndex;
+
+    SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer, boost::shared_ptr<SequencerEntry> entry);
+    ~SequencerEntryDownCommand();
+
+    void doAction();
+    void undoAction();
+};//SequencerEntryDownCommand
+
 struct AddSequencerEntryCommand : public Command
 {
     boost::shared_ptr<Sequencer> sequencer;

@@ -57,6 +57,7 @@ public:
 
     unsigned int getEntryIndex(boost::shared_ptr<SequencerEntry> entry);
     boost::shared_ptr<SequencerEntry> getSelectedEntry();
+    unsigned int getNumEntries() const;
  
     void doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next);
     void notifySelected(SequencerEntry *selectedEntry);

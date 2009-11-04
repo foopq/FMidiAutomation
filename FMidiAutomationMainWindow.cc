@@ -211,6 +211,10 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddPressed) );
     uiXml->get_widget("deleteButton", button);
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeletePressed) );
+    uiXml->get_widget("upButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleUpButtonPressed) );
+    uiXml->get_widget("downButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDownButtonPressed) );
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
     menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
@@ -501,6 +505,34 @@ void FMidiAutomationMainWindow::handleDeletePressed()
         }//if
     }//if
 }//handleDeletePressed
+
+void FMidiAutomationMainWindow::handleUpButtonPressed()
+{
+    boost::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
+
+    if (entry != NULL) {
+        if (entry->getIndex() == 0) {
+            return;
+        }//if
+
+        boost::shared_ptr<Command> sequencerEntryUpCommand(new SequencerEntryUpCommand(sequencer, entry));
+        CommandManager::Instance().setNewCommand(sequencerEntryUpCommand);
+    }//if
+}//handleUpPressed
+
+void FMidiAutomationMainWindow::handleDownButtonPressed()
+{
+    boost::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
+
+    if (entry != NULL) {
+        if (entry->getIndex() == (sequencer->getNumEntries() - 1)) {
+            return;
+        }//if
+
+        boost::shared_ptr<Command> sequencerEntryDownCommand(new SequencerEntryDownCommand(sequencer, entry));
+        CommandManager::Instance().setNewCommand(sequencerEntryDownCommand);
+    }//if
+}//handleDownButtonPressed
 
 void FMidiAutomationMainWindow::unsetAllCurveFrames()
 {

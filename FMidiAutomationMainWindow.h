@@ -161,6 +161,8 @@ class FMidiAutomationMainWindow
 
     void handleAddPressed();
     void handleDeletePressed();
+    void handleUpButtonPressed();
+    void handleDownButtonPressed();
 
     void handleRewPressed();
     void handlePlayPressed();

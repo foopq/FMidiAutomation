@@ -212,5 +212,52 @@ void DeleteSequencerEntryCommand::undoAction()
     sequencer->addEntry(entry, entryIndex);
 }//undoAction
 
+SequencerEntryUpCommand::SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_)
+{
+    sequencer = sequencer_;
+    entry = entry_;
+    origIndex = entry->getIndex();
+}//constructor
+
+SequencerEntryUpCommand::~SequencerEntryUpCommand()
+{
+    //Nothing
+}//destructor
+
+void SequencerEntryUpCommand::doAction()
+{
+    sequencer->deleteEntry(entry);
+    sequencer->addEntry(entry, origIndex - 1);
+}//doAction
+
+void SequencerEntryUpCommand::undoAction()
+{
+    sequencer->deleteEntry(entry);
+    sequencer->addEntry(entry, origIndex);
+}//undoAction
+
+SequencerEntryDownCommand::SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_)
+{
+    sequencer = sequencer_;
+    entry = entry_;
+    origIndex = entry->getIndex();
+}//constructor
+
+SequencerEntryDownCommand::~SequencerEntryDownCommand()
+{
+    //Nothing
+}//destructor
+
+void SequencerEntryDownCommand::doAction()
+{
+    sequencer->deleteEntry(entry);
+    sequencer->addEntry(entry, origIndex + 1);
+}//doAction
+
+void SequencerEntryDownCommand::undoAction()
+{
+    sequencer->deleteEntry(entry);
+    sequencer->addEntry(entry, origIndex);
+}//undoAction
 
 
