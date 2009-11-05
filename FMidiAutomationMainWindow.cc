@@ -391,6 +391,7 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
 bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollType, double pos)
 {
     sequencer->notifyOnScroll(pos);
+    graphDrawingArea->queue_draw();
     return true;
 }//handleEntryWindowScroll
 

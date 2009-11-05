@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include "FMidiAutomationMainWindow.h"
+#include "Sequencer.h"
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
 
@@ -333,6 +334,9 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     drawLeftMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawRightMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
+
+    sequencer->drawEntryBoxes(graphDrawingArea, context, graphState, drawingAreaWidth, drawingAreaHeight);
+
 
     /*
     int tmpw;

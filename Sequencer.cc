@@ -1,4 +1,5 @@
 #include "Sequencer.h"
+#include "FMidiAutomationMainWindow.h"
 #include <iostream>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -226,10 +227,12 @@ void Sequencer::notifyOnScroll(double pos)
         int y = 0;
         entryHookWidget->get_window()->get_origin(x, y);
 
-        entries[mapIter->first] = y;
+        mapIter->second = y;
 
         std::cout << "entry: " << x << " - " << y << std::endl;
     }//foreach
+
+    std::cout << std::endl;
 }//notifyOnScroll
 
 unsigned int Sequencer::getNumEntries() const
@@ -316,4 +319,63 @@ void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
 
     selectedEntry = selectedEntry_;
 }//notifySelected
+
+void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+    std::cout << "drawEntryBoxes" << std::endl;
+
+    int x1 = 0;
+    int y1 = 0;
+
+    parentWidget->get_window()->get_origin(x1, y1);
+    std::cout << "parentWidget y: " << y1 << std::endl;
+
+    int drawingAreaStartY;
+    graphDrawingArea->get_window()->get_origin(x1, drawingAreaStartY);
+
+    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+        Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
+
+        Gdk::Rectangle entryRect;
+        entryHookWidget->get_window()->get_frame_extents(entryRect);
+
+        int x;
+        int y;
+        int width;
+        int height;
+        int depth;
+        entryHookWidget->get_window()->get_geometry(x, y, width, height, depth);
+
+        int absEntryStartY = mapIter->second;
+
+        if (((absEntryStartY + height) >= (drawingAreaStartY + 60)) && (absEntryStartY < (drawingAreaStartY + areaHeight))) {
+            int relativeStartY = (absEntryStartY - drawingAreaStartY);
+            int relativeEndY = height;
+
+            if (relativeStartY < 61) {
+                int diff = 61 - relativeStartY;
+                relativeStartY = 61;
+                relativeEndY -= diff;
+            }//if
+
+            std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
+
+            context->reset_clip();
+            context->rectangle(0, relativeStartY, 100, relativeEndY);
+            context->clip();
+
+            if ((mapIter->first->getIndex() % 2) == 0) {
+                context->set_source_rgba(1.0, 0.0, 0.0, 0.3);
+            } else {
+                context->set_source_rgba(0.0, 1.0, 0.0, 0.3);
+            }//if
+            context->paint();
+        }//if
+
+        std::cout << "top: " << mapIter->second << " --- x: " << x << "   y: " << y << "    width: " << width << "   height: " << height << "   depth: " << depth << std::endl;
+
+    }//foreach
+
+    std::cout << std::endl;
+}//drawEntryBoxes
 

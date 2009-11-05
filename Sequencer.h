@@ -9,6 +9,7 @@
 #include <boost/function.hpp>
 
 class Sequencer;
+struct GraphState;
 
 class SequencerEntry
 {
@@ -62,6 +63,8 @@ public:
     void doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next);
     void notifySelected(SequencerEntry *selectedEntry);
     void notifyOnScroll(double pos);
+
+    void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
 };//Sequencer
 
 #endif
