@@ -9,6 +9,51 @@
 static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
 static const unsigned int smallEntryWindowHeight = 44 + 6; //size plus padding
 
+SequencerEntryBlock::SequencerEntryBlock(int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
+{
+    startTick_ = std::max(startTick_, 0);
+
+    startTick = startTick_;
+    instanceOf = instanceOf_;
+    duration = 200;
+}//constructor
+
+void SequencerEntryBlock::moveBlock(int startTick_)
+{
+    startTick_ = std::max(startTick_, 0);
+    startTick = startTick_;
+}//moveBlock
+
+void SequencerEntryBlock::setDuration(int duration_)
+{
+    duration = duration_;
+}//setDuration
+
+void SequencerEntryBlock::setTitle(const Glib::ustring &title_)
+{
+    title = title_;
+}//setTitle
+
+int SequencerEntryBlock::getStartTick() const
+{
+    return startTick;
+}//getStartTick
+
+int SequencerEntryBlock::getDuration() const
+{
+    return duration;
+}//getDuration
+
+Glib::ustring SequencerEntryBlock::getTitle() const
+{
+    return title;
+}//getTitle
+
+boost::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::getInstanceOf() const
+{
+    return instanceOf;
+}//getInstanceOf
+
 SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer_, unsigned int entryNum)
 {
     sequencer = sequencer_;
@@ -92,6 +137,9 @@ void SequencerEntry::handleSwitchPressed()
         }//if
         sequencer->doSwapEntryBox(smallWindow, mainWindow);
     }//if
+
+    Globals &globals = Globals::Instance();
+    globals.graphDrawingArea->queue_draw();
 }//handleSwitchPressed
 
 bool SequencerEntry::IsFullBox() const
@@ -172,6 +220,20 @@ void SequencerEntry::deselect()
     frame->modify_base(Gtk::STATE_NORMAL, bgColour);
 }//deselect
 
+void SequencerEntry::addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    removeEntryBlock(entryBlock);
+    entryBlocks[entryBlock->getStartTick()] = entryBlock;
+    std::cout << "addEntryBlock: " << entryBlock->getStartTick() << std::endl;
+}//addEntryBlock
+
+void SequencerEntry::removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    if (entryBlocks.find(entryBlock->getStartTick()) != entryBlocks.end()) {
+        entryBlocks.erase(entryBlocks.find(entryBlock->getStartTick()));
+    }//if
+}//removeEntryBlock
+
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_)
 {
     entryGlade = entryGlade_;
@@ -219,6 +281,7 @@ void Sequencer::adjustEntryIndices()
 
 void Sequencer::notifyOnScroll(double pos)
 {
+/*    
     std::cout << std::endl << "notifyOnScroll" << std::endl;
     for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
@@ -229,10 +292,14 @@ void Sequencer::notifyOnScroll(double pos)
 
         mapIter->second = y;
 
-        std::cout << "entry: " << x << " - " << y << std::endl;
+//        std::cout << "entry: " << x << " - " << y << std::endl;
     }//foreach
 
     std::cout << std::endl;
+*/
+
+    Globals &globals = Globals::Instance();
+    globals.graphDrawingArea->queue_draw();
 }//notifyOnScroll
 
 unsigned int Sequencer::getNumEntries() const
@@ -276,6 +343,7 @@ void Sequencer::deleteEntry(boost::shared_ptr<SequencerEntry> entry)
     entries.erase(entries.find(entry));
     adjustFillerHeight();
     adjustEntryIndices();
+    notifyOnScroll(-1);
 }//deleteEntry
 
 unsigned int Sequencer::getEntryIndex(boost::shared_ptr<SequencerEntry> entry)
@@ -304,6 +372,7 @@ void Sequencer::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
     parentWidget->children().erase(foundWidget);
 
     adjustFillerHeight();
+    adjustEntryIndices();
     notifyOnScroll(-1);
 }//doSwapEntryBox
 
@@ -320,15 +389,34 @@ void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
     selectedEntry = selectedEntry_;
 }//notifySelected
 
-void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
 {
-    std::cout << "drawEntryBoxes" << std::endl;
+    return boost::shared_ptr<SequencerEntryBlock>();
+}//getSelectedEntryBlock
+
+boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) const //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+{
+    return boost::shared_ptr<SequencerEntryBlock>();
+}//getSelectedEntryBlock
+
+void Sequencer::clearSelectedEntryBlock()
+{
+    selectedEntryBlock.reset();
+}//clearSelectedEntryBlock
+
+///////////////////////////////////////////////////////////////////////////////////
+// Rendering code
+
+void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues)
+{
+//std::cout << std::endl;    
+//std::cout << "drawEntryBoxes" << std::endl;
 
     int x1 = 0;
     int y1 = 0;
 
-    parentWidget->get_window()->get_origin(x1, y1);
-    std::cout << "parentWidget y: " << y1 << std::endl;
+//    parentWidget->get_window()->get_origin(x1, y1);
+//std::cout << "parentWidget y: " << y1 << std::endl;
 
     int drawingAreaStartY;
     graphDrawingArea->get_window()->get_origin(x1, drawingAreaStartY);
@@ -339,6 +427,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
         Gdk::Rectangle entryRect;
         entryHookWidget->get_window()->get_frame_extents(entryRect);
 
+
         int x;
         int y;
         int width;
@@ -346,36 +435,101 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
         int depth;
         entryHookWidget->get_window()->get_geometry(x, y, width, height, depth);
 
-        int absEntryStartY = mapIter->second;
+        entryHookWidget->get_window()->get_origin(x1, y1);
+        mapIter->second = y1;
+        int absEntryStartY = mapIter->second + 1;
 
         if (((absEntryStartY + height) >= (drawingAreaStartY + 60)) && (absEntryStartY < (drawingAreaStartY + areaHeight))) {
+//std::cout << "absEntryStartY: " << absEntryStartY << "    drawingAreaStartY: " << drawingAreaStartY << std::endl;            
             int relativeStartY = (absEntryStartY - drawingAreaStartY);
             int relativeEndY = height;
 
             if (relativeStartY < 61) {
-                int diff = 61 - relativeStartY;
-                relativeStartY = 61;
+                int diff = 62 - relativeStartY;
+                relativeStartY = 62;
                 relativeEndY -= diff;
             }//if
 
-            std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
+//std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
 
+            mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1);
+            
             context->reset_clip();
             context->rectangle(0, relativeStartY, 100, relativeEndY);
             context->clip();
 
             if ((mapIter->first->getIndex() % 2) == 0) {
-                context->set_source_rgba(1.0, 0.0, 0.0, 0.3);
+                context->set_source_rgba(1.0, 0.0, 1.0, 0.3);
             } else {
-                context->set_source_rgba(0.0, 1.0, 0.0, 0.3);
+                context->set_source_rgba(0.0, 1.0, 1.0, 0.3);
             }//if
             context->paint();
+            
         }//if
 
-        std::cout << "top: " << mapIter->second << " --- x: " << x << "   y: " << y << "    width: " << width << "   height: " << height << "   depth: " << depth << std::endl;
+//std::cout << "top: " << mapIter->second << " --- x: " << x << "   y: " << y << "    width: " << width << "   height: " << height << "   depth: " << depth << std::endl;
 
     }//foreach
 
-    std::cout << std::endl;
+//    std::cout << std::endl;
+}//drawEntryBoxes
+
+void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY)
+{
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
+        int startTick = entryBlockIter->second->getStartTick();
+        int duration = entryBlockIter->second->getDuration();
+
+        if ((startTick > verticalPixelTickValues[verticalPixelTickValues.size()-1]) || (startTick + duration < verticalPixelTickValues[0])) {
+            continue;
+        }//if
+
+        std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator nextEntryBlockIter = entryBlockIter;
+        ++nextEntryBlockIter;
+
+        int relativeStartXTick = startTick;
+        relativeStartXTick = std::max(relativeStartXTick, verticalPixelTickValues[0]);
+
+        int relativeEndXTick = startTick + duration;
+        bool wasCutOff = false;
+        if (nextEntryBlockIter != entryBlocks.end()) {
+            if (nextEntryBlockIter->second->getStartTick() < relativeEndXTick) {
+                relativeEndXTick = nextEntryBlockIter->second->getStartTick();
+                wasCutOff = true;
+            }//if
+        }//if
+
+        relativeEndXTick = std::min(relativeEndXTick, verticalPixelTickValues[verticalPixelTickValues.size()-1]);
+
+        std::vector<int>::iterator bound = std::lower_bound(verticalPixelTickValues.begin(), verticalPixelTickValues.end(), relativeStartXTick);
+        int relativeStartX = std::distance(verticalPixelTickValues.begin(), bound);
+
+        bound = std::lower_bound(verticalPixelTickValues.begin(), verticalPixelTickValues.end(), relativeEndXTick);
+        int relativeEndX = std::distance(verticalPixelTickValues.begin(), bound);
+
+//        std::cout << "relativeStartXTick: " << relativeStartXTick << std::endl;
+//        std::cout << "relativeStartX: " << verticalPixelTickValues[relativeStartX] << "    relativeEndX: " << verticalPixelTickValues[relativeEndX] << std::endl;
+//        std::cout << "relStY: " << relativeStartY << "   relEnY: " << relativeEndY << std::endl;
+
+        context->reset_clip();
+        context->rectangle(relativeStartX, relativeStartY + 10, relativeEndX - relativeStartX, relativeEndY - relativeStartY - 10);
+        context->clip();
+
+        if (entryBlockIter->second->getInstanceOf() == NULL) {
+            if (false == wasCutOff) {
+                context->set_source_rgba(1.0, 0.0, 0.0, 0.3);
+            } else {
+                context->set_source_rgba(0.7, 0.0, 0.0, 0.3);
+            }//if
+        } else {
+            if (false == wasCutOff) {
+                context->set_source_rgba(1.0, 0.4, 0.0, 0.3);
+            } else {
+                context->set_source_rgba(0.7, 0.2, 0.0, 0.3);
+            }//if
+        }//if
+
+        context->paint();
+    }//for
 }//drawEntryBoxes
 

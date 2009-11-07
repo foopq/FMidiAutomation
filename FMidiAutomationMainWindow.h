@@ -33,6 +33,8 @@ struct Globals
 
     bool darkTheme;
 
+    Gtk::DrawingArea *graphDrawingArea;
+
     TempoGlobals tempoGlobals;
 };//Globals
 
@@ -109,6 +111,10 @@ class FMidiAutomationMainWindow
     Gtk::Entry *barSubdivisionsEntry;
     Gtk::Entry *transportTimeEntry;
 
+    Glib::RefPtr<Gtk::UIManager> m_refUIManager;
+    Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
+    Gtk::Menu *m_pMenuPopup;
+
     int drawingAreaWidth;
     int drawingAreaHeight;
     Glib::ustring currentFilename;
@@ -169,6 +175,8 @@ class FMidiAutomationMainWindow
     void handlePausePressed();
 
     bool handleEntryWindowScroll(Gtk::ScrollType, double);
+
+    void handleAddSeqencerEntryBlock();
 
     void updateCursorTick(int tick, bool updateJack);
 

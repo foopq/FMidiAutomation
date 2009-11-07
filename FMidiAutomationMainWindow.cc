@@ -113,12 +113,15 @@ Globals &Globals::Instance()
 
 FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
+    Globals &globals = Globals::Instance();
+
     uiXml = Gtk::Builder::create_from_file("FMidiAutomation.glade");
 
     uiXml->get_widget("mainWindow", mainWindow);
     uiXml->get_widget("trackListWindow", trackListWindow);
     
     uiXml->get_widget("graphDrawingArea", graphDrawingArea);
+    globals.graphDrawingArea = graphDrawingArea;
     
     backingImage.reset(new Gtk::Image());
     backingTexture.reset(new Gtk::Image());
@@ -837,7 +840,15 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 
                 if (false == ctrlCurrentlyPressed) {
                     unsetAllCurveFrames();
+
+                    //////////////// IF IN SEQUENCER MODE...
+                    boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+                    if (entryBlock != NULL) {
+                        graphDrawingArea->queue_draw();
+                    }//if
                 }//if
+
+
             } else {
                 if ((event->y > 30) && (false == ctrlCurrentlyPressed)) {
                     if ((graphState.leftMarkerTickXPixel >= 0) && (abs(event->x - graphState.leftMarkerTickXPixel) <= 5)) {
@@ -870,6 +881,61 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
         {
             mousePressDownX = event->x;
             mousePressDownY = event->y;
+
+            if (event->y > 60) {
+                m_refActionGroup = Gtk::ActionGroup::create();
+                m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
+
+                boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+                Glib::ustring ui_info;
+                if (entryBlock != NULL) {
+                    //Context menu to delete entry
+                    m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
+                    ui_info =
+                        "<ui>"
+                        "  <popup name='PopupMenu'>"
+                        "    <menuitem action='ContextDelete'/>"
+                        "  </popup>"
+                        "</ui>";
+
+                } else {
+                    //Context menu to add entry
+                    m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
+                    ui_info =
+                        "<ui>"
+                        "  <popup name='PopupMenu'>"
+                        "    <menuitem action='ContextAdd'/>"
+                        "  </popup>"
+                        "</ui>";
+                }//if
+
+                m_refUIManager = Gtk::UIManager::create();
+                m_refUIManager->insert_action_group(m_refActionGroup);
+
+                mainWindow->add_accel_group(m_refUIManager->get_accel_group());
+
+                #ifdef GLIBMM_EXCEPTIONS_ENABLED
+                try {
+                    m_refUIManager->add_ui_from_string(ui_info);
+                } catch(const Glib::Error& ex) {
+                    std::cerr << "building menus failed: " <<  ex.what();
+                } 
+                #else
+                std::auto_ptr<Glib::Error> ex;
+                m_refUIManager->add_ui_from_string(ui_info, ex);
+                if(ex.get()) {
+                    std::cerr << "building menus failed: " <<  ex->what();
+                }
+                #endif //GLIBMM_EXCEPTIONS_ENABLED
+
+                m_pMenuPopup = dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
+                if(m_pMenuPopup != NULL) {
+                    m_pMenuPopup->show_all_children();
+                    m_pMenuPopup->popup(event->button, event->time);
+                } else {
+                    g_warning("menu not found");
+                }//if
+            }//if
 
         break;
         }
@@ -1040,4 +1106,16 @@ bool FMidiAutomationMainWindow::on_idle()
     return true;
 }//on_idle
 
+void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
+{
+    boost::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
+    if (selectedEntry != NULL) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(graphState.curPointerTick, boost::shared_ptr<SequencerEntryBlock>()));
+
+        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
+        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand);
+
+        graphDrawingArea->queue_draw();
+    }//if
+}//handleAddSeqencerEntryBlock
 

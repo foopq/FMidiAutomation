@@ -260,4 +260,27 @@ void SequencerEntryDownCommand::undoAction()
     sequencer->addEntry(entry, origIndex);
 }//undoAction
 
+AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_)
+{
+    entry = entry_;
+    entryBlock = entryBlock_;
+}//constructor
+
+AddSequencerEntryBlockCommand::~AddSequencerEntryBlockCommand()
+{
+    //Nothing
+}//destructor
+
+void AddSequencerEntryBlockCommand::doAction()
+{
+    entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
+}//doAction
+
+void AddSequencerEntryBlockCommand::undoAction()
+{
+    entry->removeEntryBlock(entryBlock);
+}//undoAction
+
+
+
 

@@ -335,7 +335,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     drawRightMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
 
-    sequencer->drawEntryBoxes(graphDrawingArea, context, graphState, drawingAreaWidth, drawingAreaHeight);
+    sequencer->drawEntryBoxes(graphDrawingArea, context, graphState, drawingAreaWidth, drawingAreaHeight, graphState.verticalPixelTickValues);
 
 
     /*

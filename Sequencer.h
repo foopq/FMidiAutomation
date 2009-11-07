@@ -11,6 +11,27 @@
 class Sequencer;
 struct GraphState;
 
+class SequencerEntryBlock
+{
+    Glib::ustring title;
+    int startTick;
+    boost::shared_ptr<SequencerEntryBlock> instanceOf;
+    int duration; //in ticks, or unused if instanceOf isn't NULL
+    //boost::shared_ptr<SequencerEntryCurce> curve;
+
+public:    
+    SequencerEntryBlock(int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
+
+    void moveBlock(int startTick);
+    void setDuration(int duration);
+    void setTitle(const Glib::ustring &title);
+
+    int getStartTick() const;
+    int getDuration() const;
+    Glib::ustring getTitle() const;
+    boost::shared_ptr<SequencerEntryBlock> getInstanceOf() const;
+};//SequencerEntryBlock
+
 class SequencerEntry
 {
     Sequencer *sequencer;
@@ -19,6 +40,7 @@ class SequencerEntry
     Gtk::Viewport *smallWindow;
     bool isFullBox;
     int curIndex;
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
     bool inHandler;
     void handleSwitchPressed();
@@ -35,6 +57,11 @@ public:
 
     Gtk::Widget *getHookWidget();
     bool IsFullBox() const;
+
+    void addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    void removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+
+    void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY);
 };//SequencerEntry
 
 class Sequencer
@@ -45,6 +72,7 @@ class Sequencer
     Gtk::Label tmpLabel;
     Gtk::VBox tmpLabelBox;
     SequencerEntry *selectedEntry;
+    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock;
 
     void adjustFillerHeight();
     void adjustEntryIndices();
@@ -56,6 +84,11 @@ public:
     void addEntry(boost::shared_ptr<SequencerEntry> entry, int index);
     void deleteEntry(boost::shared_ptr<SequencerEntry> entry);
 
+    boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock() const;
+    boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection) const; //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+    // ... MULTISELECT???
+    void clearSelectedEntryBlock();
+
     unsigned int getEntryIndex(boost::shared_ptr<SequencerEntry> entry);
     boost::shared_ptr<SequencerEntry> getSelectedEntry();
     unsigned int getNumEntries() const;
@@ -64,7 +97,7 @@ public:
     void notifySelected(SequencerEntry *selectedEntry);
     void notifyOnScroll(double pos);
 
-    void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
+    void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues);
 };//Sequencer
 
 #endif
