@@ -12,6 +12,7 @@ class Sequencer;
 struct GraphState;
 class SequencerEntry;
 class SequencerEntryBlock;
+class FMidiAutomationMainWindow;
 
 struct SequencerEntryBlockSelectionInfo
 {
@@ -83,6 +84,7 @@ public:
 
 class Sequencer
 {
+    FMidiAutomationMainWindow *mainWindow;
     std::map<boost::shared_ptr<SequencerEntry>, int > entries; //int is abs height
     Glib::ustring entryGlade;
     Gtk::VBox *parentWidget;
@@ -96,7 +98,7 @@ class Sequencer
     void adjustEntryIndices();
 
 public:
-    Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget);
+    Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
 
     boost::shared_ptr<SequencerEntry> addEntry(int index);
     void addEntry(boost::shared_ptr<SequencerEntry> entry, int index);

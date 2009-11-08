@@ -163,7 +163,6 @@ class FMidiAutomationMainWindow
 
     bool handleBPMFrameClick(GdkEventButton *event);
     void handleBPMFrameClickBase();
-    void unsetAllCurveFrames();
 
     void handleAddPressed();
     void handleDeletePressed();
@@ -191,6 +190,8 @@ public:
     ~FMidiAutomationMainWindow();
     
     Gtk::Window *MainWindow();
+
+    void unsetAllCurveFrames();
 };//FMidiAutomationMainWindow
 
 #endif

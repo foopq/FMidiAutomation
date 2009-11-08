@@ -12,7 +12,9 @@ class SequencerEntryBlock;
 
 struct EntryBlockProperties
 {
+    bool wasChanged;
     Glib::ustring newTitle;
+    Gdk::Color newColour;
 
     EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<SequencerEntryBlock> entryBlock);
 };//EntryBlockProperties

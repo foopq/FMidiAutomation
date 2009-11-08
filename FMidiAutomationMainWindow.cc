@@ -237,7 +237,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     datas->entryGlade = readEntryGlade();
     Gtk::VBox *entryVBox;
     uiXml->get_widget("entryVBox", entryVBox);
-    sequencer.reset(new Sequencer(datas->entryGlade, entryVBox));
+    sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
 
     Gtk::ScrolledWindow *entryScrollWindow;
     uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
@@ -553,7 +553,7 @@ void FMidiAutomationMainWindow::unsetAllCurveFrames()
     bpmFrame->modify_bg(Gtk::STATE_NORMAL, black);
 
     Globals &globals = Globals::Instance();
-    globals.tempoGlobals.tempoDataSelected = true;
+    globals.tempoGlobals.tempoDataSelected = false;
 }//unsetAllCurveFrames
 
 bool FMidiAutomationMainWindow::handleBPMFrameClick(GdkEventButton *event)
@@ -564,6 +564,8 @@ bool FMidiAutomationMainWindow::handleBPMFrameClick(GdkEventButton *event)
 
 void FMidiAutomationMainWindow::handleBPMFrameClickBase()
 {
+    sequencer->notifySelected(NULL);
+
     Globals &globals = Globals::Instance();
 
     Gdk::Color yellow;
@@ -574,6 +576,8 @@ void FMidiAutomationMainWindow::handleBPMFrameClickBase()
     bpmFrame->modify_bg(Gtk::STATE_NORMAL, yellow);
 
     globals.tempoGlobals.tempoDataSelected = true;
+
+    //sequencer->clearSelectedEntryBlock();
 }//handleBPMFrameClickBase
 
 bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event)
@@ -1144,8 +1148,8 @@ void FMidiAutomationMainWindow::handleSequencerEntryProperties()
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     EntryBlockProperties entryBlockProperties(uiXml, selectedEntryBlock);
 
-    if (entryBlockProperties.newTitle.empty() == false) {
-        boost::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockTitleCommand(selectedEntryBlock, entryBlockProperties.newTitle));
+    if (entryBlockProperties.wasChanged == true) {
+        boost::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockPropertiesCommand(selectedEntryBlock, entryBlockProperties.newTitle));
         CommandManager::Instance().setNewCommand(changeSequencerEntryBlockTitleCommand);
 
         graphDrawingArea->queue_draw();

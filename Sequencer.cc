@@ -427,8 +427,9 @@ void SequencerEntry::removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> ent
     }//if
 }//removeEntryBlock
 
-Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_)
+Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
+    mainWindow = mainWindow_;
     entryGlade = entryGlade_;
     parentWidget = parentWidget_;
 
@@ -582,6 +583,8 @@ void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
     }//if
 
     selectedEntry = selectedEntry_;
+
+    mainWindow->unsetAllCurveFrames();
 }//notifySelected
 
 boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
