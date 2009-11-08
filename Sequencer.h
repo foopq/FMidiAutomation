@@ -10,6 +10,15 @@
 
 class Sequencer;
 struct GraphState;
+class SequencerEntry;
+class SequencerEntryBlock;
+
+struct SequencerEntryBlockSelectionInfo
+{
+    SequencerEntry *entry;
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    Gdk::Rectangle drawnArea;
+};//SequencerEntryBlockSelectionInfo
 
 class SequencerEntryBlock
 {
@@ -38,6 +47,8 @@ class SequencerEntry
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Viewport *mainWindow;
     Gtk::Viewport *smallWindow;
+    Gtk::Frame *largeFrame;
+    Gtk::Frame *smallFrame;
     bool isFullBox;
     int curIndex;
     std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
@@ -50,18 +61,24 @@ class SequencerEntry
 
 public:
     SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
+    ~SequencerEntry();
+    void setThemeColours();
 
     void setIndex(unsigned int index);
     unsigned int getIndex();
     void deselect();
+    void select();
 
     Gtk::Widget *getHookWidget();
     bool IsFullBox() const;
+    Glib::ustring getTitle() const;
 
     void addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
 
-    void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY);
+    void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
+                            boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);
+
 };//SequencerEntry
 
 class Sequencer
@@ -73,6 +90,7 @@ class Sequencer
     Gtk::VBox tmpLabelBox;
     SequencerEntry *selectedEntry;
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock;
+    std::vector<SequencerEntryBlockSelectionInfo> selectionInfos;
 
     void adjustFillerHeight();
     void adjustEntryIndices();
@@ -85,7 +103,7 @@ public:
     void deleteEntry(boost::shared_ptr<SequencerEntry> entry);
 
     boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock() const;
-    boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection) const; //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+    boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection); //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
     // ... MULTISELECT???
     void clearSelectedEntryBlock();
 

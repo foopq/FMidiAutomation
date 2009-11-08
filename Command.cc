@@ -281,6 +281,48 @@ void AddSequencerEntryBlockCommand::undoAction()
     entry->removeEntryBlock(entryBlock);
 }//undoAction
 
+DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_)
+{
+    entry = entry_;
+    entryBlock = entryBlock_;
+}//constructor
 
+DeleteSequencerEntryBlockCommand::~DeleteSequencerEntryBlockCommand()
+{
+    //Nothing
+}//destructor
+
+void DeleteSequencerEntryBlockCommand::doAction()
+{
+    entry->removeEntryBlock(entryBlock);
+}//doAction
+
+void DeleteSequencerEntryBlockCommand::undoAction()
+{
+    entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
+}//undoAction
+
+ChangeSequencerEntryBlockTitleCommand::ChangeSequencerEntryBlockTitleCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_)
+{
+    entryBlock = entryBlock_;
+    prevTitle = newTitle_;
+}//constructor
+
+ChangeSequencerEntryBlockTitleCommand::~ChangeSequencerEntryBlockTitleCommand()
+{
+    //Nothing
+}//destructor
+
+void ChangeSequencerEntryBlockTitleCommand::doAction()
+{
+    Glib::ustring curTitle = entryBlock->getTitle();
+    entryBlock->setTitle(prevTitle);
+    prevTitle = curTitle;
+}//doAction
+
+void ChangeSequencerEntryBlockTitleCommand::undoAction()
+{
+    doAction();
+}//undoAction
 
 

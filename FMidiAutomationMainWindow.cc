@@ -14,6 +14,7 @@
 #include <boost/thread/mutex.hpp> 
 #include "jack.h"
 #include "Sequencer.h"
+#include "EntryBlockProperties.h"
 
 namespace
 {
@@ -251,6 +252,8 @@ FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
     
 void FMidiAutomationMainWindow::setThemeColours()
 {
+return;
+
     Globals &globals = Globals::Instance();
 
     Gdk::Color fgColour;
@@ -279,7 +282,7 @@ void FMidiAutomationMainWindow::setThemeColours()
         //    toolbutton->get_label_widget()->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
         //}//if
 
-        if (x < 11) {
+        if (x < 12) {
             std::string viewportStr("viewport");
             viewportStr = viewportStr + boost::lexical_cast<std::string>(x);
 
@@ -843,9 +846,11 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 
                     //////////////// IF IN SEQUENCER MODE...
                     boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
-                    if (entryBlock != NULL) {
-                        graphDrawingArea->queue_draw();
+                    if (entryBlock == NULL) {
+                        sequencer->clearSelectedEntryBlock();
                     }//if
+                    
+                    graphDrawingArea->queue_draw();
                 }//if
 
 
@@ -890,14 +895,17 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                 Glib::ustring ui_info;
                 if (entryBlock != NULL) {
                     //Context menu to delete entry
-                    m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
+                    m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock));
+                    m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
                     ui_info =
                         "<ui>"
                         "  <popup name='PopupMenu'>"
+                        "    <menuitem action='ContextProperties'/>"
                         "    <menuitem action='ContextDelete'/>"
                         "  </popup>"
                         "</ui>";
 
+                    graphDrawingArea->queue_draw();
                 } else {
                     //Context menu to add entry
                     m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
@@ -1118,4 +1126,29 @@ void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
         graphDrawingArea->queue_draw();
     }//if
 }//handleAddSeqencerEntryBlock
+
+void FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock()
+{
+    boost::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
+    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    if (selectedEntryBlock != NULL) {
+        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(selectedEntry, selectedEntryBlock));
+        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand);
+
+        graphDrawingArea->queue_draw();
+    }//if
+}//handleDeleteSeqencerEntryBlock
+
+void FMidiAutomationMainWindow::handleSequencerEntryProperties()
+{
+    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    EntryBlockProperties entryBlockProperties(uiXml, selectedEntryBlock);
+
+    if (entryBlockProperties.newTitle.empty() == false) {
+        boost::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockTitleCommand(selectedEntryBlock, entryBlockProperties.newTitle));
+        CommandManager::Instance().setNewCommand(changeSequencerEntryBlockTitleCommand);
+
+        graphDrawingArea->queue_draw();
+    }//if
+}//handleSequencerEntryProperties
 

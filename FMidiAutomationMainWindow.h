@@ -177,6 +177,8 @@ class FMidiAutomationMainWindow
     bool handleEntryWindowScroll(Gtk::ScrollType, double);
 
     void handleAddSeqencerEntryBlock();
+    void handleDeleteSeqencerEntryBlock();
+    void handleSequencerEntryProperties();
 
     void updateCursorTick(int tick, bool updateJack);
 

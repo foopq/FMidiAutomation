@@ -9,6 +9,113 @@
 static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
 static const unsigned int smallEntryWindowHeight = 44 + 6; //size plus padding
 
+namespace
+{
+
+void setThemeColours(Gtk::Widget *widget)
+{
+    Globals &globals = Globals::Instance();
+
+    Gdk::Color fgColour;
+    Gdk::Color bgColour;
+    Gdk::Color editBoxBgColour;
+    Gdk::Color textColour;
+    Gdk::Color darkTextColour;
+    Gdk::Color black;
+
+    black.set_rgb(0, 0, 0);
+
+    if (true == globals.darkTheme) {
+        fgColour.set_rgb(52429, 42429, 52429);
+        bgColour.set_rgb(10000, 10000, 10000);
+        editBoxBgColour.set_rgb(25000, 25000, 25000);
+        textColour.set_rgb(55982, 55982, 55982);
+        darkTextColour.set_rgb(45982, 45982, 45982);
+    }//if
+
+    Gtk::Viewport *viewport = dynamic_cast<Gtk::Viewport *>(widget);
+    if (viewport != NULL) {
+        viewport->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        viewport->modify_fg(Gtk::STATE_NORMAL, fgColour);
+    }//if
+
+    Gtk::Label *label = dynamic_cast<Gtk::Label *>(widget);
+    if (label != NULL) {
+        label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
+    }//if
+
+    Gtk::Entry *entry = dynamic_cast<Gtk::Entry *>(widget);
+    if (entry != NULL) {
+        entry->modify_base(Gtk::STATE_NORMAL, bgColour);
+        entry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
+        entry->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    }//if
+
+    Gtk::Frame *frame = dynamic_cast<Gtk::Frame *>(widget);
+    if (frame != NULL) {
+        frame->modify_bg(Gtk::STATE_NORMAL, black);
+    }//if
+
+    Gtk::Button *button = dynamic_cast<Gtk::Button *>(widget);
+    if (button != NULL) {
+        button->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    }//if
+
+    Gtk::Table *table = dynamic_cast<Gtk::Table *>(widget);
+    if (table != NULL) {        
+        table->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        table->modify_fg(Gtk::STATE_NORMAL, fgColour);
+    }//if
+
+    Gtk::EventBox *eventBox = dynamic_cast<Gtk::EventBox *>(widget);
+    if (eventBox != NULL) {
+        eventBox->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        eventBox->modify_fg(Gtk::STATE_NORMAL, fgColour);
+    }//if
+
+    Gtk::ComboBox *comboBox = dynamic_cast<Gtk::ComboBox *>(widget);
+    if (comboBox != NULL) {
+        comboBox->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        comboBox->modify_text(Gtk::STATE_NORMAL, bgColour);
+        comboBox->modify_base(Gtk::STATE_NORMAL, bgColour);
+        comboBox->modify_fg(Gtk::STATE_NORMAL, bgColour);
+
+//        comboBox->get_column(0);
+
+        /*
+        Gtk::TreeModel::Children children = comboBox->get_model()->children();
+        BOOST_FOREACH (Gtk::TreeRow row, children) {
+
+        }//foreach
+        */
+    }//if
+
+    /*
+    Gtk::Alignment *alignment = dynamic_cast<Gtk::Alignment *>(widget);
+    if (alignment != NULL) {
+        alignment->modify_bg(Gtk::STATE_NORMAL, bgColour);
+        alignment->modify_fg(Gtk::STATE_NORMAL, bgColour);
+        alignment->modify_base(Gtk::STATE_NORMAL, bgColour);
+        alignment->modify_text(Gtk::STATE_NORMAL, bgColour);
+    }//if
+    */
+
+    Gtk::CellRendererText *cellRendererText = dynamic_cast<Gtk::CellRendererText *>(widget);
+    if (cellRendererText != NULL) {
+        std::cout << "crt" << std::endl;
+    }//if
+
+    Gtk::Container *container = dynamic_cast<Gtk::Container *>(widget);
+    if (container != NULL) {
+        Glib::ListHandle<Gtk::Widget *> children = container->get_children();
+        BOOST_FOREACH (Gtk::Widget *childWidget, children) {
+            ::setThemeColours(childWidget);
+        }//forach
+    }//if
+}//setThemeColours
+
+}//anonymous namespace
+
 SequencerEntryBlock::SequencerEntryBlock(int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
 {
     startTick_ = std::max(startTick_, 0);
@@ -62,6 +169,12 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
     uiXml->get_widget("entryViewport", mainWindow);
     uiXml->get_widget("smallEntryViewport", smallWindow);
 
+    uiXml->get_widget("largeEntryFrame", largeFrame);
+    uiXml->get_widget("smallEntryFrame", smallFrame);
+
+//std::cout << "largeFrame: " << largeFrame << "   --    " << this << std::endl;
+//largeFrame->get_label();
+
     Gtk::Button *switchButton;
     uiXml->get_widget("toggleButton", switchButton);
     switchButton->signal_clicked().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSwitchPressed) );
@@ -93,7 +206,74 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
     curIndex = -1;
 
     deselect();
+
+    setThemeColours();
 }//constructor
+
+SequencerEntry::~SequencerEntry()
+{
+    std::cout << "AAAAAAAAAAAAAAAAA" << std::endl;
+}//destructor
+
+void SequencerEntry::setThemeColours()
+{
+return;
+
+    ::setThemeColours(mainWindow);
+    ::setThemeColours(smallWindow);
+
+    Globals &globals = Globals::Instance();
+
+    Gdk::Color fgColour;
+    Gdk::Color bgColour;
+    Gdk::Color editBoxBgColour;
+    Gdk::Color textColour;
+    Gdk::Color darkTextColour;
+    Gdk::Color black;
+
+    black.set_rgb(0, 0, 0);
+
+    Gdk::Color red;
+    red.set_rgb(1, 0, 0);
+
+    if (true == globals.darkTheme) {
+        fgColour.set_rgb(52429, 42429, 52429);
+        bgColour.set_rgb(10000, 10000, 10000);
+        editBoxBgColour.set_rgb(25000, 25000, 25000);
+        textColour.set_rgb(55982, 55982, 55982);
+        darkTextColour.set_rgb(45982, 45982, 45982);
+    }//if
+
+    Glib::RefPtr<Glib::Object> obj = uiXml->get_object("cellrenderertext1");
+    Glib::RefPtr<Gtk::CellRendererText> cellRendererText = Glib::RefPtr<Gtk::CellRendererText>::cast_dynamic(obj);
+
+    if (cellRendererText != NULL) {
+        #ifdef GLIBMM_PROPERTIES_ENABLED
+//            cellRendererText->property_background_gdk() = bgColour;
+            cellRendererText->property_foreground_gdk() = textColour;
+//            cellRendererText->property_cell_background_set() = true;
+            cellRendererText->property_cell_background_gdk() = bgColour;
+        #else
+            aaaaaa
+            cellRendererText.set_property("background_gdk", bgColour);
+        #endif
+    }//if
+
+    obj = uiXml->get_object("cellrenderertext2");
+    cellRendererText = Glib::RefPtr<Gtk::CellRendererText>::cast_dynamic(obj);
+
+    if (cellRendererText != NULL) {
+        #ifdef GLIBMM_PROPERTIES_ENABLED
+//            cellRendererText->property_background_gdk() = bgColour;
+            cellRendererText->property_foreground_gdk() = textColour;
+//            cellRendererText->property_cell_background_set() = true;
+            cellRendererText->property_cell_background_gdk() = bgColour;
+        #else
+            aaaaaa
+            cellRendererText.set_property("background_gdk", bgColour);
+        #endif
+    }//if
+}//setThemeColours
 
 bool SequencerEntry::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
 {
@@ -158,6 +338,13 @@ void SequencerEntry::setIndex(unsigned int index)
     curIndex = index;
 }//setIndex
 
+Glib::ustring SequencerEntry::getTitle() const
+{
+    Gtk::Entry *label;
+    uiXml->get_widget("titleEntry", label);
+    return label->get_text();
+}//getTitle
+
 unsigned int SequencerEntry::getIndex()
 {
     return curIndex;
@@ -180,23 +367,24 @@ bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
     fgColour.set_rgb(65535, 32768, 0);
     bgColour.set_rgb(10000, 10000, 10000);
 
-    Gtk::Frame *frame;
-    uiXml->get_widget("largeEntryFrame", frame);
+    largeFrame->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    largeFrame->modify_fg(Gtk::STATE_NORMAL, fgColour);
+    largeFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
 
-    frame->modify_bg(Gtk::STATE_NORMAL, fgColour);
-    frame->modify_fg(Gtk::STATE_NORMAL, fgColour);
-    frame->modify_base(Gtk::STATE_NORMAL, fgColour);
 
-    uiXml->get_widget("smallEntryFrame", frame);
-
-    frame->modify_bg(Gtk::STATE_NORMAL, fgColour);
-    frame->modify_fg(Gtk::STATE_NORMAL, fgColour);
-    frame->modify_base(Gtk::STATE_NORMAL, fgColour);
+    smallFrame->modify_bg(Gtk::STATE_NORMAL, fgColour);
+    smallFrame->modify_fg(Gtk::STATE_NORMAL, fgColour);
+    smallFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
 
     sequencer->notifySelected(this);
 
     return true;
 }//mouseButtonPressed
+
+void SequencerEntry::select()
+{
+    mouseButtonPressed(NULL);
+}//select
 
 void SequencerEntry::deselect()
 {
@@ -206,25 +394,30 @@ void SequencerEntry::deselect()
     fgColour.set_rgb(52429, 42429, 52429);
     bgColour.set_rgb(10000, 10000, 10000);
 
-    Gtk::Frame *frame;
-    uiXml->get_widget("largeEntryFrame", frame);
+//std::cout << "largeFrame2: " << largeFrame << "   ---   " << this << std::endl;
+    largeFrame->get_label();
 
-    frame->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    frame->modify_fg(Gtk::STATE_NORMAL, bgColour);
-    frame->modify_base(Gtk::STATE_NORMAL, bgColour);
+    largeFrame->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    largeFrame->modify_fg(Gtk::STATE_NORMAL, bgColour);
+    largeFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
 
-    uiXml->get_widget("smallEntryFrame", frame);
-
-    frame->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    frame->modify_fg(Gtk::STATE_NORMAL, bgColour);
-    frame->modify_base(Gtk::STATE_NORMAL, bgColour);
+    smallFrame->modify_bg(Gtk::STATE_NORMAL, bgColour);
+    smallFrame->modify_fg(Gtk::STATE_NORMAL, bgColour);
+    smallFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
 }//deselect
 
 void SequencerEntry::addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     removeEntryBlock(entryBlock);
     entryBlocks[entryBlock->getStartTick()] = entryBlock;
-    std::cout << "addEntryBlock: " << entryBlock->getStartTick() << std::endl;
+
+    if (entryBlock->getTitle().empty() == true) {
+        entryBlock->setTitle(getTitle() + Glib::ustring(" - ") + boost::lexical_cast<Glib::ustring>(entryBlocks.size()));
+
+//        std::cout << "entryBlock title: " << entryBlock->getTitle() << std::endl;
+    }//if
+
+//    std::cout << "addEntryBlock: " << entryBlock->getStartTick() << std::endl;
 }//addEntryBlock
 
 void SequencerEntry::removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
@@ -241,6 +434,8 @@ Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_)
 
     tmpLabel.set_text("");
     tmpLabel.show();
+
+    selectedEntry = NULL;
 
     parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
 }//constructor
@@ -391,11 +586,26 @@ void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
 
 boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
 {
-    return boost::shared_ptr<SequencerEntryBlock>();
+    return selectedEntryBlock;
 }//getSelectedEntryBlock
 
-boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) const //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
 {
+//    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
+
+    BOOST_FOREACH (SequencerEntryBlockSelectionInfo selectionInfo, selectionInfos) {
+//        std::cout << "drawnArea: " << selectionInfo.drawnArea.get_x() << " - " << selectionInfo.drawnArea.get_y() << " - " << selectionInfo.drawnArea.get_width() << " - " << selectionInfo.drawnArea.get_height() << std::endl;
+
+        if ( ((selectionInfo.drawnArea.get_x() <= x) && ((selectionInfo.drawnArea.get_x() + selectionInfo.drawnArea.get_width()) >= x)) &&
+             ((selectionInfo.drawnArea.get_y() <= y) && ((selectionInfo.drawnArea.get_y() + selectionInfo.drawnArea.get_height()) >= y)) ) {
+            if (true == setSelection) {
+                selectedEntryBlock = selectionInfo.entryBlock;
+                selectionInfo.entry->select();
+            }//if
+            return selectedEntryBlock;
+        }//if
+    }//foreach
+
     return boost::shared_ptr<SequencerEntryBlock>();
 }//getSelectedEntryBlock
 
@@ -409,6 +619,8 @@ void Sequencer::clearSelectedEntryBlock()
 
 void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues)
 {
+    selectionInfos.clear();
+
 //std::cout << std::endl;    
 //std::cout << "drawEntryBoxes" << std::endl;
 
@@ -426,7 +638,6 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
         Gdk::Rectangle entryRect;
         entryHookWidget->get_window()->get_frame_extents(entryRect);
-
 
         int x;
         int y;
@@ -452,7 +663,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
 //std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
 
-            mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1);
+            mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, selectedEntryBlock);
             
             context->reset_clip();
             context->rectangle(0, relativeStartY, 100, relativeEndY);
@@ -474,8 +685,12 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 //    std::cout << std::endl;
 }//drawEntryBoxes
 
-void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY)
+void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfos,
+                                        boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock)
+
 {
+    Globals &globals = Globals::Instance();
+
     for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
         int startTick = entryBlockIter->second->getStartTick();
         int duration = entryBlockIter->second->getDuration();
@@ -530,6 +745,40 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         }//if
 
         context->paint();
+
+        if (entryBlockIter->second == selectedEntryBlock) {
+            context->set_source_rgba(1.0, 1.0, 0.0, 0.8);
+            context->set_line_cap(Cairo::LINE_CAP_ROUND);
+            context->move_to(relativeStartX, relativeStartY + 10);
+            context->line_to(relativeEndX, relativeEndY - 10);
+            context->stroke();
+        }//if
+
+        context->move_to(relativeStartX + 10, relativeStartY + 10);
+
+        std::string fontStr;
+        {
+            std::ostringstream tmpSS;
+            tmpSS << globals.topBarFont << " bold " << globals.topBarFontSize;
+            fontStr = tmpSS.str();
+        }
+
+        Glib::RefPtr<Pango::Layout> pangoLayout = Pango::Layout::create(context);
+        Pango::FontDescription font_descr(fontStr.c_str());
+
+        pangoLayout->set_font_description(font_descr);
+        pangoLayout->set_text(entryBlockIter->second->getTitle());
+        pangoLayout->update_from_cairo_context(context);  //gets cairo cursor position
+        pangoLayout->add_to_cairo_context(context);       //adds text to cairos stack of stuff to be drawn
+        context->set_source_rgba(1.0, 1.0, 1.0, 0.8);
+        context->fill();
+        context->stroke();
+
+        SequencerEntryBlockSelectionInfo newSelectionInfo;
+        newSelectionInfo.entry = this;
+        newSelectionInfo.entryBlock = entryBlockIter->second;
+        newSelectionInfo.drawnArea = Gdk::Rectangle(relativeStartX, relativeStartY + 10, relativeEndX - relativeStartX, relativeEndY - relativeStartY - 10);
+        selectionInfos.push_back(newSelectionInfo);
     }//for
 }//drawEntryBoxes
 

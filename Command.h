@@ -34,6 +34,18 @@ public:
     void setNewCommand(boost::shared_ptr<Command> command);
 };//CommandManager
 
+struct ChangeSequencerEntryBlockTitleCommand : public Command
+{
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    Glib::ustring prevTitle;
+
+    ChangeSequencerEntryBlockTitleCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, Glib::ustring newTitle);
+    ~ChangeSequencerEntryBlockTitleCommand();
+
+    void doAction();
+    void undoAction();
+};//ChangeSequencerEntryBlockTitleCommand
+
 struct AddSequencerEntryBlockCommand : public Command
 {
     boost::shared_ptr<SequencerEntry> entry;
@@ -45,6 +57,18 @@ struct AddSequencerEntryBlockCommand : public Command
     void doAction();
     void undoAction();
 };//AddSequencerEntryBlockCommand
+
+struct DeleteSequencerEntryBlockCommand : public Command
+{
+    boost::shared_ptr<SequencerEntry> entry;
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+
+    DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry, boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    ~DeleteSequencerEntryBlockCommand();
+
+    void doAction();
+    void undoAction();
+};//DeleteSequencerEntryBlockCommand
 
 struct SequencerEntryUpCommand : public Command
 {
