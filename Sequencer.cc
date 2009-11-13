@@ -116,19 +116,31 @@ void setThemeColours(Gtk::Widget *widget)
 
 }//anonymous namespace
 
-SequencerEntryBlock::SequencerEntryBlock(int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
+SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> entry, int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
 {
     startTick_ = std::max(startTick_, 0);
 
     startTick = startTick_;
     instanceOf = instanceOf_;
     duration = 200;
+
+    owningEntry = entry.get();
 }//constructor
 
 void SequencerEntryBlock::moveBlock(int startTick_)
 {
+    if (owningEntry->getEntryBlock(startTick_) != NULL) {
+        return;
+    }//if
+
+    owningEntry->removeEntryBlock(shared_from_this());
+
     startTick_ = std::max(startTick_, 0);
+//    std::cout << "move block from: " << startTick << " to " << startTick_ << std::endl;
+
     startTick = startTick_;
+    owningEntry->addEntryBlock(startTick, shared_from_this());
+
 }//moveBlock
 
 void SequencerEntryBlock::setDuration(int duration_)
@@ -212,7 +224,7 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
 
 SequencerEntry::~SequencerEntry()
 {
-    std::cout << "AAAAAAAAAAAAAAAAA" << std::endl;
+    //Nothing
 }//destructor
 
 void SequencerEntry::setThemeColours()
@@ -327,10 +339,32 @@ bool SequencerEntry::IsFullBox() const
     return isFullBox;
 }//IsFullBox
 
+void SequencerEntry::setLabelColour(Gdk::Color colour)
+{
+    Gtk::EventBox *labelBox;
+    uiXml->get_widget("indexLabelEventBox", labelBox);
+
+    labelBox->modify_bg(Gtk::STATE_NORMAL, colour);
+}//setLabelColour
+
 void SequencerEntry::setIndex(unsigned int index)
 {
     Gtk::Label *label;
     uiXml->get_widget("indexLabel", label);
+
+    /*
+    if (label->get_text() == "###") {
+        Gdk::Color defaultColour;
+
+        int baseP[3] = {0xff, 0xcc, 0x99}; //stolen from qtractor
+        float baseC[3] = {baseP[index %3] / 255.0f, baseP[(index/3)%3] / 255.0f, baseP[(index/9)%3] / 255.0f};
+
+        defaultColour.set_rgb(baseC[0] * 65535, baseC[1] * 65535, baseC[2] * 65535);
+
+        setLabelColour(defaultColour);
+    }//if
+    */
+
     label->set_text(boost::lexical_cast<std::string>(index+1));
     uiXml->get_widget("indexLabel1", label);
     label->set_text(boost::lexical_cast<std::string>(index+1));
@@ -417,15 +451,27 @@ void SequencerEntry::addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> e
 //        std::cout << "entryBlock title: " << entryBlock->getTitle() << std::endl;
     }//if
 
-//    std::cout << "addEntryBlock: " << entryBlock->getStartTick() << std::endl;
+//    std::cout << "addEntryBlock: " << entryBlock->getTitle() << "  --  " << entryBlock->getStartTick() << "(" << entryBlocks.size() << ")" << std::endl;
 }//addEntryBlock
 
 void SequencerEntry::removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     if (entryBlocks.find(entryBlock->getStartTick()) != entryBlocks.end()) {
+//        std::cout << "removed at: " << entryBlock->getStartTick() << std::endl;
         entryBlocks.erase(entryBlocks.find(entryBlock->getStartTick()));
+    } else {
+//        std::cout << "not removed at: " << entryBlock->getStartTick() << std::endl;
     }//if
 }//removeEntryBlock
+
+boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
+{
+    if (entryBlocks.find(tick) != entryBlocks.end()) {
+        return entryBlocks[tick];
+    } else {
+        return boost::shared_ptr<SequencerEntryBlock>();
+    }//if
+}//getEntryBlock
 
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {

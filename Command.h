@@ -34,6 +34,19 @@ public:
     void setNewCommand(boost::shared_ptr<Command> command);
 };//CommandManager
 
+struct MoveSequencerEntryBlockCommand : public Command
+{
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    int origTick;
+    int newTick;
+
+    MoveSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, int origTick, int newTick);
+    ~MoveSequencerEntryBlockCommand();
+
+    void doAction();
+    void undoAction();
+};//MoveSequencerEntryBlockCommand
+
 struct ChangeSequencerEntryBlockPropertiesCommand : public Command
 {
     boost::shared_ptr<SequencerEntryBlock> entryBlock;

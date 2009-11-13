@@ -325,4 +325,27 @@ void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
     doAction();
 }//undoAction
 
+MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, int origTick_, int newTick_)
+{
+    entryBlock = entryBlock_;
+    origTick = origTick_;
+    newTick = newTick_;
+}//constructor
+
+MoveSequencerEntryBlockCommand::~MoveSequencerEntryBlockCommand()
+{
+    //Nothing
+}//destructor
+
+void MoveSequencerEntryBlockCommand::doAction()
+{
+    entryBlock->moveBlock(newTick);
+}//doAction
+
+void MoveSequencerEntryBlockCommand::undoAction()
+{
+    entryBlock->moveBlock(origTick);
+}//undoAction
+
+
 

@@ -15,6 +15,7 @@
 
 struct TempoGlobals;
 class Sequencer;
+class SequencerEntryBlock;
 
 struct Globals
 {
@@ -52,6 +53,7 @@ enum SelectedEntity
     LeftTickBar,
     RightTickBar,
     TempoChange,
+    SequencerEntrySelection,
     Nobody
 };//SelectedEntity
 
@@ -80,6 +82,9 @@ struct GraphState
     int rightMarkerTick;
     int leftMarkerTickXPixel;
     int rightMarkerTickXPixel;
+
+    int currentlySelectedEntryOriginalStartTick;
+    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
 
     GraphState();
     ~GraphState();

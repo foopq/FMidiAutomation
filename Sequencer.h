@@ -7,6 +7,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 class Sequencer;
 struct GraphState;
@@ -21,8 +22,9 @@ struct SequencerEntryBlockSelectionInfo
     Gdk::Rectangle drawnArea;
 };//SequencerEntryBlockSelectionInfo
 
-class SequencerEntryBlock
+class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntryBlock>
 {
+    SequencerEntry *owningEntry;
     Glib::ustring title;
     int startTick;
     boost::shared_ptr<SequencerEntryBlock> instanceOf;
@@ -30,7 +32,7 @@ class SequencerEntryBlock
     //boost::shared_ptr<SequencerEntryCurce> curve;
 
 public:    
-    SequencerEntryBlock(int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
+    SequencerEntryBlock(boost::shared_ptr<SequencerEntry> entry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
 
     void moveBlock(int startTick);
     void setDuration(int duration);
@@ -74,8 +76,11 @@ public:
     bool IsFullBox() const;
     Glib::ustring getTitle() const;
 
+    void setLabelColour(Gdk::Color colour);
+
     void addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    boost::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
 
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
                             boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);

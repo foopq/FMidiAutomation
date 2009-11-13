@@ -18,6 +18,7 @@ EntryBlockProperties::EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, boo
         Glib::ustring newEntryTitle = entry->get_text();
         if ((newEntryTitle.empty() == false) && (newEntryTitle != entryBlock->getTitle())) {
             newTitle = newEntryTitle;
+            wasChanged = true;
         }//if
     }//if
 
