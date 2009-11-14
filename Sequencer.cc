@@ -116,7 +116,7 @@ void setThemeColours(Gtk::Widget *widget)
 
 }//anonymous namespace
 
-SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> entry, int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
+SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry_, int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
 {
     startTick_ = std::max(startTick_, 0);
 
@@ -124,23 +124,27 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> entry
     instanceOf = instanceOf_;
     duration = 200;
 
-    owningEntry = entry.get();
+    owningEntry = owningEntry_;;
 }//constructor
 
 void SequencerEntryBlock::moveBlock(int startTick_)
 {
-    if (owningEntry->getEntryBlock(startTick_) != NULL) {
+    boost::shared_ptr<SequencerEntry> owningEntry_ = owningEntry.lock();
+    if (owningEntry_ == NULL) {
         return;
     }//if
 
-    owningEntry->removeEntryBlock(shared_from_this());
+    if (owningEntry_->getEntryBlock(startTick_) != NULL) {
+        return;
+    }//if
+
+    owningEntry_->removeEntryBlock(shared_from_this());
 
     startTick_ = std::max(startTick_, 0);
 //    std::cout << "move block from: " << startTick << " to " << startTick_ << std::endl;
 
     startTick = startTick_;
-    owningEntry->addEntryBlock(startTick, shared_from_this());
-
+    owningEntry_->addEntryBlock(startTick, shared_from_this());
 }//moveBlock
 
 void SequencerEntryBlock::setDuration(int duration_)
@@ -160,7 +164,11 @@ int SequencerEntryBlock::getStartTick() const
 
 int SequencerEntryBlock::getDuration() const
 {
-    return duration;
+    if (instanceOf == NULL) {
+        return duration;
+    } else {
+        return instanceOf->getDuration();
+    }//if
 }//getDuration
 
 Glib::ustring SequencerEntryBlock::getTitle() const
@@ -172,6 +180,11 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::getInstanceOf() cons
 {
     return instanceOf;
 }//getInstanceOf
+
+boost::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
+{
+    return owningEntry.lock();
+}//getOwningEntry
 
 SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer_, unsigned int entryNum)
 {

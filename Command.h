@@ -76,7 +76,7 @@ struct DeleteSequencerEntryBlockCommand : public Command
     boost::shared_ptr<SequencerEntry> entry;
     boost::shared_ptr<SequencerEntryBlock> entryBlock;
 
-    DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry, boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock);
     ~DeleteSequencerEntryBlockCommand();
 
     void doAction();

@@ -15,6 +15,7 @@
 #include "jack.h"
 #include "Sequencer.h"
 #include "EntryBlockProperties.h"
+#include "PasteManager.h"
 
 namespace
 {
@@ -123,6 +124,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     
     uiXml->get_widget("graphDrawingArea", graphDrawingArea);
     globals.graphDrawingArea = graphDrawingArea;
+    globals.graphState = &graphState;
     
     backingImage.reset(new Gtk::Image());
     backingTexture.reset(new Gtk::Image());
@@ -149,11 +151,26 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("menu_saveas", menuSaveAs);
     uiXml->get_widget("menu_new", menuNew);
     uiXml->get_widget("menu_quit", menuQuit);
+    uiXml->get_widget("menu_copy", menuCopy);
+    uiXml->get_widget("menu_cut", menuCut);
+    uiXml->get_widget("menu_paste", menuPaste);
+    uiXml->get_widget("menu_paste_instance", menuPasteInstance);
+
     menuOpen->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuOpen));
     menuSave->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSave));
     menuSaveAs->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSaveAs));
     menuNew->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuNew));
     menuQuit->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuQuit));
+
+    menuCopy->set_sensitive(false);
+    menuCut->set_sensitive(false);
+    menuPaste->set_sensitive(false);
+    menuPasteInstance->set_sensitive(false);
+
+    menuCopy->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuCopy));
+    menuCut->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuCut));
+    menuPaste->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuPaste));
+    menuPasteInstance->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuPasteInstance));
 
     Gtk::ImageMenuItem *menuUndo;
     Gtk::ImageMenuItem *menuRedo;
@@ -161,6 +178,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("menu_undo", menuUndo);
 
     CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
+    PasteManager::Instance().setMenuItems(menuPaste, menuPasteInstance);
 
     menuUndo->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuUndo));
     menuRedo->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuRedo));
@@ -172,6 +190,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     ctrlCurrentlyPressed = false;
     altCurrentlyPressed = false;
     leftMouseCurrentlyPressed = false;
+    mousePressDownX = 0;
+    mousePressDownY = 0;
 
     on_menuNew();
 
@@ -222,7 +242,12 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
     menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    menuRedo->add_accelerator("activate", accelGroup, GDK_R, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuRedo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
+
+    menuCopy->add_accelerator("activate", accelGroup, GDK_C, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuCut->add_accelerator("activate", accelGroup, GDK_X, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuPaste->add_accelerator("activate", accelGroup, GDK_V, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuPasteInstance->add_accelerator("activate", accelGroup, GDK_V, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
 
 //    Glib::signal_idle().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle) );
     Glib::signal_timeout().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle), 20 );
@@ -238,6 +263,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     Gtk::VBox *entryVBox;
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
+    globals.sequencer = sequencer;
 
     Gtk::ScrolledWindow *entryScrollWindow;
     uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
@@ -576,8 +602,6 @@ void FMidiAutomationMainWindow::handleBPMFrameClickBase()
     bpmFrame->modify_bg(Gtk::STATE_NORMAL, yellow);
 
     globals.tempoGlobals.tempoDataSelected = true;
-
-    //sequencer->clearSelectedEntryBlock();
 }//handleBPMFrameClickBase
 
 bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event)
@@ -651,6 +675,37 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
 }//handleGraphResize
+
+void FMidiAutomationMainWindow::on_menuCopy()
+{
+    //////////////// IF IN SEQUENCER MODE...
+    if (graphState.currentlySelectedEntryBlock != NULL) {
+        boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
+        PasteManager::Instance().setNewCommand(pasteSequencerEntryBlockCommand);
+    }//if
+}//on_menuCopy
+
+void FMidiAutomationMainWindow::on_menuCut()
+{
+    if (graphState.currentlySelectedEntryBlock != NULL) {
+        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
+        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand);
+
+        on_menuCopy();
+    }//if
+}//on_menuCut
+
+void FMidiAutomationMainWindow::on_menuPaste()
+{
+    PasteManager::Instance().doPaste();
+    graphDrawingArea->queue_draw();
+}//on_menuPaste
+
+void FMidiAutomationMainWindow::on_menuPasteInstance()
+{
+    PasteManager::Instance().doPasteInstance();
+    graphDrawingArea->queue_draw();
+}//on_menuPasteInstance
 
 void FMidiAutomationMainWindow::on_menuQuit()
 {
@@ -852,11 +907,21 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                     boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
                     if (entryBlock == NULL) {
                         sequencer->clearSelectedEntryBlock();
+
+                        menuCopy->set_sensitive(false);
+                        menuCut->set_sensitive(false);
+                        graphState.currentlySelectedEntryBlock.reset();
                     } else {
                         graphState.selectedEntity = SequencerEntrySelection;
                         graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
                         graphState.currentlySelectedEntryBlock = entryBlock;
+
+                        menuCopy->set_sensitive(true);
+                        menuCut->set_sensitive(true);
                     }//if
+
+                    //Essentially clear the selection state of the tempo changes
+                    (void)checkForTempoSelection(-100, datas->tempoChanges);
                     
                     graphDrawingArea->queue_draw();
                 }//if
@@ -877,6 +942,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                         graphState.selectedEntity = TempoChange;
                         handleBPMFrameClickBase();
                         updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+                        sequencer->clearSelectedEntryBlock();
+                        graphState.currentlySelectedEntryBlock.reset();
                         graphDrawingArea->queue_draw();
                     }//if
 
@@ -1149,6 +1216,10 @@ void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
 {
     boost::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     if (selectedEntry != NULL) {
+        if (selectedEntry->getEntryBlock(graphState.curPointerTick) != NULL) {
+            return;
+        }//if
+
         boost::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(selectedEntry, graphState.curPointerTick, boost::shared_ptr<SequencerEntryBlock>()));
 
         boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
@@ -1160,10 +1231,9 @@ void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
 
 void FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock()
 {
-    boost::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (selectedEntryBlock != NULL) {
-        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(selectedEntry, selectedEntryBlock));
+        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(selectedEntryBlock));
         CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand);
 
         graphDrawingArea->queue_draw();

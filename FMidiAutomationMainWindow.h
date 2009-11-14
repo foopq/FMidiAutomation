@@ -16,6 +16,7 @@
 struct TempoGlobals;
 class Sequencer;
 class SequencerEntryBlock;
+struct GraphState;
 
 struct Globals
 {
@@ -35,6 +36,8 @@ struct Globals
     bool darkTheme;
 
     Gtk::DrawingArea *graphDrawingArea;
+    GraphState *graphState;
+    boost::shared_ptr<Sequencer> sequencer;
 
     TempoGlobals tempoGlobals;
 };//Globals
@@ -104,6 +107,10 @@ class FMidiAutomationMainWindow
     Gtk::ImageMenuItem *menuSaveAs;
     Gtk::ImageMenuItem *menuNew;
     Gtk::ImageMenuItem *menuQuit;
+    Gtk::ImageMenuItem *menuCopy;
+    Gtk::ImageMenuItem *menuCut;
+    Gtk::ImageMenuItem *menuPaste;
+    Gtk::ImageMenuItem *menuPasteInstance;
     Gtk::Entry *leftTickEntryBox;
     Gtk::Entry *rightTickEntryBox;
     Gtk::Entry *cursorTickEntryBox;
@@ -154,6 +161,11 @@ class FMidiAutomationMainWindow
     void on_menuQuit();
     void on_menuUndo();
     void on_menuRedo();
+    void on_menuCopy();
+    void on_menuCut();
+    void on_menuPaste();
+    void on_menuPasteInstance();
+
 
     bool key_pressed(GdkEventKey *event);
     bool key_released(GdkEventKey *event);

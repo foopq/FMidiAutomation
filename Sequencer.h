@@ -24,7 +24,7 @@ struct SequencerEntryBlockSelectionInfo
 
 class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntryBlock>
 {
-    SequencerEntry *owningEntry;
+    boost::weak_ptr<SequencerEntry> owningEntry;
     Glib::ustring title;
     int startTick;
     boost::shared_ptr<SequencerEntryBlock> instanceOf;
@@ -32,7 +32,7 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     //boost::shared_ptr<SequencerEntryCurce> curve;
 
 public:    
-    SequencerEntryBlock(boost::shared_ptr<SequencerEntry> entry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
+    SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
 
     void moveBlock(int startTick);
     void setDuration(int duration);
@@ -42,9 +42,11 @@ public:
     int getDuration() const;
     Glib::ustring getTitle() const;
     boost::shared_ptr<SequencerEntryBlock> getInstanceOf() const;
+
+    boost::shared_ptr<SequencerEntry> getOwningEntry() const;
 };//SequencerEntryBlock
 
-class SequencerEntry
+class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
 {
     Sequencer *sequencer;
     Glib::RefPtr<Gtk::Builder> uiXml;

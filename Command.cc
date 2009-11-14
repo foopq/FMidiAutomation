@@ -281,10 +281,10 @@ void AddSequencerEntryBlockCommand::undoAction()
     entry->removeEntryBlock(entryBlock);
 }//undoAction
 
-DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_)
+DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_)
 {
-    entry = entry_;
     entryBlock = entryBlock_;
+    entry = entryBlock->getOwningEntry();
 }//constructor
 
 DeleteSequencerEntryBlockCommand::~DeleteSequencerEntryBlockCommand()
