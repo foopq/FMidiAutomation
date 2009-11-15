@@ -597,7 +597,7 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     }//if
 
     graphState.displayMode = DisplayMode::Curve;
-    graphState.lastSequencerPointerTick = graphState.curPointerTick;
+    graphState.lastSequencerPointerTick = selectedEntryBlock->getStartTick(); //graphState.curPointerTick;
     graphState.curPointerTick = selectedEntryBlock->getStartTick();
 
     sequencerButton->set_sensitive(true);
