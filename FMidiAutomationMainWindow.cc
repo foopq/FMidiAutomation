@@ -125,6 +125,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("graphDrawingArea", graphDrawingArea);
     globals.graphDrawingArea = graphDrawingArea;
     globals.graphState = &graphState;
+
+    graphState.displayMode = DisplayMode::Sequencer;
     
     backingImage.reset(new Gtk::Image());
     backingTexture.reset(new Gtk::Image());
@@ -239,6 +241,12 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleUpButtonPressed) );
     uiXml->get_widget("downButton", button);
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDownButtonPressed) );
+    uiXml->get_widget("sequencerButton", sequencerButton);
+    sequencerButton->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerButtonPressed) );
+    uiXml->get_widget("curveButton", curveButton);
+    curveButton->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleCurveButtonPressed) );
+
+    sequencerButton->set_sensitive(false);
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
     menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
@@ -567,6 +575,40 @@ void FMidiAutomationMainWindow::handleDownButtonPressed()
     }//if
 }//handleDownButtonPressed
 
+void FMidiAutomationMainWindow::handleSequencerButtonPressed()
+{
+    graphState.displayMode = DisplayMode::Sequencer;
+    graphState.curPointerTick = graphState.lastSequencerPointerTick;
+
+    sequencerButton->set_sensitive(false);
+    curveButton->set_sensitive(true);
+
+    graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    updateCursorTick(graphState.curPointerTick, false);
+    graphDrawingArea->queue_draw();
+}//handleSequencerButtonPressed
+
+void FMidiAutomationMainWindow::handleCurveButtonPressed()
+{
+    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    if (selectedEntryBlock == NULL) {
+        return;
+    }//if
+
+    graphState.displayMode = DisplayMode::Curve;
+    graphState.lastSequencerPointerTick = graphState.curPointerTick;
+    graphState.curPointerTick = selectedEntryBlock->getStartTick();
+
+    sequencerButton->set_sensitive(true);
+    curveButton->set_sensitive(false);
+
+    graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    updateCursorTick(graphState.curPointerTick, false);
+    graphDrawingArea->queue_draw();
+}//handleCurveButtonPressed
+
 void FMidiAutomationMainWindow::unsetAllCurveFrames()
 {
     focusStealingButton->grab_focus();
@@ -678,19 +720,18 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 
 void FMidiAutomationMainWindow::on_menuCopy()
 {
-    //////////////// IF IN SEQUENCER MODE...
-    if (graphState.currentlySelectedEntryBlock != NULL) {
-        boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
-        PasteManager::Instance().setNewCommand(pasteSequencerEntryBlockCommand);
+    if (graphState.displayMode == DisplayMode::Sequencer) {
+        if (graphState.currentlySelectedEntryBlock != NULL) {
+            boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
+            PasteManager::Instance().setNewCommand(pasteSequencerEntryBlockCommand);
+        }//if
     }//if
 }//on_menuCopy
 
 void FMidiAutomationMainWindow::on_menuCut()
 {
     if (graphState.currentlySelectedEntryBlock != NULL) {
-        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
-        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand);
-
+        handleDeleteSeqencerEntryBlock();
         on_menuCopy();
     }//if
 }//on_menuCut
@@ -891,43 +932,52 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
     switch (event->button) {
         case 1: //Left
         {
-            graphState.selectedEntity = Nobody;
-            leftMouseCurrentlyPressed = true;
-            mousePressDownX = event->x;
-            mousePressDownY = event->y;
+            if (event->type == GDK_BUTTON_PRESS) {
+                graphState.selectedEntity = Nobody;
+                leftMouseCurrentlyPressed = true;
+                mousePressDownX = event->x;
+                mousePressDownY = event->y;
+            }//if
 
             if (event->y > 60) {
-                graphState.inMotion = true;
-                graphState.baseOffset = graphState.offset;
+                if (event->type == GDK_BUTTON_PRESS) {
+                    graphState.inMotion = true;
+                    graphState.baseOffset = graphState.offset;
 
-                if (false == ctrlCurrentlyPressed) {
-                    unsetAllCurveFrames();
+                    if (false == ctrlCurrentlyPressed) {
+                        unsetAllCurveFrames();
 
-                    //////////////// IF IN SEQUENCER MODE...
-                    boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
-                    if (entryBlock == NULL) {
-                        sequencer->clearSelectedEntryBlock();
+                        if (graphState.displayMode == DisplayMode::Sequencer) {
+                            boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+                            if (entryBlock == NULL) {
+                                sequencer->clearSelectedEntryBlock();
 
-                        menuCopy->set_sensitive(false);
-                        menuCut->set_sensitive(false);
-                        graphState.currentlySelectedEntryBlock.reset();
-                    } else {
-                        graphState.selectedEntity = SequencerEntrySelection;
-                        graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
-                        graphState.currentlySelectedEntryBlock = entryBlock;
+                                menuCopy->set_sensitive(false);
+                                menuCut->set_sensitive(false);
+                                graphState.currentlySelectedEntryBlock.reset();
+                            } else {
+                                graphState.selectedEntity = SequencerEntrySelection;
+                                graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
+                                graphState.currentlySelectedEntryBlock = entryBlock;
 
-                        menuCopy->set_sensitive(true);
-                        menuCut->set_sensitive(true);
+                                menuCopy->set_sensitive(true);
+                                menuCut->set_sensitive(true);
+                            }//if
+                        }//if
+
+                        //Essentially clear the selection state of the tempo changes
+                        (void)checkForTempoSelection(-100, datas->tempoChanges);
+                        
+                        graphDrawingArea->queue_draw();
                     }//if
-
-                    //Essentially clear the selection state of the tempo changes
-                    (void)checkForTempoSelection(-100, datas->tempoChanges);
-                    
-                    graphDrawingArea->queue_draw();
+                } else { //single click
+                    if (event->type == GDK_2BUTTON_PRESS) {
+                        if (SequencerEntrySelection == graphState.selectedEntity) {
+                            handleCurveButtonPressed();
+                        }//if
+                    }//double click
                 }//if
-
-
-            } else {
+            } else { //event->y > 60
                 if ((event->y > 30) && (false == ctrlCurrentlyPressed)) {
                     if ((graphState.leftMarkerTickXPixel >= 0) && (abs(event->x - graphState.leftMarkerTickXPixel) <= 5)) {
                         graphState.selectedEntity = LeftTickBar;
@@ -966,30 +1016,36 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                 m_refActionGroup = Gtk::ActionGroup::create();
                 m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
 
-                boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
-                Glib::ustring ui_info;
-                if (entryBlock != NULL) {
-                    //Context menu to delete entry
-                    m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock));
-                    m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
-                    ui_info =
-                        "<ui>"
-                        "  <popup name='PopupMenu'>"
-                        "    <menuitem action='ContextProperties'/>"
-                        "    <menuitem action='ContextDelete'/>"
-                        "  </popup>"
-                        "</ui>";
+                Glib::ustring ui_info = "<ui><popup name='PopupMenu'></popup></ui>";
+                if (graphState.displayMode == DisplayMode::Sequencer) {
+                    boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+                    if (entryBlock != NULL) {
+                        //Context menu to delete entry
+                        m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock));
+                        m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
+                        m_refActionGroup->add(Gtk::Action::create("ContextCurve", "Entry Block Curve"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryCurve));
+                        ui_info =
+                            "<ui>"
+                            "  <popup name='PopupMenu'>"
+                            "    <menuitem action='ContextCurve'/>"
+                            "    <menuitem action='ContextProperties'/>"
+                            "    <menuitem action='ContextDelete'/>"
+                            "  </popup>"
+                            "</ui>";
 
-                    graphDrawingArea->queue_draw();
-                } else {
-                    //Context menu to add entry
-                    m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
-                    ui_info =
-                        "<ui>"
-                        "  <popup name='PopupMenu'>"
-                        "    <menuitem action='ContextAdd'/>"
-                        "  </popup>"
-                        "</ui>";
+                        graphDrawingArea->queue_draw();
+                    } else {
+                        if (sequencer->getSelectedEntry() != NULL) {
+                            //Context menu to add entry
+                            m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
+                            ui_info =
+                                "<ui>"
+                                "  <popup name='PopupMenu'>"
+                                "    <menuitem action='ContextAdd'/>"
+                                "  </popup>"
+                                "</ui>";
+                        }//if
+                    }//if
                 }//if
 
                 m_refUIManager = Gtk::UIManager::create();
@@ -1243,6 +1299,10 @@ void FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock()
 void FMidiAutomationMainWindow::handleSequencerEntryProperties()
 {
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    if (selectedEntryBlock == NULL) {
+        return;
+    }//if
+
     EntryBlockProperties entryBlockProperties(uiXml, selectedEntryBlock);
 
     if (entryBlockProperties.wasChanged == true) {
@@ -1252,4 +1312,12 @@ void FMidiAutomationMainWindow::handleSequencerEntryProperties()
         graphDrawingArea->queue_draw();
     }//if
 }//handleSequencerEntryProperties
+
+void FMidiAutomationMainWindow::handleSequencerEntryCurve()
+{
+    handleCurveButtonPressed();
+}//handleSequencerEntryCurve
+
+
+
 

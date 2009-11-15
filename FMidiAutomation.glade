@@ -527,6 +527,39 @@
                                             <property name="homogeneous">True</property>
                                           </packing>
                                         </child>
+                                        <child>
+                                          <object class="GtkSeparatorToolItem" id="toolbutton1">
+                                            <property name="visible">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="homogeneous">True</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkToolButton" id="sequencerButton">
+                                            <property name="visible">True</property>
+                                            <property name="label" translatable="yes">sequencer</property>
+                                            <property name="use_underline">True</property>
+                                            <property name="stock_id">gtk-unindent</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="homogeneous">True</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkToolButton" id="curveButton">
+                                            <property name="visible">True</property>
+                                            <property name="label" translatable="yes">curve</property>
+                                            <property name="use_underline">True</property>
+                                            <property name="stock_id">gtk-convert</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="homogeneous">True</property>
+                                          </packing>
+                                        </child>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>

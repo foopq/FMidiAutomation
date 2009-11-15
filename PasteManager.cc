@@ -66,6 +66,10 @@ void PasteSequencerEntryBlockCommand::doPaste()
 {
     Globals &globals = Globals::Instance();
     
+    if (globals.graphState->displayMode != DisplayMode::Sequencer) {
+        return;
+    }//if
+
     boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
     if (selectedEntry != NULL) {
         if (selectedEntry->getEntryBlock(globals.graphState->curPointerTick) != NULL) {
@@ -84,6 +88,10 @@ void PasteSequencerEntryBlockCommand::doPaste()
 void PasteSequencerEntryBlockCommand::doPasteInstance()
 {
     Globals &globals = Globals::Instance();
+
+    if (globals.graphState->displayMode != DisplayMode::Sequencer) {
+        return;
+    }//if
     
     boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
     if (selectedEntry != NULL) {

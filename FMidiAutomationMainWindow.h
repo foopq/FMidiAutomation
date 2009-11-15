@@ -60,6 +60,15 @@ enum SelectedEntity
     Nobody
 };//SelectedEntity
 
+namespace DisplayMode
+{
+enum DisplayMode
+{
+    Sequencer,
+    Curve,
+};//DisplayMode
+}//DisplayMode
+
 struct GraphState
 {    
     double baseOffset; //when actively scrolling
@@ -88,6 +97,9 @@ struct GraphState
 
     int currentlySelectedEntryOriginalStartTick;
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
+
+    DisplayMode::DisplayMode displayMode;
+    int lastSequencerPointerTick; //for swaping back to the seqeucner
 
     GraphState();
     ~GraphState();
@@ -122,6 +134,8 @@ class FMidiAutomationMainWindow
     Gtk::Entry *beatsPerBarEntry;
     Gtk::Entry *barSubdivisionsEntry;
     Gtk::Entry *transportTimeEntry;
+    Gtk::ToolButton *sequencerButton;
+    Gtk::ToolButton *curveButton;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
@@ -185,6 +199,8 @@ class FMidiAutomationMainWindow
     void handleDeletePressed();
     void handleUpButtonPressed();
     void handleDownButtonPressed();
+    void handleSequencerButtonPressed();
+    void handleCurveButtonPressed();
 
     void handleRewPressed();
     void handlePlayPressed();
@@ -195,6 +211,7 @@ class FMidiAutomationMainWindow
     void handleAddSeqencerEntryBlock();
     void handleDeleteSeqencerEntryBlock();
     void handleSequencerEntryProperties();
+    void handleSequencerEntryCurve();
 
     void updateCursorTick(int tick, bool updateJack);
 
