@@ -10,6 +10,7 @@ struct FMidiAutomationData;
 class Sequencer;
 class SequencerEntry;
 class SequencerEntryBlock;
+struct SequencerEntryImpl;
 
 struct Command
 {
@@ -33,6 +34,20 @@ public:
     void doUndo();
     void setNewCommand(boost::shared_ptr<Command> command);
 };//CommandManager
+
+
+struct ChangeSequencerEntryPropertiesCommand : public Command
+{
+    boost::shared_ptr<SequencerEntry> entry;
+    boost::shared_ptr<SequencerEntryImpl> origImpl;
+    boost::shared_ptr<SequencerEntryImpl> newImpl;
+
+    ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry, boost::shared_ptr<SequencerEntryImpl> origImpl, boost::shared_ptr<SequencerEntryImpl> newImpl);
+    ~ChangeSequencerEntryPropertiesCommand();
+
+    void doAction();
+    void undoAction();
+};//ChangeSequencerEntryPropertiesCommand
 
 struct MoveSequencerEntryBlockCommand : public Command
 {

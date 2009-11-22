@@ -46,14 +46,44 @@ public:
     boost::shared_ptr<SequencerEntry> getOwningEntry() const;
 };//SequencerEntryBlock
 
+struct SequencerEntryImpl
+{
+    enum ControlType
+    {
+        CC,
+        RPN,
+    };//ControlType
+
+    SequencerEntryImpl();
+    ~SequencerEntryImpl();
+
+    boost::shared_ptr<SequencerEntryImpl> clone();
+    bool operator==(SequencerEntryImpl &other);
+
+    SequencerEntryImpl::ControlType controllerType;
+    unsigned char msb;
+    unsigned char lsb;
+    unsigned char channel;
+
+    //UI specific
+    Glib::ustring title;    
+    int minValue;
+    int maxValue;
+    bool sevenBit;
+    bool useBothMSBandLSB; //implied true if sevenBit is true
+};//SequencerEntryImpl
+
 class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
 {
+    boost::shared_ptr<SequencerEntryImpl> impl;
+
     Sequencer *sequencer;
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Viewport *mainWindow;
     Gtk::Viewport *smallWindow;
     Gtk::Frame *largeFrame;
-    Gtk::Frame *smallFrame;
+//    Gtk::Frame *smallFrame;
+    Gtk::Viewport *smallFrame;
     bool isFullBox;
     int curIndex;
     std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
@@ -63,10 +93,15 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     bool handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event);
     bool mouseButtonPressed(GdkEventButton *event);
+    bool handleEntryFocus(GdkEventFocus*);
 
 public:
     SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
     ~SequencerEntry();
+
+    boost::shared_ptr<SequencerEntryImpl> getImplClone();
+    void setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl);
+
     void setThemeColours();
 
     void setIndex(unsigned int index);
@@ -77,6 +112,7 @@ public:
     Gtk::Widget *getHookWidget();
     bool IsFullBox() const;
     Glib::ustring getTitle() const;
+    void setTitle(Glib::ustring);
 
     void setLabelColour(Gdk::Color colour);
 
@@ -123,6 +159,8 @@ public:
     void doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next);
     void notifySelected(SequencerEntry *selectedEntry);
     void notifyOnScroll(double pos);
+
+    void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 
     void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues);
 };//Sequencer

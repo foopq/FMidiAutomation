@@ -16,6 +16,7 @@
 #include "Sequencer.h"
 #include "EntryBlockProperties.h"
 #include "PasteManager.h"
+#include "EntryProperties.h"
 
 namespace
 {
@@ -445,6 +446,7 @@ void FMidiAutomationMainWindow::handleRewPressed()
     updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
     graphState.setOffsetCenteredOnTick(0, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
 }//handleRewPressed
 
@@ -585,6 +587,7 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     updateCursorTick(graphState.curPointerTick, false);
     graphDrawingArea->queue_draw();
 }//handleSequencerButtonPressed
@@ -605,6 +608,7 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
 
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     updateCursorTick(graphState.curPointerTick, false);
     graphDrawingArea->queue_draw();
 }//handleCurveButtonPressed
@@ -715,6 +719,7 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
     drawingAreaHeight = allocation.get_height();
     
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
 }//handleGraphResize
 
@@ -1163,6 +1168,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 
             if (graphState.offset != curOffset) {
                 graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+                graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
                 graphDrawingArea->queue_draw();
             }//if
         }//if
@@ -1229,6 +1235,7 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
 
         if (curTicksPerPixel != graphState.ticksPerPixel) {
             graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+            graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
             graphDrawingArea->queue_draw();
         }//if
     }//if
@@ -1254,6 +1261,7 @@ bool FMidiAutomationMainWindow::on_idle()
         if (graphState.curPointerTick != curFrame) {
             graphState.setOffsetCenteredOnTick(curFrame, drawingAreaWidth);
             graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+            graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
             updateCursorTick(curFrame, false);
 
 //            cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(curFrame));
@@ -1318,6 +1326,21 @@ void FMidiAutomationMainWindow::handleSequencerEntryCurve()
     handleCurveButtonPressed();
 }//handleSequencerEntryCurve
 
+void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
+{
+    EntryProperties entryProperties(uiXml, entry, !createUpdatePoint);
 
+    if (true == entryProperties.wasChanged) {
+        if (true == createUpdatePoint) {
+            boost::shared_ptr<Command> changeSequencerEntryPropertiesCommand(new ChangeSequencerEntryPropertiesCommand(entry, entryProperties.origImpl, entryProperties.newImpl));
+            CommandManager::Instance().setNewCommand(changeSequencerEntryPropertiesCommand);
+
+            graphDrawingArea->queue_draw();
+        } else {
+            //Here is we added a new entry
+            entry->setNewDataImpl(entryProperties.newImpl);
+        }//if
+    }//if
+}//editSequencerEntryProperties
 
 

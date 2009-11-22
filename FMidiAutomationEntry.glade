@@ -423,52 +423,25 @@
         <property name="visible">True</property>
         <property name="border_width">1</property>
         <property name="resize_mode">queue</property>
-        <property name="shadow_type">none</property>
+        <property name="shadow_type">etched-in</property>
         <child>
-          <object class="GtkFrame" id="smallEntryFrame">
+          <object class="GtkEventBox" id="eventbox2">
             <property name="visible">True</property>
-            <property name="border_width">2</property>
-            <property name="label_xalign">0</property>
             <child>
-              <object class="GtkEventBox" id="eventbox2">
+              <object class="GtkTable" id="table2">
                 <property name="visible">True</property>
+                <property name="row_spacing">5</property>
                 <child>
-                  <object class="GtkTable" id="table2">
+                  <object class="GtkHBox" id="hbox3">
                     <property name="visible">True</property>
-                    <property name="row_spacing">5</property>
                     <child>
-                      <object class="GtkHBox" id="hbox3">
+                      <object class="GtkHBox" id="vbox6">
                         <property name="visible">True</property>
                         <child>
-                          <object class="GtkHBox" id="vbox6">
+                          <object class="GtkLabel" id="indexLabel1">
                             <property name="visible">True</property>
-                            <child>
-                              <object class="GtkLabel" id="indexLabel1">
-                                <property name="visible">True</property>
-                                <property name="ypad">10</property>
-                                <property name="label" translatable="yes">###</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="toggleButton1">
-                                <property name="width_request">24</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <property name="image">image2</property>
-                                <property name="image_position">top</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
+                            <property name="ypad">10</property>
+                            <property name="label" translatable="yes">###</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -477,48 +450,50 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkHBox" id="vbox7">
+                          <object class="GtkButton" id="toggleButton1">
+                            <property name="width_request">24</property>
                             <property name="visible">True</property>
-                            <property name="homogeneous">True</property>
-                            <child>
-                              <object class="GtkToggleButton" id="recButton1">
-                                <property name="label" translatable="yes">R</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkToggleButton" id="muteButton1">
-                                <property name="label" translatable="yes">M</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkToggleButton" id="soloButton1">
-                                <property name="label" translatable="yes">S</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">2</property>
-                              </packing>
-                            </child>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="image">image2</property>
+                            <property name="image_position">top</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkHBox" id="vbox7">
+                        <property name="visible">True</property>
+                        <property name="homogeneous">True</property>
+                        <child>
+                          <object class="GtkToggleButton" id="recButton1">
+                            <property name="label" translatable="yes">R</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="muteButton1">
+                            <property name="label" translatable="yes">M</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -527,33 +502,45 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="titleEntry1">
+                          <object class="GtkToggleButton" id="soloButton1">
+                            <property name="label" translatable="yes">S</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="invisible_char">&#x25CF;</property>
-                            <property name="width_chars">20</property>
+                            <property name="receives_default">True</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">False</property>
-                            <property name="padding">4</property>
                             <property name="position">2</property>
                           </packing>
                         </child>
                       </object>
                       <packing>
-                        <property name="x_options"></property>
-                        <property name="y_options"></property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="titleEntry1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                        <property name="width_chars">20</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">4</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                   </object>
+                  <packing>
+                    <property name="x_options"></property>
+                    <property name="y_options"></property>
+                  </packing>
                 </child>
-              </object>
-            </child>
-            <child type="label">
-              <object class="GtkLabel" id="label7">
-                <property name="visible">True</property>
-                <property name="use_markup">True</property>
               </object>
             </child>
           </object>

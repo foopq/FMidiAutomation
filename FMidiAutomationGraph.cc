@@ -85,6 +85,17 @@ void scaleImage(boost::shared_ptr<Gtk::Image> image, Glib::RefPtr<Gdk::Pixbuf> p
     }//if
 }//scaleImage
 
+void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+    //Bar backgrounds
+    context->reset_clip();
+    context->rectangle(0, 60, 60, areaHeight-60);
+    context->clip();
+
+    context->set_source_rgba(0.1, 0.1, 0.1, 0.8);
+    context->paint();
+}//drawLeftBar
+
 void drawTopBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
     Globals &globals = Globals::Instance();
@@ -339,6 +350,10 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         sequencer->drawEntryBoxes(graphDrawingArea, context, graphState, drawingAreaWidth, drawingAreaHeight, graphState.verticalPixelTickValues);
     }//if
 
+    if (graphState.displayMode == DisplayMode::Curve) {
+        drawLeftBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    }//if
+
 
     /*
     int tmpw;
@@ -395,6 +410,13 @@ GraphState::~GraphState()
 {
     //Nothing
 }//destructor
+
+void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight)
+{
+    if (displayMode != DisplayMode::Curve) {
+        return;
+    }//if
+}//refreshHorizontalLines
 
 void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight)
 {

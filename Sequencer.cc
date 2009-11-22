@@ -7,7 +7,7 @@
 #include <boost/lexical_cast.hpp>
 
 static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
-static const unsigned int smallEntryWindowHeight = 44 + 6; //size plus padding
+static const unsigned int smallEntryWindowHeight = 46 + 4; //size plus padding
 
 namespace
 {
@@ -186,8 +186,53 @@ boost::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
     return owningEntry.lock();
 }//getOwningEntry
 
+SequencerEntryImpl::SequencerEntryImpl()
+{
+    controllerType = CC;
+    channel = 16;
+    msb = 7;
+    lsb = 0;
+
+    //UI specific
+    minValue = 0;
+    maxValue = 127;
+    sevenBit = true;
+    useBothMSBandLSB = false; //implied true if sevenBit is true
+}//constructor
+
+SequencerEntryImpl::~SequencerEntryImpl()
+{
+    //Nothing
+}//destructor
+
+boost::shared_ptr<SequencerEntryImpl> SequencerEntryImpl::clone()
+{
+    boost::shared_ptr<SequencerEntryImpl> retVal(new SequencerEntryImpl);
+    *retVal = *this;
+    return retVal;
+}//clone
+
+bool SequencerEntryImpl::operator==(SequencerEntryImpl &other)
+{
+    bool diff = false;
+
+    diff |= this->controllerType != other.controllerType;
+    diff |= this->msb != other.msb;
+    diff |= this->lsb != other.lsb;
+    diff |= this->minValue != other.minValue;
+    diff |= this->maxValue != other.maxValue;
+    diff |= this->sevenBit != other.sevenBit;
+    diff |= this->useBothMSBandLSB != other.useBothMSBandLSB;
+    diff |= this->channel != other.channel;
+    diff |= this->title != other.title;
+
+    return !diff;
+}//operator==
+
 SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer_, unsigned int entryNum)
 {
+    impl.reset(new SequencerEntryImpl);
+
     sequencer = sequencer_;
 
     uiXml = Gtk::Builder::create_from_string(entryGlade);
@@ -195,7 +240,8 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
     uiXml->get_widget("smallEntryViewport", smallWindow);
 
     uiXml->get_widget("largeEntryFrame", largeFrame);
-    uiXml->get_widget("smallEntryFrame", smallFrame);
+//    uiXml->get_widget("smallEntryFrame", smallFrame);
+    uiXml->get_widget("smallEntryViewport", smallFrame);
 
 //std::cout << "largeFrame: " << largeFrame << "   --    " << this << std::endl;
 //largeFrame->get_label();
@@ -213,7 +259,9 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
     entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleKeyEntryOnLargeTitleEntryBox));
     uiXml->get_widget("titleEntry1", entryBox);
     entryBox->set_text("Automation " + boost::lexical_cast<std::string>(entryNum));
+    impl->title = std::string("Automation ") + boost::lexical_cast<std::string>(entryNum);
     entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleKeyEntryOnSmallTitleEntryBox));
+    entryBox->signal_focus_in_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleEntryFocus));
 
     Gtk::EventBox *eventBox;
     uiXml->get_widget("eventbox1", eventBox);
@@ -225,7 +273,7 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
     mainWindow->get_parent()->remove(*mainWindow);
     smallWindow->get_parent()->remove(*smallWindow);
 
-    isFullBox = true;
+    isFullBox = false;
     inHandler = false;
 
     curIndex = -1;
@@ -239,6 +287,22 @@ SequencerEntry::~SequencerEntry()
 {
     //Nothing
 }//destructor
+
+boost::shared_ptr<SequencerEntryImpl> SequencerEntry::getImplClone()
+{
+    return impl->clone();
+}//getImplClone
+
+void SequencerEntry::setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl_)
+{
+    impl = impl_;
+
+    Gtk::Entry *entryBox;
+    uiXml->get_widget("titleEntry", entryBox);
+    entryBox->set_text(impl->title);
+    uiXml->get_widget("titleEntry1", entryBox);
+    entryBox->set_text(impl->title);
+}//setNewDataImpl
 
 void SequencerEntry::setThemeColours()
 {
@@ -279,7 +343,6 @@ return;
 //            cellRendererText->property_cell_background_set() = true;
             cellRendererText->property_cell_background_gdk() = bgColour;
         #else
-            aaaaaa
             cellRendererText.set_property("background_gdk", bgColour);
         #endif
     }//if
@@ -310,6 +373,8 @@ bool SequencerEntry::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
     uiXml->get_widget("titleEntry1", entryBox);
     entryBox->set_text(title);
 
+    impl->title = title;
+
     return true;
 }//handleKeyEntryOnLargeTitleEntryBox
 
@@ -323,11 +388,16 @@ bool SequencerEntry::handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event)
     uiXml->get_widget("titleEntry", entryBox);
     entryBox->set_text(title);
 
+    impl->title = title;
+
     return true;
 }//handleKeyEntryOnSmallTitleEntryBox
 
 void SequencerEntry::handleSwitchPressed()
 {
+    sequencer->editSequencerEntryProperties(shared_from_this(), true);
+
+    /*
     mouseButtonPressed(NULL);
     isFullBox = !isFullBox;
 
@@ -345,6 +415,7 @@ void SequencerEntry::handleSwitchPressed()
 
     Globals &globals = Globals::Instance();
     globals.graphDrawingArea->queue_draw();
+    */
 }//handleSwitchPressed
 
 bool SequencerEntry::IsFullBox() const
@@ -387,10 +458,19 @@ void SequencerEntry::setIndex(unsigned int index)
 
 Glib::ustring SequencerEntry::getTitle() const
 {
-    Gtk::Entry *label;
-    uiXml->get_widget("titleEntry", label);
-    return label->get_text();
+    return impl->title;
 }//getTitle
+
+void SequencerEntry::setTitle(Glib::ustring title)
+{
+    if (title.empty() == false) {
+        Gtk::Entry *entryBox;
+        uiXml->get_widget("titleEntry", entryBox);
+        entryBox->set_text(impl->title);
+        uiXml->get_widget("titleEntry1", entryBox);
+        entryBox->set_text(impl->title);
+    }//if
+}//setTitle
 
 unsigned int SequencerEntry::getIndex()
 {
@@ -405,6 +485,11 @@ Gtk::Widget *SequencerEntry::getHookWidget()
         return smallWindow;
     }//if
 }//getHookWidget
+
+bool SequencerEntry::handleEntryFocus(GdkEventFocus*)
+{
+    mouseButtonPressed(NULL);
+}//handleEntryFocus
 
 bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
 {
@@ -583,9 +668,12 @@ void Sequencer::addEntry(boost::shared_ptr<SequencerEntry> entry, int index)
     notifyOnScroll(-1);
 }//addEntry
 
-boost::shared_ptr<SequencerEntry>Sequencer::addEntry(int index)
+boost::shared_ptr<SequencerEntry> Sequencer::addEntry(int index)
 {
     boost::shared_ptr<SequencerEntry> newEntry(new SequencerEntry(entryGlade, this, entries.size()+1));
+
+    editSequencerEntryProperties(newEntry, false);
+
     addEntry(newEntry, index);
     return newEntry;
 }//addEntry
@@ -675,6 +763,11 @@ void Sequencer::clearSelectedEntryBlock()
 {
     selectedEntryBlock.reset();
 }//clearSelectedEntryBlock
+
+void Sequencer::editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
+{
+    mainWindow->editSequencerEntryProperties(entry, createUpdatePoint);
+}//editSequencerEntryProperties
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Rendering code

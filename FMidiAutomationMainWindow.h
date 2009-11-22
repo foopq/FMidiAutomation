@@ -16,6 +16,7 @@
 struct TempoGlobals;
 class Sequencer;
 class SequencerEntryBlock;
+class SequencerEntry;
 struct GraphState;
 
 struct Globals
@@ -105,6 +106,7 @@ struct GraphState
     ~GraphState();
 
     void refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight);
+    void refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight);
     void setOffsetCenteredOnTick(int tick, int drawingAreaWidth);
 };//GraphState
 
@@ -226,6 +228,7 @@ public:
     Gtk::Window *MainWindow();
 
     void unsetAllCurveFrames();
+    void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 };//FMidiAutomationMainWindow
 
 #endif
