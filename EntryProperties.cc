@@ -79,9 +79,8 @@ EntryProperties::EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml_, boost::share
 
     int result = mainDialog->run();
 
+    newImpl.reset(new SequencerEntryImpl);
     if (result == 0) {
-        newImpl.reset(new SequencerEntryImpl);
-
         uiXml->get_widget("titleEntry", entryBox);
         title = entryBox->get_text();
         newImpl->title = title;

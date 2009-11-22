@@ -888,15 +888,6 @@
         <col id="0" translatable="yes">RPN</col>
       </row>
       <row>
-        <col id="0" translatable="yes">NRPN</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Pitch Bend</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Program Change</col>
-      </row>
-      <row>
         <col id="0" translatable="yes">Sysex</col>
       </row>
     </data>
@@ -1485,7 +1476,7 @@
     </child>
     <action-widgets>
       <action-widget response="0">entryWindowPropertiesOkButton</action-widget>
-      <action-widget response="0">entryWindowPropertiesCancelButton</action-widget>
+      <action-widget response="1">entryWindowPropertiesCancelButton</action-widget>
     </action-widgets>
   </object>
   <object class="GtkAdjustment" id="adjustment1">
