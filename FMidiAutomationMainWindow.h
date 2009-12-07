@@ -48,7 +48,8 @@ enum LineType
     BarStart,
     BarBeat,
     SubdivisionLine,
-    SecondLine
+    SecondLine,
+    ValueLine,
 };//LineType
 
 enum SelectedEntity
@@ -72,18 +73,23 @@ enum DisplayMode
 
 struct GraphState
 {    
-    double baseOffset; //when actively scrolling
+    double baseOffsetX; //when actively scrolling
+    double baseOffsetY;
     bool inMotion; //when actively scrolling
 
     int zeroithTickPixel;
-    double offset; //scroll offset
+    double offsetX; //scroll offset
+    double offsetY;
     int barsSubdivisionAmount;
     int ticksPerPixel; //negative means N pixels per tick
+    double valuesPerPixel;
     std::vector<std::pair<unsigned int, LineType> > verticalLines;
     std::vector<std::pair<unsigned int, std::string> > upperLineText;
+    std::vector<std::pair<unsigned int, LineType> > horizontalLines;
+    std::vector<std::pair<unsigned int, std::string> > valueLineText;
 
     std::vector<int> verticalPixelTickValues;
-    std::vector<float> horizontalPixelValues;
+    std::vector<double> horizontalPixelValues;
 
     SelectedEntity selectedEntity;
 
@@ -226,6 +232,8 @@ public:
     ~FMidiAutomationMainWindow();
     
     Gtk::Window *MainWindow();
+
+    void doTestInit();
 
     void unsetAllCurveFrames();
     void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);

@@ -166,9 +166,10 @@ void DeleteTempoChangeCommand::undoAction()
     updateTempoChangesUIData();
 }//undoAction
 
-AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_)
+AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, bool useDefaults_)
 {
     sequencer = sequencer_;
+    useDefaults = useDefaults_;
 }//constructor
 
 AddSequencerEntryCommand::~AddSequencerEntryCommand()
@@ -179,7 +180,7 @@ AddSequencerEntryCommand::~AddSequencerEntryCommand()
 void AddSequencerEntryCommand::doAction()
 {
     if (entry == NULL) {
-        entry = sequencer->addEntry(-1);
+        entry = sequencer->addEntry(-1, useDefaults);
     } else {
         sequencer->addEntry(entry, -1);
     }//if

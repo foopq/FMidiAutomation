@@ -31,12 +31,21 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     int duration; //in ticks, or unused if instanceOf isn't NULL
     //boost::shared_ptr<SequencerEntryCurce> curve;
 
+    //UI properties
+    double valuesPerPixel;
+    double offsetY;
+
 public:    
     SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
 
     void moveBlock(int startTick);
     void setDuration(int duration);
     void setTitle(const Glib::ustring &title);
+
+    double getValuesPerPixel();
+    double getOffsetY();
+    void setValuesPerPixel(double valuesPerPixel);
+    void setOffsetY(double offsetY);
 
     int getStartTick() const;
     int getDuration() const;
@@ -99,6 +108,7 @@ public:
     SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
     ~SequencerEntry();
 
+    const boost::shared_ptr<SequencerEntryImpl> getImpl();
     boost::shared_ptr<SequencerEntryImpl> getImplClone();
     void setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl);
 
@@ -143,7 +153,7 @@ class Sequencer
 public:
     Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
 
-    boost::shared_ptr<SequencerEntry> addEntry(int index);
+    boost::shared_ptr<SequencerEntry> addEntry(int index, bool useDefaults);
     void addEntry(boost::shared_ptr<SequencerEntry> entry, int index);
     void deleteEntry(boost::shared_ptr<SequencerEntry> entry);
 

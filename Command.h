@@ -128,8 +128,9 @@ struct AddSequencerEntryCommand : public Command
 {
     boost::shared_ptr<Sequencer> sequencer;
     boost::shared_ptr<SequencerEntry> entry;
+    bool useDefaults;
 
-    AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer);
+    AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer, bool useDefaults);
     ~AddSequencerEntryCommand();
 
     void doAction();

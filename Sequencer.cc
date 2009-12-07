@@ -124,8 +124,31 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
     instanceOf = instanceOf_;
     duration = 200;
 
-    owningEntry = owningEntry_;;
+    owningEntry = owningEntry_;
+
+    valuesPerPixel = std::numeric_limits<double>::max();
+    offsetY = 0;
 }//constructor
+
+double SequencerEntryBlock::getValuesPerPixel()
+{
+    return valuesPerPixel;
+}//getValuesPerPixel
+
+double SequencerEntryBlock::getOffsetY()
+{
+    return offsetY;
+}//getOffsetY
+
+void SequencerEntryBlock::setValuesPerPixel(double valuesPerPixel_)
+{
+    valuesPerPixel = valuesPerPixel_;
+}//setValuesPerPixel
+
+void SequencerEntryBlock::setOffsetY(double offsetY_)
+{
+    offsetY = offsetY_;
+}//setOffsetY
 
 void SequencerEntryBlock::moveBlock(int startTick_)
 {
@@ -292,6 +315,11 @@ boost::shared_ptr<SequencerEntryImpl> SequencerEntry::getImplClone()
 {
     return impl->clone();
 }//getImplClone
+
+const boost::shared_ptr<SequencerEntryImpl> SequencerEntry::getImpl()
+{
+    return impl;
+}//getImpl
 
 void SequencerEntry::setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl_)
 {
@@ -668,11 +696,13 @@ void Sequencer::addEntry(boost::shared_ptr<SequencerEntry> entry, int index)
     notifyOnScroll(-1);
 }//addEntry
 
-boost::shared_ptr<SequencerEntry> Sequencer::addEntry(int index)
+boost::shared_ptr<SequencerEntry> Sequencer::addEntry(int index, bool useDefaults)
 {
     boost::shared_ptr<SequencerEntry> newEntry(new SequencerEntry(entryGlade, this, entries.size()+1));
 
-    editSequencerEntryProperties(newEntry, false);
+    if (false == useDefaults) {
+        editSequencerEntryProperties(newEntry, false);
+    }//if
 
     addEntry(newEntry, index);
     return newEntry;
@@ -742,6 +772,11 @@ boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
 boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
 {
 //    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
+
+    if (x < 0) {
+        selectedEntryBlock = (*entries.begin()).first->getEntryBlock(0);
+        return selectedEntryBlock;
+    }//if
 
     BOOST_FOREACH (SequencerEntryBlockSelectionInfo selectionInfo, selectionInfos) {
 //        std::cout << "drawnArea: " << selectionInfo.drawnArea.get_x() << " - " << selectionInfo.drawnArea.get_y() << " - " << selectionInfo.drawnArea.get_width() << " - " << selectionInfo.drawnArea.get_height() << std::endl;

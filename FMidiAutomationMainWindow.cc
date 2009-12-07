@@ -38,25 +38,32 @@ Glib::ustring readEntryGlade()
     return retString;
 }//readEntryGlade
 
+void handleGraphValueScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
+{
+    gdouble offsetY = event->y - mousePressDownY;
+
+    graphState.offsetY = graphState.baseOffsetY + offsetY;
+}//handleGraphValueScroll
+
 void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
 {
     gdouble offsetX = -(event->x - mousePressDownX);
 //    gdouble offsetY = -(event->y - mousePressDownY);
 
-    if ((offsetX < 0) && (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) && (graphState.zeroithTickPixel >= (drawingAreaWidth/2))) {
+    if ((offsetX < 0) && (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) && (graphState.zeroithTickPixel >= (drawingAreaWidth/2))) {       
         return;
     }//if
 
-    gdouble curOffset = graphState.offset;
-    graphState.offset = graphState.baseOffset + offsetX;
+    gdouble curOffset = graphState.offsetX;
+    graphState.offsetX = graphState.baseOffsetX + offsetX;
 
-    int tickCountStart = 0 * graphState.ticksPerPixel + graphState.offset * graphState.ticksPerPixel;
-    int tickCountEnd = drawingAreaWidth * graphState.ticksPerPixel + graphState.offset * graphState.ticksPerPixel;
+    int tickCountStart = 0 * graphState.ticksPerPixel + graphState.offsetX * graphState.ticksPerPixel;
+    int tickCountEnd = drawingAreaWidth * graphState.ticksPerPixel + graphState.offsetX * graphState.ticksPerPixel;
 
     if ((tickCountStart < 0) && (tickCountEnd > 0)) {
-        int tickCountMiddle = (drawingAreaWidth / 2) * graphState.ticksPerPixel + graphState.offset * graphState.ticksPerPixel;
+        int tickCountMiddle = (drawingAreaWidth / 2) * graphState.ticksPerPixel + graphState.offsetX * graphState.ticksPerPixel;
         if (tickCountMiddle < 0) {
-            graphState.offset = curOffset;
+            graphState.offsetX = curOffset;
         }//if
     }//if
 }//handleGraphTimeScroll
@@ -467,7 +474,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
     Globals &globals = Globals::Instance();
 
     if (false == globals.tempoGlobals.tempoDataSelected) {
-        boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer));
+        boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, false));
         CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
         trackListWindow->queue_draw();
     }//if
@@ -579,6 +586,12 @@ void FMidiAutomationMainWindow::handleDownButtonPressed()
 
 void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 {
+    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    assert(selectedEntryBlock != NULL);
+
+    selectedEntryBlock->setValuesPerPixel(graphState.valuesPerPixel);
+    selectedEntryBlock->setOffsetY(graphState.offsetY);
+
     graphState.displayMode = DisplayMode::Sequencer;
     graphState.curPointerTick = graphState.lastSequencerPointerTick;
 
@@ -598,6 +611,9 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     if (selectedEntryBlock == NULL) {
         return;
     }//if
+
+    graphState.valuesPerPixel = selectedEntryBlock->getValuesPerPixel();
+    graphState.offsetY = selectedEntryBlock->getOffsetY();
 
     graphState.displayMode = DisplayMode::Curve;
     graphState.lastSequencerPointerTick = selectedEntryBlock->getStartTick(); //graphState.curPointerTick;
@@ -721,6 +737,13 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
+
+    static bool firstTime = true;
+    if (true == firstTime) {
+        firstTime = false;
+        doTestInit();
+        std::cout << "TEST INIT" << std::endl;
+    }//if
 }//handleGraphResize
 
 void FMidiAutomationMainWindow::on_menuCopy()
@@ -947,7 +970,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
             if (event->y > 60) {
                 if (event->type == GDK_BUTTON_PRESS) {
                     graphState.inMotion = true;
-                    graphState.baseOffset = graphState.offset;
+                    graphState.baseOffsetX = graphState.offsetX;
+                    graphState.baseOffsetY = graphState.offsetY;
 
                     if (false == ctrlCurrentlyPressed) {
                         unsetAllCurveFrames();
@@ -1162,14 +1186,26 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
     if (true == ctrlCurrentlyPressed) {
         if (event->y > 60) {
            //We are scrolling the canvas
-            gdouble curOffset = graphState.offset;
+            gdouble curOffsetX = graphState.offsetX;
 
             handleGraphTimeScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth);
 
-            if (graphState.offset != curOffset) {
+            if (graphState.offsetX != curOffsetX) {
                 graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
                 graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
                 graphDrawingArea->queue_draw();
+            }//if
+
+            if (DisplayMode::Curve == graphState.displayMode) {
+                gdouble curOffsetY = graphState.offsetY;
+
+                handleGraphValueScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaHeight);
+
+                if (graphState.offsetY != curOffsetY) {
+                    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+                    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+                    graphDrawingArea->queue_draw();
+                }//if
             }//if
         }//if
     } else {
@@ -1342,5 +1378,41 @@ void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<S
         }//if
     }//if
 }//editSequencerEntryProperties
+
+void FMidiAutomationMainWindow::doTestInit()
+{
+    boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, true));
+    CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
+
+    //sequencer->notifySelected(boost::dynamic_pointer_cast<AddSequencerEntryCommand>(addSequencerEntryCommand)->entry.get());
+    boost::dynamic_pointer_cast<AddSequencerEntryCommand>(addSequencerEntryCommand)->entry->select();
+
+    handleAddSeqencerEntryBlock();
+
+    boost::shared_ptr<SequencerEntryBlock> entryBlock = boost::dynamic_pointer_cast<AddSequencerEntryCommand>(addSequencerEntryCommand)->entry->getEntryBlock(0);
+    boost::shared_ptr<SequencerEntryBlock> entryBlock2 = sequencer->getSelectedEntryBlock(-1, -1, true);
+
+    assert(entryBlock == entryBlock2);
+    
+    graphState.selectedEntity = SequencerEntrySelection;
+    graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
+    graphState.currentlySelectedEntryBlock = entryBlock;
+
+    graphState.displayMode = DisplayMode::Curve;
+    graphState.lastSequencerPointerTick = entryBlock->getStartTick(); //graphState.curPointerTick;
+    graphState.curPointerTick = entryBlock->getStartTick();
+
+    sequencerButton->set_sensitive(true);
+    curveButton->set_sensitive(false);
+
+    graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    updateCursorTick(graphState.curPointerTick, false);
+
+    handleCurveButtonPressed();
+}//doTestInit
+
+
 
 

@@ -887,9 +887,6 @@
       <row>
         <col id="0" translatable="yes">RPN</col>
       </row>
-      <row>
-        <col id="0" translatable="yes">Sysex</col>
-      </row>
     </data>
   </object>
   <object class="GtkDialog" id="entryBoxProperties">

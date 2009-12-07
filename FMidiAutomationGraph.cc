@@ -87,6 +87,8 @@ void scaleImage(boost::shared_ptr<Gtk::Image> image, Glib::RefPtr<Gdk::Pixbuf> p
 
 void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
+    Globals &globals = Globals::Instance();
+
     //Bar backgrounds
     context->reset_clip();
     context->rectangle(0, 60, 60, areaHeight-60);
@@ -94,6 +96,51 @@ void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, 
 
     context->set_source_rgba(0.1, 0.1, 0.1, 0.8);
     context->paint();
+
+    //Value ticks
+    context->reset_clip();
+    context->set_source_rgba(0.6, 0.6, 0.6, 0.7);
+    context->set_line_width(1.0);
+    for (std::vector<std::pair<unsigned int, LineType> >::const_iterator valueLineIter = graphState.horizontalLines.begin(); valueLineIter != graphState.horizontalLines.end(); ++valueLineIter) {
+        context->move_to(40, valueLineIter->first + 60);
+        context->line_to(60, valueLineIter->first + 60);
+    }//for
+
+    context->stroke();
+
+    context->reset_clip();
+    
+    //Second text
+    context->set_source_rgba(1.0, 1.0, 1.0, 0.7);
+    //context->select_font_face(globals.topBarFont.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    //context->set_font_size(globals.topBarFontSize);
+
+    std::string fontStr;
+    {
+        std::ostringstream tmpSS;
+        tmpSS << globals.topBarFont << " bold " << globals.topBarFontSize;
+        fontStr = tmpSS.str();
+    }
+
+    for(std::vector<std::pair<unsigned int, std::string> >::const_iterator textIter = graphState.valueLineText.begin(); textIter != graphState.valueLineText.end(); ++textIter) {
+        //context->move_to(textIter->first, 30 - ((30 - globals.topBarFontSize) / 2 + globals.topBarFontSize));
+
+////        get actual dimensions of text and place appropriately..
+
+        context->move_to(0, textIter->first + 60- (globals.topBarFontSize / 1));
+
+        Glib::RefPtr<Pango::Layout> pangoLayout = Pango::Layout::create(context);
+        Pango::FontDescription font_descr(fontStr.c_str());
+
+        pangoLayout->set_font_description(font_descr);
+        pangoLayout->set_text(textIter->second.c_str());
+        pangoLayout->update_from_cairo_context(context);  //gets cairo cursor position
+        pangoLayout->add_to_cairo_context(context);       //adds text to cairos stack of stuff to be drawn
+        context->fill();
+        context->stroke();
+    }//for
+
+    context->stroke();
 }//drawLeftBar
 
 void drawTopBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
@@ -392,7 +439,8 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 
 GraphState::GraphState()
 {
-    offset = 0;
+    offsetX = 0;
+    offsetY = 0;
     barsSubdivisionAmount = 1;
     ticksPerPixel = 2;
     inMotion = false;
@@ -416,16 +464,66 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
     if (displayMode != DisplayMode::Curve) {
         return;
     }//if
+
+    if (std::numeric_limits<double>::max() == valuesPerPixel) {
+        const boost::shared_ptr<SequencerEntryImpl> entryImpl = currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+        int minValue = entryImpl->minValue;
+        int maxValue = entryImpl->maxValue;
+
+        int delta = maxValue - minValue;
+        valuesPerPixel = (double)delta / (double)(areaHeight - 60);
+        valuesPerPixel *= 1.05;
+
+//        std::cout << "min: " << minValue << "   max: " << maxValue << "   delta: " << delta << "   valuesPerPixel: " << valuesPerPixel << std::endl;
+    }//if
+
+    horizontalLines.clear();
+    valueLineText.clear();
+    horizontalPixelValues.clear();
+    horizontalPixelValues.reserve(areaHeight-60);
+
+    unsigned int lastYTick = 0;
+    int lastLineValue = std::numeric_limits<int>::max();
+    for (unsigned int y = 0; y < areaHeight-60; ++y) {
+        double value = y * valuesPerPixel + offsetY * valuesPerPixel;
+        int roundedValue = value + 0.5;
+        
+        horizontalPixelValues[areaHeight-60-y-1] = value;
+
+//        std::cout << "y: " << areaHeight-60-y << ":  " << roundedValue << "    " << areaHeight-60 << std::endl;
+
+        if (((y - lastYTick) > 40) && (roundedValue != lastLineValue)) {
+            lastLineValue = roundedValue;
+            lastYTick = y;
+
+            horizontalLines.push_back(std::make_pair(areaHeight-60-y-1, ValueLine));
+
+            std::ostringstream tmpSS;
+            tmpSS << roundedValue;
+            valueLineText.push_back(std::make_pair(areaHeight-60-y-1, tmpSS.str()));
+        }//if
+    }//for
 }//refreshHorizontalLines
 
 void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
+    //Ugly kluge to handle the case where if we've already reached the half-way zeroith point and keep scrolling over too far, bad things happen
+    static int lastOffsetX = std::numeric_limits<int>::max();
+    if (((areaWidth-2) * ticksPerPixel + offsetX * ticksPerPixel) < 0) {
+        if (lastOffsetX == std::numeric_limits<int>::max()) {
+            lastOffsetX = offsetX;
+        }//if
+
+        offsetX = lastOffsetX;
+        return;
+    } else {
+        lastOffsetX = std::numeric_limits<int>::max();
+    }//if
+
     verticalLines.clear();
     upperLineText.clear();
 
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
-
-//std::cout << "ticksPerPixel: " << ticksPerPixel << " -- tickCountGroupSize: " << tickCountGroupSize << std::endl;
 
     //Determine frame ticks
     bool toggle = true;
@@ -435,7 +533,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     int lastRecordedTickCount = std::numeric_limits<int>::max(); //I don't like using this, but I'm a little nervous about just skipping x ahead when appropriate.. only for case when ticksPerPixel < 0
     for (unsigned int x = 0; x < areaWidth; ++x) {
         if (ticksPerPixel > 1) {
-            int tickCount = x * ticksPerPixel + offset * ticksPerPixel;
+            int tickCount = x * ticksPerPixel + offsetX * ticksPerPixel;
 
             int absTickCountModded = tickCount % tickCountGroupSize;
             if (absTickCountModded < 0) {
@@ -444,6 +542,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 
             verticalPixelTickValues.push_back(tickCount);
 
+////            std::cout << "absTickCountModded: " << absTickCountModded << "  --  tickCount: " << tickCount << "   offsetX: " << offsetX << "   x: " << x << std::endl;
             if (absTickCountModded < ticksPerPixel) { //XXX: <=??
                 tickCount = tickCount - (tickCount % 1000);
 
@@ -456,7 +555,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 verticalLines.push_back(std::make_pair(x, SecondLine));
 
                 if ((0 == tickCount) && (x > 0)) {
-                    zeroithTickPixel = x - 1;
+                    zeroithTickPixel = x - 1;                    
                 }//if
 
                 std::ostringstream tmpSS;
@@ -464,11 +563,11 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 upperLineText.push_back(std::make_pair(x, tmpSS.str()));
             }//if
         } else {
-            float tickCountBase = ((float)(x + offset)) / ((float)(-ticksPerPixel));
+            float tickCountBase = ((float)(x + offsetX)) / ((float)(-ticksPerPixel));
             int tickCount = (int)(fabs(tickCountBase) + 0.5f);
 
             if (1 == ticksPerPixel) {
-                tickCount = (int)(((float)(x + offset)) / ((float)(ticksPerPixel)) + 0.5f);
+                tickCount = (int)(((float)(x + offsetX)) / ((float)(ticksPerPixel)) + 0.5f);
             }//if
 
             verticalPixelTickValues.push_back(tickCount);
@@ -537,13 +636,13 @@ void GraphState::setOffsetCenteredOnTick(int tick, int drawingAreaWidth)
         int halfWindowsToSkip = tick / halfWindowTicks;
         int remaningTicks = tick % halfWindowTicks;
 
-        offset = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / ticksPerPixel) - (drawingAreaWidth / 2);
+        offsetX = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / ticksPerPixel) - (drawingAreaWidth / 2);
     } else {
         //int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
         //int halfWindowTicks = fullWindowTicks / 2;
         int baseOffset = abs(ticksPerPixel) * tick;
 
-        offset = baseOffset - (drawingAreaWidth / 2); // - halfWindowTicks;
+        offsetX = baseOffset - (drawingAreaWidth / 2); // - halfWindowTicks;
     }//if
 }//setOffsetCenteredOnTick
 
