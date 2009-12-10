@@ -109,6 +109,14 @@ void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, 
     context->stroke();
 
     context->reset_clip();
+    context->set_source_rgba(0.3, 0.3, 0.3, 0.3);
+    context->set_line_width(1.0);
+    for (std::vector<std::pair<unsigned int, LineType> >::const_iterator valueLineIter = graphState.horizontalLines.begin(); valueLineIter != graphState.horizontalLines.end(); ++valueLineIter) {
+        context->move_to(61, valueLineIter->first + 60);
+        context->line_to(areaWidth, valueLineIter->first + 60);
+    }//for
+
+    context->reset_clip();
     
     //Second text
     context->set_source_rgba(1.0, 1.0, 1.0, 0.7);
@@ -387,6 +395,56 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         context->paint();
     }//if
 
+    std::vector<int> roundedHorizontalValues;
+    roundedHorizontalValues.reserve(graphState.horizontalPixelValues.size());
+    BOOST_FOREACH (double val, graphState.horizontalPixelValues) {
+        if (val >=0) {
+            roundedHorizontalValues.push_back(val+0.5);
+        } else {
+            roundedHorizontalValues.push_back(val-0.5);
+        }//if
+    }//foreach
+
+    if (graphState.displayMode == DisplayMode::Curve) {
+        const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+        int minValue = entryImpl->minValue;
+        int maxValue = entryImpl->maxValue;
+
+        //std::vector<int>::reverse_iterator maxIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), maxValue);
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), maxValue);
+
+        if (maxIterPair.first != roundedHorizontalValues.rend()) {
+            int rangeDist = std::distance(maxIterPair.first, maxIterPair.second) / 2.0;
+            std::vector<int>::reverse_iterator maxIter = maxIterPair.second;
+////            std::advance(maxIter, rangeDist);
+
+            unsigned int dist = (drawingAreaHeight-60) - std::distance(roundedHorizontalValues.rbegin(), maxIter);
+
+            context->reset_clip();
+            context->rectangle(60, 60, drawingAreaWidth-60, dist+1);
+            context->clip();
+
+            context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
+            context->paint();
+        }//if
+
+        //std::vector<int>::reverse_iterator minIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), minValue);
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> minIterPair = std::equal_range(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), minValue);
+        if (minIterPair.first != roundedHorizontalValues.rend()) {
+            int rangeDist = std::distance(minIterPair.first, minIterPair.second) / 2.0;
+            std::vector<int>::reverse_iterator minIter = minIterPair.first;
+
+            unsigned int dist = std::distance(roundedHorizontalValues.rbegin(), minIter);
+
+            context->reset_clip();
+            context->rectangle(60, drawingAreaHeight-dist, drawingAreaWidth-60, dist);
+            context->clip();
+
+            context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
+            context->paint();
+        }//if
+    }//if
+
     drawTopBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
     drawTempoBar(context, graphState, datas, drawingAreaWidth, drawingAreaHeight, graphState.verticalPixelTickValues, graphState.ticksPerPixel);
     drawLeftMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
@@ -480,19 +538,34 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
     horizontalLines.clear();
     valueLineText.clear();
     horizontalPixelValues.clear();
-    horizontalPixelValues.reserve(areaHeight-60);
+    horizontalPixelValues.resize(areaHeight-60);
+
+    double minPixelDist = 40;
+    double firstValue = 0 * valuesPerPixel + offsetY * valuesPerPixel;
+    double lastValue = (areaHeight-60) * valuesPerPixel + offsetY * valuesPerPixel;
+    minPixelDist = std::max(minPixelDist,  (double)(areaHeight-60) / fabs(firstValue-lastValue));
+
+//    unsigned int lastYTick = (-minPixelDist) + fmod(offsetY, minPixelDist);
+
+//    std::cout << "lastYTick: " << lastYTick << "   -  " << offsetY << std::endl;
 
     unsigned int lastYTick = 0;
+
     int lastLineValue = std::numeric_limits<int>::max();
     for (unsigned int y = 0; y < areaHeight-60; ++y) {
         double value = y * valuesPerPixel + offsetY * valuesPerPixel;
-        int roundedValue = value + 0.5;
+        int roundedValue = 0;
+        if (value > 0) {
+            roundedValue = value + 0.5;
+        } else {
+            roundedValue = value - 0.5;
+        }//if
         
         horizontalPixelValues[areaHeight-60-y-1] = value;
 
 //        std::cout << "y: " << areaHeight-60-y << ":  " << roundedValue << "    " << areaHeight-60 << std::endl;
 
-        if (((y - lastYTick) > 40) && (roundedValue != lastLineValue)) {
+        if (((y - lastYTick) > minPixelDist) && (roundedValue != lastLineValue)) {
             lastLineValue = roundedValue;
             lastYTick = y;
 
@@ -503,6 +576,8 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
             valueLineText.push_back(std::make_pair(areaHeight-60-y-1, tmpSS.str()));
         }//if
     }//for
+
+//    std::cout << "minPixelDist: " << minPixelDist << std::endl;
 }//refreshHorizontalLines
 
 void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight)

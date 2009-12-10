@@ -68,6 +68,39 @@ void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdoubl
     }//if
 }//handleGraphTimeScroll
 
+bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, int drawingAreaHeight)
+{
+    bool changed = true;
+    double curValuesPerPixel = graphState.valuesPerPixel;
+
+    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+    int minValue = entryImpl->minValue;
+    int maxValue = entryImpl->maxValue;
+
+    int delta = maxValue - minValue;
+    double origValuesPerPixel = (double)delta / (double)(drawingAreaHeight - 60);
+    origValuesPerPixel *= 1.05;
+
+    if (direction == GDK_SCROLL_UP) { //zoom in
+        if ((graphState.horizontalPixelValues[0] - graphState.horizontalPixelValues[drawingAreaHeight-60-1]) < 10) {
+            changed = false;
+        } else {
+            graphState.valuesPerPixel *= 0.8;
+        }//if
+    } else {
+        if ((graphState.horizontalPixelValues[0] - graphState.horizontalPixelValues[drawingAreaHeight-60-1]) > delta * 2) {
+            changed = false;
+        } else {
+            graphState.valuesPerPixel *= 1.2;
+        }//if
+    }//if
+
+//std::cout << "first: " << graphState.horizontalPixelValues[0] << std::endl;
+//std::cout << changed << ": " << graphState.valuesPerPixel << std::endl;
+
+    return changed;
+}//handleGraphValueZoom
+
 void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState, int drawingAreaWidth)
 {
     //This is a kinda brain-dead way of doing things..
@@ -1273,6 +1306,16 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
             graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
             graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
             graphDrawingArea->queue_draw();
+        }//if
+    } else {
+        if (DisplayMode::Curve == graphState.displayMode) {
+            bool ret = handleGraphValueZoom(event->direction, graphState, drawingAreaHeight);
+
+            if (true == ret) {
+                graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+                graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+                graphDrawingArea->queue_draw();
+            }//if
         }//if
     }//if
 
