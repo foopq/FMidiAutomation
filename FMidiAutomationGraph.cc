@@ -703,6 +703,14 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     
 }//refreshVerticalLines
 
+void GraphState::setOffsetCenteredOnValue(double value, int drawingAreaHeight)
+{
+    value = std::max(value, 0.0);
+
+    drawingAreaHeight -= 60;
+    offsetY = value / valuesPerPixel - drawingAreaHeight / 2.0; //close enough..
+}//setOffsetCenteredOnValue
+
 void GraphState::setOffsetCenteredOnTick(int tick, int drawingAreaWidth)
 {
     if (ticksPerPixel > 1) {

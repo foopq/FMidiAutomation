@@ -71,7 +71,7 @@ void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdoubl
 bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, int drawingAreaHeight)
 {
     bool changed = true;
-    double curValuesPerPixel = graphState.valuesPerPixel;
+    //double curValuesPerPixel = graphState.valuesPerPixel;
 
     const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
     int minValue = entryImpl->minValue;
@@ -95,8 +95,10 @@ bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, 
         }//if
     }//if
 
-//std::cout << "first: " << graphState.horizontalPixelValues[0] << std::endl;
-//std::cout << changed << ": " << graphState.valuesPerPixel << std::endl;
+    if (true == changed) {
+        double medianValue = graphState.horizontalPixelValues[graphState.horizontalPixelValues.size() / 2];
+        graphState.setOffsetCenteredOnValue(medianValue, drawingAreaHeight);
+    }//if
 
     return changed;
 }//handleGraphValueZoom

@@ -114,6 +114,7 @@ struct GraphState
     void refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight);
     void refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight);
     void setOffsetCenteredOnTick(int tick, int drawingAreaWidth);
+    void setOffsetCenteredOnValue(double value, int drawingAreaHeight);
 };//GraphState
 
 class FMidiAutomationMainWindow
