@@ -38,11 +38,23 @@ Glib::ustring readEntryGlade()
     return retString;
 }//readEntryGlade
 
-void handleGraphValueScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
+bool handleGraphValueScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaHeight)
 {
     gdouble offsetY = event->y - mousePressDownY;
 
+    double newOffset = graphState.baseOffsetY + offsetY;
+    double medianValue = (drawingAreaHeight-60) / 2.0 * graphState.valuesPerPixel + newOffset * graphState.valuesPerPixel;
+
+    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+    double minValue = entryImpl->minValue;
+    double maxValue = entryImpl->maxValue;
+
+    if ((medianValue < minValue) || (medianValue > maxValue)) {
+        return false;
+    }//if
+
     graphState.offsetY = graphState.baseOffsetY + offsetY;
+    return true;
 }//handleGraphValueScroll
 
 void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
@@ -1232,11 +1244,9 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
             }//if
 
             if (DisplayMode::Curve == graphState.displayMode) {
-                gdouble curOffsetY = graphState.offsetY;
+                bool didScroll = handleGraphValueScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaHeight);
 
-                handleGraphValueScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaHeight);
-
-                if (graphState.offsetY != curOffsetY) {
+                if (true == didScroll) {
                     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
                     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
                     graphDrawingArea->queue_draw();
