@@ -202,7 +202,6 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     graphDrawingArea->signal_motion_notify_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::mouseMoved) );
     graphDrawingArea->signal_scroll_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleScroll) );
 
-
     uiXml->get_widget("menu_open", menuOpen);
     uiXml->get_widget("menu_save", menuSave);
     uiXml->get_widget("menu_saveas", menuSaveAs);
@@ -249,8 +248,6 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     leftMouseCurrentlyPressed = false;
     mousePressDownX = 0;
     mousePressDownY = 0;
-
-    on_menuNew();
 
     uiXml->get_widget("leftTickEntryBox", leftTickEntryBox);
     uiXml->get_widget("rightTickEntryBox", rightTickEntryBox);
@@ -304,6 +301,11 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     sequencerButton->set_sensitive(false);
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
+    menuNew->add_accelerator("activate", accelGroup, GDK_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuOpen->add_accelerator("activate", accelGroup, GDK_O, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuSave->add_accelerator("activate", accelGroup, GDK_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuQuit->add_accelerator("activate", accelGroup, GDK_Q, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+
     menuUndo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     menuRedo->add_accelerator("activate", accelGroup, GDK_Z, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
 
@@ -323,6 +325,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handlePausePressed) );
 
     datas->entryGlade = readEntryGlade();
+
     Gtk::VBox *entryVBox;
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
@@ -332,6 +335,10 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
     entryScrollWindow->get_vscrollbar()->signal_change_value().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEntryWindowScroll) );
 
+    boost::function<void (void)> titleStarFunc = boost::lambda::bind(boost::mem_fn(&FMidiAutomationMainWindow::setTitleChanged), this);
+    CommandManager::Instance().setTitleStar(titleStarFunc);
+
+    setTitle("Unknown");
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -339,6 +346,21 @@ FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
     //Nothing
 }//destructor
     
+void FMidiAutomationMainWindow::setTitle(Glib::ustring currentFilename)
+{
+    mainWindow->set_title("FMidiAutomation - " + currentFilename);
+}//setTitle
+
+void FMidiAutomationMainWindow::setTitleChanged()
+{
+    Glib::ustring curTitle = mainWindow->get_title();
+    if (curTitle[curTitle.length()-1] != '*') {
+        curTitle = curTitle.substr(sizeof("FMidiAutomation - ")-1);
+        curTitle = curTitle + " *";
+        setTitle(curTitle);
+    }//if
+}//setTitleChanged
+
 void FMidiAutomationMainWindow::setThemeColours()
 {
 return;
@@ -830,8 +852,21 @@ void FMidiAutomationMainWindow::on_menuQuit()
 
 void FMidiAutomationMainWindow::on_menuNew()
 {
+    Globals &globals = Globals::Instance();
+
     datas.reset(new FMidiAutomationData);
     datas->addTempoChange(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
+    datas->entryGlade = readEntryGlade();
+
+    currentFilename = "";
+    setTitle("Unknown");
+
+    graphState.doInit();
+
+    Gtk::VBox *entryVBox;
+    uiXml->get_widget("entryVBox", entryVBox);
+    sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
+    globals.sequencer = sequencer;
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()
@@ -851,6 +886,10 @@ void FMidiAutomationMainWindow::on_menuSave()
         outputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationVersion);
 
         outputArchive & BOOST_SERIALIZATION_NVP(datas);
+        outputArchive & BOOST_SERIALIZATION_NVP(graphState);
+        sequencer->doSave(outputArchive);
+
+        setTitle(currentFilename);
     } else {
         on_menuSaveAs();
     }//if
@@ -866,7 +905,7 @@ void FMidiAutomationMainWindow::on_menuSaveAs()
     dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
 
     Gtk::FileFilter filter_normal;
-    filter_normal.set_name("Automation files");
+    filter_normal.set_name("Automation files (*.fma)");
     filter_normal.add_pattern("*.fma");
     dialog.add_filter(filter_normal);
 
@@ -880,6 +919,9 @@ void FMidiAutomationMainWindow::on_menuSaveAs()
         case(Gtk::RESPONSE_OK):
         {
             currentFilename = dialog.get_filename();
+            if (currentFilename.find(".fma") == std::string::npos) {
+                currentFilename.append(".fma");
+            }//if
             on_menuSave();
             break;
         }
@@ -897,6 +939,11 @@ void FMidiAutomationMainWindow::on_menuOpen()
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
 
+    Gtk::FileFilter filter_normal;
+    filter_normal.set_name("Automation files (*.fma)");
+    filter_normal.add_pattern("*.fma");
+    dialog.add_filter(filter_normal);
+
     Gtk::FileFilter filter_any;
     filter_any.set_name("Any files");
     filter_any.add_pattern("*");
@@ -906,6 +953,8 @@ void FMidiAutomationMainWindow::on_menuOpen()
     switch(result) {
         case(Gtk::RESPONSE_OK):
         {
+            Globals &globals = Globals::Instance();
+
             currentFilename = dialog.get_filename();
             std::string filename = Glib::locale_from_utf8(currentFilename);
             std::ifstream inputStream(filename.c_str());
@@ -920,6 +969,20 @@ void FMidiAutomationMainWindow::on_menuOpen()
             inputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationVersion);
 
             inputArchive & BOOST_SERIALIZATION_NVP(datas);
+            inputArchive & BOOST_SERIALIZATION_NVP(graphState);
+            sequencer->doLoad(inputArchive);
+
+            graphState.displayMode = DisplayMode::Sequencer;
+            graphState.selectedEntity = Nobody;
+
+            datas->entryGlade = readEntryGlade();
+
+            setTitle(currentFilename);
+
+            Gtk::VBox *entryVBox;
+            uiXml->get_widget("entryVBox", entryVBox);
+            sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
+            globals.sequencer = sequencer;
             break;
         }
         case(Gtk::RESPONSE_CANCEL):
@@ -928,6 +991,9 @@ void FMidiAutomationMainWindow::on_menuOpen()
             break;
     }//switch 
 
+    graphState.currentlySelectedEntryBlock.reset();
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
 }//on_menuOpen
 
@@ -1436,6 +1502,8 @@ void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<S
 
 void FMidiAutomationMainWindow::doTestInit()
 {
+    return; 
+
     boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, true));
     CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
 

@@ -110,11 +110,15 @@ struct GraphState
 
     GraphState();
     ~GraphState();
+    void doInit();
 
     void refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight);
     void refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight);
     void setOffsetCenteredOnTick(int tick, int drawingAreaWidth);
     void setOffsetCenteredOnValue(double value, int drawingAreaHeight);
+
+    template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    friend class boost::serialization::access;
 };//GraphState
 
 class FMidiAutomationMainWindow
@@ -167,8 +171,8 @@ class FMidiAutomationMainWindow
     boost::shared_ptr<Gtk::Image> origBackingTexture;
 
     std::vector <Gtk::Window *> automationTrackWindows;
+    
     boost::shared_ptr<FMidiAutomationData> datas;
-
     GraphState graphState;
     boost::shared_ptr<Sequencer> sequencer;
     
@@ -227,6 +231,9 @@ class FMidiAutomationMainWindow
     void setThemeColours();
 
     bool on_idle();
+
+    void setTitle(Glib::ustring currentFilename);
+    void setTitleChanged();
        
 public:    
     FMidiAutomationMainWindow();

@@ -24,9 +24,12 @@ class CommandManager
     std::stack<boost::shared_ptr<Command> > redoStack;
     Gtk::ImageMenuItem *menuUndo;
     Gtk::ImageMenuItem *menuRedo;
+    boost::function<void (void)> titleStarFunc;
 
 public:
     static CommandManager &Instance();
+
+    void setTitleStar(boost::function<void (void)> titleStarFunc);
 
     void setMenuItems(Gtk::ImageMenuItem *menuUndo, Gtk::ImageMenuItem *menuRedo);
 
@@ -34,7 +37,6 @@ public:
     void doUndo();
     void setNewCommand(boost::shared_ptr<Command> command);
 };//CommandManager
-
 
 struct ChangeSequencerEntryPropertiesCommand : public Command
 {

@@ -497,6 +497,11 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 
 GraphState::GraphState()
 {
+    doInit();
+}//constructor
+
+void GraphState::doInit()
+{
     offsetX = 0;
     offsetY = 0;
     barsSubdivisionAmount = 1;
@@ -510,7 +515,9 @@ GraphState::GraphState()
     rightMarkerTick = -1;
     leftMarkerTickXPixel = -1;
     rightMarkerTickXPixel = -1;
-}//constructor
+    displayMode = DisplayMode::Sequencer;
+    selectedEntity = Nobody;
+}//doInit
 
 GraphState::~GraphState()
 {

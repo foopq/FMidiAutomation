@@ -5,6 +5,10 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/weak_ptr.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
 
 static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
 static const unsigned int smallEntryWindowHeight = 46 + 4; //size plus padding
@@ -209,6 +213,43 @@ boost::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
     return owningEntry.lock();
 }//getOwningEntry
 
+template<class Archive>
+void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(owningEntry);
+    ar & BOOST_SERIALIZATION_NVP(startTick);
+    ar & BOOST_SERIALIZATION_NVP(instanceOf);
+    ar & BOOST_SERIALIZATION_NVP(duration);
+    ar & BOOST_SERIALIZATION_NVP(valuesPerPixel);
+    ar & BOOST_SERIALIZATION_NVP(offsetY);
+
+    std::string titleStr = Glib::locale_from_utf8(title);
+    ar & BOOST_SERIALIZATION_NVP(titleStr);
+    title = titleStr;
+}//serialize
+
+template<class Archive>
+void SequencerEntryBlockSelectionInfo::serialize(Archive &ar, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(entry);
+    ar & BOOST_SERIALIZATION_NVP(entryBlock);
+
+    int x = drawnArea.get_x();
+    int y = drawnArea.get_y();
+    int width = drawnArea.get_width();
+    int height = drawnArea.get_height();
+
+    ar & BOOST_SERIALIZATION_NVP(x);
+    ar & BOOST_SERIALIZATION_NVP(y);
+    ar & BOOST_SERIALIZATION_NVP(width);
+    ar & BOOST_SERIALIZATION_NVP(height);
+
+    drawnArea.set_x(x);
+    drawnArea.set_y(y);
+    drawnArea.set_width(width);
+    drawnArea.set_height(height);
+}//serialize
+
 SequencerEntryImpl::SequencerEntryImpl()
 {
     controllerType = CC;
@@ -256,8 +297,13 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
 {
     impl.reset(new SequencerEntryImpl);
 
-    sequencer = sequencer_;
+    doInit(entryGlade, sequencer_, entryNum);
+}//constructor
 
+void SequencerEntry::doInit(const Glib::ustring &entryGlade, Sequencer *sequencer_, unsigned int entryNum)
+{
+    sequencer = sequencer_;
+    
     uiXml = Gtk::Builder::create_from_string(entryGlade);
     uiXml->get_widget("entryViewport", mainWindow);
     uiXml->get_widget("smallEntryViewport", smallWindow);
@@ -304,7 +350,7 @@ SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, Sequencer *seque
     deselect();
 
     setThemeColours();
-}//constructor
+}//doInit
 
 SequencerEntry::~SequencerEntry()
 {
@@ -590,6 +636,32 @@ void SequencerEntry::removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> ent
     }//if
 }//removeEntryBlock
 
+template<class Archive>
+void SequencerEntry::serialize(Archive &ar, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(impl);
+    ar & BOOST_SERIALIZATION_NVP(isFullBox);
+    ar & BOOST_SERIALIZATION_NVP(curIndex);
+    ar & BOOST_SERIALIZATION_NVP(entryBlocks);
+}//serialize
+
+template<class Archive>
+void SequencerEntryImpl::serialize(Archive &ar, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(controllerType);
+    ar & BOOST_SERIALIZATION_NVP(msb);
+    ar & BOOST_SERIALIZATION_NVP(lsb);
+    ar & BOOST_SERIALIZATION_NVP(channel);
+    ar & BOOST_SERIALIZATION_NVP(minValue);
+    ar & BOOST_SERIALIZATION_NVP(maxValue);
+    ar & BOOST_SERIALIZATION_NVP(sevenBit);
+    ar & BOOST_SERIALIZATION_NVP(useBothMSBandLSB);
+
+    std::string titleStr = Glib::locale_from_utf8(title);
+    ar & BOOST_SERIALIZATION_NVP(titleStr);
+    title = titleStr;
+}//serialize
+
 boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
 {
     if (entryBlocks.find(tick) != entryBlocks.end()) {
@@ -601,6 +673,11 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
 
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
+    doInit(entryGlade_, parentWidget_, mainWindow_);
+}//constructor
+
+void Sequencer::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
+{
     mainWindow = mainWindow_;
     entryGlade = entryGlade_;
     parentWidget = parentWidget_;
@@ -610,8 +687,13 @@ Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_,
 
     selectedEntry = NULL;
 
+    parentWidget->children().clear();
     parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
-}//constructor
+
+    adjustFillerHeight();
+    adjustEntryIndices();
+    notifyOnScroll(-1);
+}//doInit
 
 void Sequencer::adjustFillerHeight()
 {
@@ -804,6 +886,41 @@ void Sequencer::editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> e
     mainWindow->editSequencerEntryProperties(entry, createUpdatePoint);
 }//editSequencerEntryProperties
 
+void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
+{
+    inputArchive & BOOST_SERIALIZATION_NVP(entries);
+    inputArchive & BOOST_SERIALIZATION_NVP(selectedEntryBlock);
+    inputArchive & BOOST_SERIALIZATION_NVP(selectionInfos);
+
+    parentWidget->children().clear();
+
+    Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().end();
+    int entryNum = 0;
+
+    typedef std::pair<boost::shared_ptr<SequencerEntry>, int > SequencerEntryMapType;
+    BOOST_FOREACH (SequencerEntryMapType entryPair, entries) {
+        Gtk::Widget *entryHookWidget = entryPair.first->getHookWidget();
+        parentWidget->children().insert(entryIter, Gtk::Box_Helpers::Element(*entryHookWidget));
+        entryPair.first->doInit(entryGlade, this, entryNum);
+
+        entryIter = parentWidget->children().end();
+        entryNum++;
+    }//foreach
+
+    adjustFillerHeight();
+    adjustEntryIndices();
+    notifyOnScroll(-1);
+
+    selectedEntry = NULL;
+}//doLoad
+
+void Sequencer::doSave(boost::archive::xml_oarchive &outputArchive)
+{
+    outputArchive & BOOST_SERIALIZATION_NVP(entries);
+    outputArchive & BOOST_SERIALIZATION_NVP(selectedEntryBlock);
+    outputArchive & BOOST_SERIALIZATION_NVP(selectionInfos);
+}//doSave
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Rendering code
 
@@ -971,4 +1088,16 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         selectionInfos.push_back(newSelectionInfo);
     }//for
 }//drawEntryBoxes
+
+
+//template void SequencerEntry::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
+//template void SequencerEntryImpl::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
+//template void SequencerEntryBlock::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
+//template void SequencerEntryBlockSelectionInfo::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
+
+//template void SequencerEntry::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
+//template void SequencerEntryImpl::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
+//template void SequencerEntryBlock::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
+//template void SequencerEntryBlockSelectionInfo::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
+
 

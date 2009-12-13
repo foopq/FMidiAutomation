@@ -8,6 +8,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/access.hpp>
 
 class Sequencer;
 struct GraphState;
@@ -20,6 +24,9 @@ struct SequencerEntryBlockSelectionInfo
     SequencerEntry *entry;
     boost::shared_ptr<SequencerEntryBlock> entryBlock;
     Gdk::Rectangle drawnArea;
+
+    template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    friend class boost::serialization::access;
 };//SequencerEntryBlockSelectionInfo
 
 class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntryBlock>
@@ -34,6 +41,8 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     //UI properties
     double valuesPerPixel;
     double offsetY;
+
+    SequencerEntryBlock() {} //For serialization
 
 public:    
     SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
@@ -53,6 +62,9 @@ public:
     boost::shared_ptr<SequencerEntryBlock> getInstanceOf() const;
 
     boost::shared_ptr<SequencerEntry> getOwningEntry() const;
+
+    template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    friend class boost::serialization::access;
 };//SequencerEntryBlock
 
 struct SequencerEntryImpl
@@ -80,6 +92,9 @@ struct SequencerEntryImpl
     int maxValue;
     bool sevenBit;
     bool useBothMSBandLSB; //implied true if sevenBit is true
+
+    template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    friend class boost::serialization::access;
 };//SequencerEntryImpl
 
 class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
@@ -104,8 +119,11 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     bool mouseButtonPressed(GdkEventButton *event);
     bool handleEntryFocus(GdkEventFocus*);
 
+    SequencerEntry() {} //For serialization
+
 public:
     SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
+    void doInit(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
     ~SequencerEntry();
 
     const boost::shared_ptr<SequencerEntryImpl> getImpl();
@@ -133,6 +151,8 @@ public:
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
                             boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);
 
+    template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    friend class boost::serialization::access;
 };//SequencerEntry
 
 class Sequencer
@@ -150,8 +170,11 @@ class Sequencer
     void adjustFillerHeight();
     void adjustEntryIndices();
 
+    Sequencer() {} //For serialization
+
 public:
     Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
+    void doInit(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
 
     boost::shared_ptr<SequencerEntry> addEntry(int index, bool useDefaults);
     void addEntry(boost::shared_ptr<SequencerEntry> entry, int index);
@@ -173,6 +196,9 @@ public:
     void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 
     void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues);
+
+    void doLoad(boost::archive::xml_iarchive &inputArchive);
+    void doSave(boost::archive::xml_oarchive &outputArchive);
 };//Sequencer
 
 #endif

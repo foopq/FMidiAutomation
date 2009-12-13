@@ -12,6 +12,11 @@ CommandManager &CommandManager::Instance()
     return manager;
 }//Instance
 
+void CommandManager::setTitleStar(boost::function<void (void)> titleStarFunc_)
+{
+    titleStarFunc = titleStarFunc_;
+}//setTitleStar
+
 void CommandManager::setMenuItems(Gtk::ImageMenuItem *menuUndo_, Gtk::ImageMenuItem *menuRedo_)
 {
     menuUndo = menuUndo_;
@@ -71,6 +76,8 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command)
     menuUndo->set_sensitive(true);
 
     command->doAction();
+
+    titleStarFunc();
 }//setNewcommand
 
 //UpdateTempoChangeCommand
