@@ -18,6 +18,7 @@ class Sequencer;
 class SequencerEntryBlock;
 class SequencerEntry;
 struct GraphState;
+struct CurveEditor;
 
 struct Globals
 {
@@ -59,6 +60,9 @@ enum SelectedEntity
     RightTickBar,
     TempoChange,
     SequencerEntrySelection,
+    KeyValue,
+    InTangent,
+    OutTangent,
     Nobody
 };//SelectedEntity
 
@@ -125,6 +129,7 @@ class FMidiAutomationMainWindow
 {
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Window *mainWindow;
+    boost::shared_ptr<CurveEditor> curveEditor;
     Gtk::ScrolledWindow *trackListWindow;
     Gtk::DrawingArea *graphDrawingArea;
     Gtk::ImageMenuItem *menuOpen;
@@ -149,6 +154,10 @@ class FMidiAutomationMainWindow
     Gtk::Entry *transportTimeEntry;
     Gtk::ToolButton *sequencerButton;
     Gtk::ToolButton *curveButton;
+    Gtk::Frame *selectedKeyframeFrame;
+    Gtk::Entry *positionTickEntry;
+    Gtk::Entry *positionValueEntry;
+    Gtk::Label *positionValueLabel;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
@@ -234,17 +243,23 @@ class FMidiAutomationMainWindow
 
     void setTitle(Glib::ustring currentFilename);
     void setTitleChanged();
+
+    friend struct FMidiAutomationCurveEditor;
        
 public:    
     FMidiAutomationMainWindow();
     ~FMidiAutomationMainWindow();
     
     Gtk::Window *MainWindow();
+    GraphState &getGraphState();
 
     void doTestInit();
 
     void unsetAllCurveFrames();
     void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 };//FMidiAutomationMainWindow
+
+
+BOOST_CLASS_VERSION(GraphState, 1);
 
 #endif

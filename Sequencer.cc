@@ -1,5 +1,6 @@
 #include "Sequencer.h"
 #include "FMidiAutomationMainWindow.h"
+#include "Animation.h"
 #include <iostream>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -132,6 +133,9 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
 
     valuesPerPixel = std::numeric_limits<double>::max();
     offsetY = 0;
+
+    curve.reset(new Animation);
+    secondaryCurve.reset(new Animation);
 }//constructor
 
 double SequencerEntryBlock::getValuesPerPixel()
@@ -213,6 +217,22 @@ boost::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
     return owningEntry.lock();
 }//getOwningEntry
 
+boost::shared_ptr<Animation> SequencerEntryBlock::getCurve()
+{
+    return curve;
+}//getCurve
+
+boost::shared_ptr<Animation> SequencerEntryBlock::getSecondaryCurve()
+{
+    return secondaryCurve;
+}//getSecondaryCurve
+
+void SequencerEntryBlock::renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+    curve->render(context, graphState, areaWidth, areaHeight);
+    secondaryCurve->render(context, graphState, areaWidth, areaHeight);
+}//renderCurves
+
 template<class Archive>
 void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
 {
@@ -226,6 +246,9 @@ void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
     std::string titleStr = Glib::locale_from_utf8(title);
     ar & BOOST_SERIALIZATION_NVP(titleStr);
     title = titleStr;
+
+    ar & BOOST_SERIALIZATION_NVP(curve);
+    ar & BOOST_SERIALIZATION_NVP(secondaryCurve);
 }//serialize
 
 template<class Archive>

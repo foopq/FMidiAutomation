@@ -6,6 +6,7 @@
 #include <sstream>
 #include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
+#include "Animation.h"
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
 
@@ -109,6 +110,9 @@ void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, 
     context->stroke();
 
     context->reset_clip();
+    context->rectangle(61, 60, areaWidth-60, areaHeight-60);
+    context->clip();
+
     context->set_source_rgba(0.3, 0.3, 0.3, 0.3);
     context->set_line_width(1.0);
     for (std::vector<std::pair<unsigned int, LineType> >::const_iterator valueLineIter = graphState.horizontalLines.begin(); valueLineIter != graphState.horizontalLines.end(); ++valueLineIter) {
@@ -116,8 +120,12 @@ void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, 
         context->line_to(areaWidth, valueLineIter->first + 60);
     }//for
 
+    context->stroke();
+
     context->reset_clip();
-    
+    context->rectangle(0, 60, 60, areaHeight-60);
+    context->clip();
+
     //Second text
     context->set_source_rgba(1.0, 1.0, 1.0, 0.7);
     //context->select_font_face(globals.topBarFont.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -347,6 +355,25 @@ int determineTickCountGroupSize(int ticksPerPixel)
 
 }//anonymous namespace
 
+void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+{
+    context->reset_clip();
+    context->rectangle(61, 61, areaWidth-61, areaHeight - 61);
+    context->clip();
+
+    typedef std::pair<int, boost::shared_ptr<Keyframe> > KeyframeMapType;
+
+    //Render curve
+    BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
+
+    }//foreach
+
+    //Render key
+    BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
+
+    }//foreach
+}//render
+
 void FMidiAutomationMainWindow::refreshGraphBackground()
 {
 //    Glib::RefPtr<Gdk::Pixbuf> scaledImagePixbuf = origBackingImage->get_pixbuf()->copy();
@@ -456,6 +483,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//if
 
     if (graphState.displayMode == DisplayMode::Curve) {
+        graphState.currentlySelectedEntryBlock->renderCurves(context, graphState, drawingAreaWidth, drawingAreaHeight);
         drawLeftBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
     }//if
 

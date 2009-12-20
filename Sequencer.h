@@ -18,6 +18,7 @@ struct GraphState;
 class SequencerEntry;
 class SequencerEntryBlock;
 class FMidiAutomationMainWindow;
+class Animation;
 
 struct SequencerEntryBlockSelectionInfo
 {
@@ -36,7 +37,8 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     int startTick;
     boost::shared_ptr<SequencerEntryBlock> instanceOf;
     int duration; //in ticks, or unused if instanceOf isn't NULL
-    //boost::shared_ptr<SequencerEntryCurce> curve;
+    boost::shared_ptr<Animation> curve;
+    boost::shared_ptr<Animation> secondaryCurve;
 
     //UI properties
     double valuesPerPixel;
@@ -62,6 +64,11 @@ public:
     boost::shared_ptr<SequencerEntryBlock> getInstanceOf() const;
 
     boost::shared_ptr<SequencerEntry> getOwningEntry() const;
+
+    boost::shared_ptr<Animation> getCurve();
+    boost::shared_ptr<Animation> getSecondaryCurve();
+
+    void renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
@@ -200,6 +207,15 @@ public:
     void doLoad(boost::archive::xml_iarchive &inputArchive);
     void doSave(boost::archive::xml_oarchive &outputArchive);
 };//Sequencer
+
+
+
+BOOST_CLASS_VERSION(Sequencer, 1);
+BOOST_CLASS_VERSION(SequencerEntryImpl, 1);
+BOOST_CLASS_VERSION(SequencerEntry, 1);
+BOOST_CLASS_VERSION(SequencerEntryBlock, 1);
+BOOST_CLASS_VERSION(SequencerEntryBlockSelectionInfo, 1);
+
 
 #endif
 

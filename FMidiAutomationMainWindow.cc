@@ -4,6 +4,7 @@
 #include <fstream>
 #include "FMidiAutomationMainWindow.h"
 #include "FMidiAutomationData.h"
+#include "FMidiAutomationCurveEditor.h"
 #include "Command.h"
 #include <boost/array.hpp>
 #include <boost/lexical_cast.hpp>
@@ -172,6 +173,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
     Globals &globals = Globals::Instance();
 
+    curveEditor.reset(new CurveEditor(this));
+
     uiXml = Gtk::Builder::create_from_file("FMidiAutomation.glade");
 
     uiXml->get_widget("mainWindow", mainWindow);
@@ -268,6 +271,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("beatsPerBarEntry", beatsPerBarEntry);
     uiXml->get_widget("barSubdivisionsEntry", barSubdivisionsEntry);
 
+    uiXml->get_widget("selectedKeyframeFrame", selectedKeyframeFrame);
+
     Gtk::Viewport *bpmFrame;
     uiXml->get_widget("viewport8", bpmFrame);
     bpmFrame->signal_button_press_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClick) );
@@ -275,9 +280,13 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     beatsPerBarEntry->signal_grab_focus().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClickBase) );
     barSubdivisionsEntry->signal_grab_focus().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClickBase) );
 
+    uiXml->get_widget("positionTickEntry", positionTickEntry);
+    uiXml->get_widget("positionValueEntry", positionValueEntry);
+    uiXml->get_widget("positionValueLabel", positionValueLabel);
+
     Gtk::Label *statusBar;
     uiXml->get_widget("statusLabel", statusBar);
-    statusBar->set_text("Welcome to FMidiAutomation");
+    statusBar->set_text("    Welcome to FMidiAutomation");
 
     setThemeColours();
 
@@ -505,6 +514,11 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
     return mainWindow;
 }//MainWindow
 
+GraphState &FMidiAutomationMainWindow::getGraphState()
+{
+    return graphState;
+}//getGraphState
+
 bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollType, double pos)
 {
     sequencer->notifyOnScroll(pos);
@@ -667,6 +681,11 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     sequencerButton->set_sensitive(false);
     curveButton->set_sensitive(true);
 
+    selectedKeyframeFrame->hide_all();
+
+    positionValueEntry->hide_all();
+    positionValueLabel->hide_all();
+
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
@@ -681,6 +700,8 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
         return;
     }//if
 
+    positionValueEntry->set_text("");
+
     graphState.valuesPerPixel = selectedEntryBlock->getValuesPerPixel();
     graphState.offsetY = selectedEntryBlock->getOffsetY();
 
@@ -690,6 +711,11 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
 
     sequencerButton->set_sensitive(true);
     curveButton->set_sensitive(false);
+
+    selectedKeyframeFrame->show_all();
+
+    positionValueEntry->show_all();
+    positionValueLabel->show_all();
 
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
@@ -1190,6 +1216,16 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                     }//if
                 }//if
 
+                if (graphState.displayMode == DisplayMode::Curve) {
+                    m_refActionGroup->add(Gtk::Action::create("ContextAddKeyframe", "Add Keyframe"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleAddKeyframe));
+                    ui_info =
+                        "<ui>"
+                        "  <popup name='PopupMenu'>"
+                        "    <menuitem action='ContextAddKeyframe'/>"
+                        "  </popup>"
+                        "</ui>";
+                }//if
+
                 m_refUIManager = Gtk::UIManager::create();
                 m_refUIManager->insert_action_group(m_refActionGroup);
 
@@ -1285,6 +1321,21 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
 bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 {
     if (false == leftMouseCurrentlyPressed) {
+        int tick = 0;
+        int value = 0;
+
+        if (event->x > 60) {
+            tick = graphState.verticalPixelTickValues[event->x];
+            positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(tick));
+        }//if
+
+        if (event->y > 60) {
+            value = (int)(graphState.horizontalPixelValues[event->y-60] + 0.5);
+            positionValueEntry->set_text(boost::lexical_cast<Glib::ustring>(value));
+        }//if
+
+        curveEditor->setUnderMouseTickValue(tick, value);
+
         return false;
     }//if
 
@@ -1358,6 +1409,10 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 //            std::cout << "diffTick: " << diffTick << "   --  curTick: " << curTick << std::endl;
 
             graphState.currentlySelectedEntryBlock->moveBlock(curTick);
+
+            curTick = std::max(0, curTick);
+            positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(curTick));
+
             graphDrawingArea->queue_draw();
         }//if
     }//if
@@ -1502,7 +1557,7 @@ void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<S
 
 void FMidiAutomationMainWindow::doTestInit()
 {
-    return; 
+//    return; 
 
     boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, true));
     CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
