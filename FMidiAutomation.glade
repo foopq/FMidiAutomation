@@ -346,6 +346,7 @@
                         </child>
                         <child>
                           <object class="GtkButton" id="focusStealingButton">
+                            <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                           </object>
@@ -940,7 +941,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="combobox1">
+                              <object class="GtkComboBox" id="selectedKeyTypeComboBox">
                                 <property name="visible">True</property>
                                 <property name="model">keyTypeListstore</property>
                                 <property name="active">0</property>
@@ -957,7 +958,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry3">
+                              <object class="GtkEntry" id="selectedKeyTickEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
@@ -972,7 +973,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry4">
+                              <object class="GtkEntry" id="selectedKeyValueEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
@@ -987,7 +988,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry5">
+                              <object class="GtkEntry" id="selectedKeyInTanXEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
@@ -1002,7 +1003,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry6">
+                              <object class="GtkEntry" id="selectedKeyInTanYEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
@@ -1017,7 +1018,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry7">
+                              <object class="GtkEntry" id="selectedKeyOutTanXEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
@@ -1032,7 +1033,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry8">
+                              <object class="GtkEntry" id="selectedKeyOutTanYEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>

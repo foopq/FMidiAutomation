@@ -19,6 +19,7 @@ class SequencerEntryBlock;
 class SequencerEntry;
 struct GraphState;
 struct CurveEditor;
+struct Keyframe;
 
 struct Globals
 {
@@ -94,8 +95,12 @@ struct GraphState
 
     std::vector<int> verticalPixelTickValues;
     std::vector<double> horizontalPixelValues;
+    std::vector<int> roundedHorizontalValues;
 
     SelectedEntity selectedEntity;
+
+    int curMousePosX;
+    int curMousePosY;
 
     //Time at which the pointer is at
     int curPointerTick;
@@ -108,6 +113,8 @@ struct GraphState
 
     int currentlySelectedEntryOriginalStartTick;
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
+
+    boost::shared_ptr<Keyframe> currentlySelectedKeyframe;
 
     DisplayMode::DisplayMode displayMode;
     int lastSequencerPointerTick; //for swaping back to the seqeucner
@@ -257,6 +264,7 @@ public:
 
     void unsetAllCurveFrames();
     void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
+    void queue_draw();
 };//FMidiAutomationMainWindow
 
 

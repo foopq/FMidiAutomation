@@ -357,6 +357,15 @@ int determineTickCountGroupSize(int ticksPerPixel)
 
 void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
+    if (keyframes.empty() == true) {
+        return;
+    }//if
+
+    int minTick = graphState.verticalPixelTickValues[0];
+    int maxTick = graphState.verticalPixelTickValues[graphState.verticalPixelTickValues.size()-1];
+    double maxValue = graphState.horizontalPixelValues[0];
+    double minValue = graphState.horizontalPixelValues[graphState.horizontalPixelValues.size()-1];
+
     context->reset_clip();
     context->rectangle(61, 61, areaWidth-61, areaHeight - 61);
     context->clip();
@@ -364,14 +373,95 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     typedef std::pair<int, boost::shared_ptr<Keyframe> > KeyframeMapType;
 
     //Render curve
-    BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
+    context->set_source_rgba(0.6, 0.3, 0.7, 0.6);
+    int tickValuesSize = graphState.verticalPixelTickValues.size();
+    for (unsigned int index = 0; index < tickValuesSize; ++index) {
+        int keyTick = graphState.verticalPixelTickValues[index];
+        double keyValueBase = sample(keyTick);
+        int keyValue = keyValueBase + 0.5;
+        if (keyValueBase < 0) {
+            keyValue = keyValueBase - 0.5;
+        }//if
 
+        if ((keyValue < minValue) || (keyValue > maxValue)) {
+            continue;
+        }//if
+
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyValue);
+        assert(valueIterPair.first != valueIterPair.second);
+        int midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
+        unsigned int valuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
+
+        context->reset_clip();
+        context->rectangle(index - 1, areaHeight - valuePointerPixel - 1, 2, 2);
+        context->clip();
+        context->paint();
     }//foreach
 
-    //Render key
-    BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
+    //Render keys
+    int selectedRectX = std::numeric_limits<int>::min();
+    int selectedRectY = std::numeric_limits<int>::min();
 
+    context->set_source_rgba(1.0, 0.1, 1.0, 0.7);
+    BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
+        int keyTick = keyPair.second->tick;
+        int keyValue = keyPair.second->value + 0.5;
+
+        if (keyPair.second->value < 0) {
+            keyValue = keyPair.second->value - 0.5;
+        }//if
+
+        if ((keyTick < minTick) || (keyTick > maxTick) || (keyValue < minValue) || (keyValue > maxValue)) {
+            keyPair.second->drawnStartX = std::numeric_limits<int>::min();
+            keyPair.second->drawnStartY = std::numeric_limits<int>::min();
+
+            continue;
+        }//if
+
+        std::vector<int>::iterator timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyTick);
+        assert(timeBound != graphState.verticalPixelTickValues.end());
+
+        unsigned int timePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
+
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyValue);
+        assert(valueIterPair.first != valueIterPair.second);
+        int midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
+        unsigned int valuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
+
+        /*
+        if ( (timePointerPixel - 4 <= graphState.curMousePosX) && (timePointerPixel - 4 + 9 >= graphState.curMousePosX) &&
+             (areaHeight - valuePointerPixel - 4 <= graphState.curMousePosY) && (areaHeight - valuePointerPixel - 4 >= graphState.curMousePosY) ) {
+            selectedRectX = timePointerPixel - 4;
+            selectedRectY = areaHeight - valuePointerPixel - 4;
+
+            std::cout << "FOUND" << std::endl;
+        } else {
+            std::cout << "NOT" << std::endl;
+        }//if
+        */
+
+        if (true == keyPair.second->isSelected) {
+            selectedRectX = timePointerPixel - 4;
+            selectedRectY = areaHeight - valuePointerPixel - 4;
+        }//if
+
+        keyPair.second->drawnStartX = timePointerPixel - 4;
+        keyPair.second->drawnStartY = areaHeight - valuePointerPixel - 4;
+
+        context->reset_clip();
+        context->rectangle(timePointerPixel - 4, areaHeight - valuePointerPixel - 4, 9, 9);
+        context->clip();
+        context->paint();
     }//foreach
+
+    if (selectedRectX != std::numeric_limits<int>::min()) {
+        context->set_source_rgba(0.0, 0.8, 0.0, 0.7);
+
+        context->reset_clip();
+        context->rectangle(selectedRectX, selectedRectY, 9, 9);
+        context->clip();
+        context->paint();
+    }//if
 }//render
 
 void FMidiAutomationMainWindow::refreshGraphBackground()
@@ -422,13 +512,13 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         context->paint();
     }//if
 
-    std::vector<int> roundedHorizontalValues;
-    roundedHorizontalValues.reserve(graphState.horizontalPixelValues.size());
+    graphState.roundedHorizontalValues.clear();
+    graphState.roundedHorizontalValues.reserve(graphState.horizontalPixelValues.size());
     BOOST_FOREACH (double val, graphState.horizontalPixelValues) {
         if (val >=0) {
-            roundedHorizontalValues.push_back(val+0.5);
+            graphState.roundedHorizontalValues.push_back(val+0.5);
         } else {
-            roundedHorizontalValues.push_back(val-0.5);
+            graphState.roundedHorizontalValues.push_back(val-0.5);
         }//if
     }//foreach
 
@@ -438,14 +528,14 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         int maxValue = entryImpl->maxValue;
 
         //std::vector<int>::reverse_iterator maxIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), maxValue);
-        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), maxValue);
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), maxValue);
 
-        if (maxIterPair.first != roundedHorizontalValues.rend()) {
+        if (maxIterPair.first != graphState.roundedHorizontalValues.rend()) {
             int rangeDist = std::distance(maxIterPair.first, maxIterPair.second) / 2.0;
             std::vector<int>::reverse_iterator maxIter = maxIterPair.second;
 ////            std::advance(maxIter, rangeDist);
 
-            unsigned int dist = (drawingAreaHeight-60) - std::distance(roundedHorizontalValues.rbegin(), maxIter);
+            unsigned int dist = (drawingAreaHeight-60) - std::distance(graphState.roundedHorizontalValues.rbegin(), maxIter);
 
             context->reset_clip();
             context->rectangle(60, 60, drawingAreaWidth-60, dist+1);
@@ -456,12 +546,12 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         }//if
 
         //std::vector<int>::reverse_iterator minIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), minValue);
-        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> minIterPair = std::equal_range(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), minValue);
-        if (minIterPair.first != roundedHorizontalValues.rend()) {
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> minIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), minValue);
+        if (minIterPair.first != graphState.roundedHorizontalValues.rend()) {
             int rangeDist = std::distance(minIterPair.first, minIterPair.second) / 2.0;
             std::vector<int>::reverse_iterator minIter = minIterPair.first;
 
-            unsigned int dist = std::distance(roundedHorizontalValues.rbegin(), minIter);
+            unsigned int dist = std::distance(graphState.roundedHorizontalValues.rbegin(), minIter);
 
             context->reset_clip();
             context->rectangle(60, drawingAreaHeight-dist, drawingAreaWidth-60, dist);
@@ -545,6 +635,8 @@ void GraphState::doInit()
     rightMarkerTickXPixel = -1;
     displayMode = DisplayMode::Sequencer;
     selectedEntity = Nobody;
+    curMousePosX = -100;
+    curMousePosY = -100;
 }//doInit
 
 GraphState::~GraphState()

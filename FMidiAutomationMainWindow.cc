@@ -18,6 +18,7 @@
 #include "EntryBlockProperties.h"
 #include "PasteManager.h"
 #include "EntryProperties.h"
+#include "Animation.h"
 
 namespace
 {
@@ -57,6 +58,30 @@ bool handleGraphValueScroll(GdkEventMotion *event, GraphState &graphState, gdoub
     graphState.offsetY = graphState.baseOffsetY + offsetY;
     return true;
 }//handleGraphValueScroll
+
+void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
+{
+    int eventX = std::max(0, (int)event->x);
+    eventX = std::min(eventX, drawingAreaWidth);
+    int eventY = std::max(60, (int)event->y);
+    eventY = std::min(eventY, drawingAreaHeight);
+    eventY -= 60;
+
+    int newTick = graphState.verticalPixelTickValues[eventX];
+    newTick = std::max(newTick, 0);
+    double newValue = graphState.horizontalPixelValues[eventY];
+
+    if ((newTick != graphState.currentlySelectedKeyframe->tick) && (graphState.currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(newTick) != NULL)) {
+        return;
+    }//if
+
+    graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe->tick);
+
+    graphState.currentlySelectedKeyframe->tick = newTick;
+    graphState.currentlySelectedKeyframe->value = newValue;
+
+    graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
+}//handleKeyScroll
 
 void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
 {
@@ -354,7 +379,12 @@ FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
 {
     //Nothing
 }//destructor
-    
+ 
+void FMidiAutomationMainWindow::queue_draw()
+{
+    graphDrawingArea->queue_draw();
+}//queue_draw
+
 void FMidiAutomationMainWindow::setTitle(Glib::ustring currentFilename)
 {
     mainWindow->set_title("FMidiAutomation - " + currentFilename);
@@ -1131,6 +1161,13 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                                 menuCopy->set_sensitive(true);
                                 menuCut->set_sensitive(true);
                             }//if
+                        } else {
+                            graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY);
+                            curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+
+                            if (graphState.currentlySelectedKeyframe != NULL) {
+                                graphState.selectedEntity = KeyValue;
+                            }//if
                         }//if
 
                         //Essentially clear the selection state of the tempo changes
@@ -1320,6 +1357,9 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
 
 bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 {
+    graphState.curMousePosX = event->x;
+    graphState.curMousePosY = event->y;
+
     if (false == leftMouseCurrentlyPressed) {
         int tick = 0;
         int value = 0;
@@ -1372,14 +1412,12 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
         }//if
     } else {
         if (graphState.selectedEntity == PointerTickBar) {
-            //Did we set the current time pointer
             if ((event->x >= 0) && (event->x < drawingAreaWidth)) {
                 updateCursorTick(graphState.verticalPixelTickValues[event->x], true);
             }//if
         }//if
 
         else if (graphState.selectedEntity == LeftTickBar) {
-            //Did we set the current time pointer
             if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.rightMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] < graphState.rightMarkerTick))) {
                 graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
                 graphState.leftMarkerTick = std::max(graphState.leftMarkerTick, 0);
@@ -1389,13 +1427,18 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
         }//if
 
         else if (graphState.selectedEntity == RightTickBar) {
-            //Did we set the current time pointer
             if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.leftMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] > graphState.leftMarkerTick))) {
                 graphState.rightMarkerTick = graphState.verticalPixelTickValues[event->x];
                 graphState.rightMarkerTick = std::max(graphState.rightMarkerTick, 0);
                 rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.rightMarkerTick));
                 graphDrawingArea->queue_draw();
             }//if
+        }//if
+
+        else if (graphState.selectedEntity == KeyValue) {
+            handleKeyScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
+            curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+            graphDrawingArea->queue_draw();
         }//if
 
         else if (graphState.selectedEntity == SequencerEntrySelection) {
