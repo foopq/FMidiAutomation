@@ -11,6 +11,7 @@ class Sequencer;
 class SequencerEntry;
 class SequencerEntryBlock;
 struct SequencerEntryImpl;
+struct Keyframe;
 
 struct Command
 {
@@ -197,5 +198,44 @@ struct UpdateTempoChangeCommand : public Command
     void doAction();
     void undoAction();
 };//AddTempoChangeCommand
+
+struct AddKeyframeCommand : public Command
+{
+    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
+    int curMouseUnderTick;
+    int curMouseUnderValue;
+
+    AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
+    ~AddKeyframeCommand();
+
+    void doAction();
+    void undoAction();
+};//AddKeyframeCommand
+
+struct DeleteKeyframeCommand : public Command
+{
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    boost::shared_ptr<Keyframe> keyframe;
+
+    DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, boost::shared_ptr<Keyframe> keyframe);
+    ~DeleteKeyframeCommand();
+
+    void doAction();
+    void undoAction();
+};//DeleteKeyframeCommand
+
+struct MoveKeyframeCommand : public Command
+{
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    boost::shared_ptr<Keyframe> keyframe;
+    int movingKeyOrigTick;
+    double movingKeyOrigValue;
+
+    MoveKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, boost::shared_ptr<Keyframe> keyframe, int movingKeyOrigTick, double movingKeyOrigValue);
+    ~MoveKeyframeCommand();
+
+    void doAction();
+    void undoAction();
+};//MoveKeyframeCommand
 
 #endif

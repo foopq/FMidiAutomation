@@ -111,6 +111,10 @@ struct GraphState
     int leftMarkerTickXPixel;
     int rightMarkerTickXPixel;
 
+    bool didMoveKey;
+    int movingKeyOrigTick;
+    double movingKeyOrigValue;
+
     int currentlySelectedEntryOriginalStartTick;
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
 

@@ -5,6 +5,9 @@
 #include "FMidiAutomationMainWindow.h"
 #include "FMidiAutomationData.h"
 #include "Sequencer.h"
+#include "Animation.h"
+
+extern FMidiAutomationMainWindow *mainWindow;
 
 CommandManager &CommandManager::Instance()
 {
@@ -43,6 +46,8 @@ void CommandManager::doRedo()
     menuUndo->set_sensitive(true);
 
     command->doAction();    
+
+    mainWindow->queue_draw();
 }//doRedo
 
 void CommandManager::doUndo()
@@ -62,6 +67,8 @@ void CommandManager::doUndo()
     menuRedo->set_sensitive(true);
 
     command->undoAction();
+
+    mainWindow->queue_draw();
 }//doUndo
 
 void CommandManager::setNewCommand(boost::shared_ptr<Command> command)
@@ -78,6 +85,8 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command)
     command->doAction();
 
     titleStarFunc();
+
+    mainWindow->queue_draw();
 }//setNewcommand
 
 //UpdateTempoChangeCommand
@@ -376,5 +385,90 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 {
     entry->setNewDataImpl(origImpl);
 }//undoAction
+
+AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_)
+{
+    currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
+    curMouseUnderTick = curMouseUnderTick_;
+    curMouseUnderValue = curMouseUnderValue_;
+}//constructor
+
+AddKeyframeCommand::~AddKeyframeCommand()
+{
+    //Nothing
+}//destructor
+
+void AddKeyframeCommand::doAction()
+{
+    assert(currentlySelectedEntryBlock != NULL);
+    //if ((currentlySelectedEntryBlock == NULL) || (mainWindow->getGraphState().displayMode != DisplayMode::Curve)) {
+    //    return;
+    //}//if
+
+    boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
+
+    newKeyframe->tick = curMouseUnderTick;
+    newKeyframe->value = curMouseUnderValue;
+
+    boost::shared_ptr<Animation> curve = currentlySelectedEntryBlock->getCurve();
+    curve->addKey(newKeyframe);
+}//doAction
+
+void AddKeyframeCommand::undoAction()
+{
+    currentlySelectedEntryBlock->getCurve()->deleteKey(curMouseUnderTick);
+
+    mainWindow->queue_draw();
+}//undoAction
+
+DeleteKeyframeCommand::DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_)
+{
+    entryBlock = entryBlock_;
+    keyframe = keyframe_;
+}//constructor
+
+DeleteKeyframeCommand::~DeleteKeyframeCommand()
+{
+    //Nothing
+}//destructor
+
+void DeleteKeyframeCommand::doAction()
+{
+    entryBlock->getCurve()->deleteKey(keyframe);
+}//doAction
+
+void DeleteKeyframeCommand::undoAction()
+{
+    entryBlock->getCurve()->addKey(keyframe);
+}//undoAction
+
+MoveKeyframeCommand::MoveKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_, int movingKeyOrigTick_, double movingKeyOrigValue_)
+{
+    entryBlock = entryBlock_;
+    keyframe = keyframe_;
+    movingKeyOrigTick = movingKeyOrigTick_;
+    movingKeyOrigValue = movingKeyOrigValue_;
+}//constructor
+
+MoveKeyframeCommand::~MoveKeyframeCommand()
+{
+    //Nothing
+}//destructor
+
+void MoveKeyframeCommand::doAction()
+{
+    entryBlock->getCurve()->deleteKey(keyframe);
+
+    std::swap(keyframe->tick, movingKeyOrigTick);
+    std::swap(keyframe->value, movingKeyOrigValue);
+
+    entryBlock->getCurve()->addKey(keyframe);
+}//doAction
+
+void MoveKeyframeCommand::undoAction()
+{
+    doAction();
+}//undoAction
+
 
 

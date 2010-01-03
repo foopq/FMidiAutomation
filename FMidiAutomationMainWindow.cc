@@ -71,9 +71,14 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
     newTick = std::max(newTick, 0);
     double newValue = graphState.horizontalPixelValues[eventY];
 
+    newValue = std::max((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue);
+    newValue = std::min((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->maxValue);
+
     if ((newTick != graphState.currentlySelectedKeyframe->tick) && (graphState.currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(newTick) != NULL)) {
         return;
     }//if
+
+    graphState.didMoveKey = true;
 
     graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe->tick);
 
@@ -1167,6 +1172,10 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 
                             if (graphState.currentlySelectedKeyframe != NULL) {
                                 graphState.selectedEntity = KeyValue;
+
+                                graphState.didMoveKey = false;
+                                graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick;
+                                graphState.movingKeyOrigValue = graphState.currentlySelectedKeyframe->value;
                             }//if
                         }//if
 
@@ -1254,13 +1263,44 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                 }//if
 
                 if (graphState.displayMode == DisplayMode::Curve) {
-                    m_refActionGroup->add(Gtk::Action::create("ContextAddKeyframe", "Add Keyframe"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleAddKeyframe));
-                    ui_info =
-                        "<ui>"
-                        "  <popup name='PopupMenu'>"
-                        "    <menuitem action='ContextAddKeyframe'/>"
-                        "  </popup>"
-                        "</ui>";
+                    graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY);
+                    curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+
+                    if (graphState.currentlySelectedKeyframe == NULL) {
+                        graphState.selectedEntity = Nobody;
+
+                        std::string menuStr = "Add Keyframe";
+                        boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState.currentlySelectedEntryBlock;
+
+                        int curMouseUnderTick = std::numeric_limits<int>::min();
+                        if (event->x > 60) {
+                            curMouseUnderTick = graphState.verticalPixelTickValues[event->x];
+                        }//if
+
+                        if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(curMouseUnderTick) != NULL) {
+                            menuStr = "Keyframe exists at this tick";
+                        }//if
+
+                        m_refActionGroup->add(Gtk::Action::create("ContextAddKeyframe", menuStr.c_str()), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleAddKeyframe));
+                        ui_info =
+                            "<ui>"
+                            "  <popup name='PopupMenu'>"
+                            "    <menuitem action='ContextAddKeyframe'/>"
+                            "  </popup>"
+                            "</ui>";
+                    } else {
+                        graphState.selectedEntity = KeyValue;
+
+                        m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframe"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframe));
+                        ui_info =
+                            "<ui>"
+                            "  <popup name='PopupMenu'>"
+                            "    <menuitem action='ContextDeleteKeyframe'/>"
+                            "  </popup>"
+                            "</ui>";
+                    }//if
+
+                    graphDrawingArea->queue_draw();
                 }//if
 
                 m_refUIManager = Gtk::UIManager::create();
@@ -1329,7 +1369,20 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
                     boost::shared_ptr<Command> moveSequencerEntryBlockCommand(new MoveSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock, graphState.currentlySelectedEntryOriginalStartTick, graphState.currentlySelectedEntryBlock->getStartTick()));
                     CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand);
 
-                    graphDrawingArea->queue_draw();
+                    graphDrawingArea->queue_draw();                    
+                }
+
+                else if (graphState.selectedEntity == KeyValue) {
+                    if (true == graphState.didMoveKey) {                        
+                        //Move key back to where it was
+                        graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe->tick);
+                        std::swap(graphState.currentlySelectedKeyframe->tick, graphState.movingKeyOrigTick);
+                        std::swap(graphState.currentlySelectedKeyframe->value, graphState.movingKeyOrigValue);
+                        graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
+
+                        boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframeCommand(graphState.currentlySelectedEntryBlock, graphState.currentlySelectedKeyframe, graphState.movingKeyOrigTick, graphState.movingKeyOrigValue));
+                        CommandManager::Instance().setNewCommand(moveKeyframeCommand);
+                    }//if
                 }//if
             }//if
         break;
