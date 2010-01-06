@@ -203,9 +203,9 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
     Globals &globals = Globals::Instance();
 
-    curveEditor.reset(new CurveEditor(this));
-
     uiXml = Gtk::Builder::create_from_file("FMidiAutomation.glade");
+
+    curveEditor.reset(new CurveEditor(this, uiXml));
 
     uiXml->get_widget("mainWindow", mainWindow);
     uiXml->get_widget("trackListWindow", trackListWindow);

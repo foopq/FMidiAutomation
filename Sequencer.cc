@@ -127,7 +127,7 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
 
     startTick = startTick_;
     instanceOf = instanceOf_;
-    duration = 200;
+//    duration = 200;
 
     owningEntry = owningEntry_;
 
@@ -178,10 +178,10 @@ void SequencerEntryBlock::moveBlock(int startTick_)
     owningEntry_->addEntryBlock(startTick, shared_from_this());
 }//moveBlock
 
-void SequencerEntryBlock::setDuration(int duration_)
-{
-    duration = duration_;
-}//setDuration
+//void SequencerEntryBlock::setDuration(int duration_)
+//{
+//    duration = duration_;
+//}//setDuration
 
 void SequencerEntryBlock::setTitle(const Glib::ustring &title_)
 {
@@ -196,6 +196,26 @@ int SequencerEntryBlock::getStartTick() const
 int SequencerEntryBlock::getDuration() const
 {
     if (instanceOf == NULL) {
+        int duration = 0;
+
+        if (curve != NULL) {
+            int numKeys = curve->getNumKeyframes();
+            if (numKeys > 0) {
+                boost::shared_ptr<Keyframe> lastKey = curve->getKeyframe(numKeys-1);
+
+                duration = std::max(duration, lastKey->tick);
+            }//if
+        }//if
+
+        if (secondaryCurve != NULL) {
+            int numKeys = secondaryCurve->getNumKeyframes();
+            if (numKeys > 0) {
+                boost::shared_ptr<Keyframe> lastKey = secondaryCurve->getKeyframe(numKeys-1);
+
+                duration = std::max(duration, lastKey->tick);
+            }//if
+        }//if
+
         return duration;
     } else {
         return instanceOf->getDuration();
@@ -239,7 +259,7 @@ void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(owningEntry);
     ar & BOOST_SERIALIZATION_NVP(startTick);
     ar & BOOST_SERIALIZATION_NVP(instanceOf);
-    ar & BOOST_SERIALIZATION_NVP(duration);
+//    ar & BOOST_SERIALIZATION_NVP(duration);
     ar & BOOST_SERIALIZATION_NVP(valuesPerPixel);
     ar & BOOST_SERIALIZATION_NVP(offsetY);
 
@@ -1051,6 +1071,10 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 
         bound = std::lower_bound(verticalPixelTickValues.begin(), verticalPixelTickValues.end(), relativeEndXTick);
         int relativeEndX = std::distance(verticalPixelTickValues.begin(), bound);
+
+        if (relativeEndX - relativeStartX < verticalPixelTickValues.size() * 0.05) {
+            relativeEndX = relativeStartX + verticalPixelTickValues.size() * 0.05;
+        }//if
 
 //        std::cout << "relativeStartXTick: " << relativeStartXTick << std::endl;
 //        std::cout << "relativeStartX: " << verticalPixelTickValues[relativeStartX] << "    relativeEndX: " << verticalPixelTickValues[relativeEndX] << std::endl;

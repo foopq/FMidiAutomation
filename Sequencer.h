@@ -36,7 +36,7 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     Glib::ustring title;
     int startTick;
     boost::shared_ptr<SequencerEntryBlock> instanceOf;
-    int duration; //in ticks, or unused if instanceOf isn't NULL
+    //int duration; //in ticks, or unused if instanceOf isn't NULL
     boost::shared_ptr<Animation> curve;
     boost::shared_ptr<Animation> secondaryCurve;
 
@@ -50,7 +50,7 @@ public:
     SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
 
     void moveBlock(int startTick);
-    void setDuration(int duration);
+//    void setDuration(int duration);
     void setTitle(const Glib::ustring &title);
 
     double getValuesPerPixel();

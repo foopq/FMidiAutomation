@@ -961,7 +961,6 @@
                               <object class="GtkEntry" id="selectedKeyTickEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
@@ -976,7 +975,6 @@
                               <object class="GtkEntry" id="selectedKeyValueEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
@@ -991,7 +989,6 @@
                               <object class="GtkEntry" id="selectedKeyInTanXEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
@@ -1006,7 +1003,6 @@
                               <object class="GtkEntry" id="selectedKeyInTanYEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
@@ -1021,7 +1017,6 @@
                               <object class="GtkEntry" id="selectedKeyOutTanXEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
@@ -1036,7 +1031,6 @@
                               <object class="GtkEntry" id="selectedKeyOutTanYEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
