@@ -68,21 +68,22 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
     eventY -= 60;
 
     int newTick = graphState.verticalPixelTickValues[eventX];
-    newTick = std::max(newTick, 0);
+    newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel]);
     double newValue = graphState.horizontalPixelValues[eventY];
 
     newValue = std::max((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue);
     newValue = std::min((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->maxValue);
 
-    if ((newTick != graphState.currentlySelectedKeyframe->tick) && (graphState.currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(newTick) != NULL)) {
+    if ( ((newTick - graphState.currentlySelectedEntryBlock->getStartTick()) != graphState.currentlySelectedKeyframe->tick) && 
+         (graphState.currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(newTick) != NULL) ) {
         return;
     }//if
 
     graphState.didMoveKey = true;
 
-    graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe->tick);
+    graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
 
-    graphState.currentlySelectedKeyframe->tick = newTick;
+    graphState.currentlySelectedKeyframe->tick = newTick - graphState.currentlySelectedEntryBlock->getStartTick();
     graphState.currentlySelectedKeyframe->value = newValue;
 
     graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
@@ -289,6 +290,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("rightBarEntryBox", rightBarEntryBox);
     uiXml->get_widget("cursorBarEntryBox", cursorBarEntryBox);
     uiXml->get_widget("transportTimeEntry", transportTimeEntry);
+    uiXml->get_widget("currentSampledValue", currentSampledValue);
 
     leftTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox));
     rightTickEntryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox));
@@ -1080,6 +1082,32 @@ void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
     if (true == updateJack) {
         JackSingleton &jackSingleton = JackSingleton::Instance();
         jackSingleton.setTime(graphState.curPointerTick);
+
+        transportTimeEntry->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
+    }//if
+
+    if (graphState.displayMode == DisplayMode::Sequencer) {
+        if(sequencer->getSelectedEntry() != NULL) {
+            double sampledValueBase = sequencer->getSelectedEntry()->sample(graphState.curPointerTick);
+            int sampledValue = sampledValueBase + 0.5;
+            if (sampledValueBase < 0) {
+                sampledValue = sampledValueBase - 0.5;
+            }//if
+
+            currentSampledValue->set_text(boost::lexical_cast<std::string>(sampledValue));
+        }//if
+    }//if
+
+    if (graphState.displayMode == DisplayMode::Curve) {
+        if (graphState.currentlySelectedEntryBlock != NULL) {
+            double sampledValueBase = graphState.currentlySelectedEntryBlock->getCurve()->sample(graphState.curPointerTick);
+            int sampledValue = sampledValueBase + 0.5;
+            if (sampledValueBase < 0) {
+                sampledValue = sampledValueBase - 0.5;
+            }//if
+
+            currentSampledValue->set_text(boost::lexical_cast<std::string>(sampledValue));
+        }//if
     }//if
 
     graphDrawingArea->queue_draw();
@@ -1174,7 +1202,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                                 graphState.selectedEntity = KeyValue;
 
                                 graphState.didMoveKey = false;
-                                graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick;
+                                graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick - graphState.currentlySelectedEntryBlock->getStartTick();
                                 graphState.movingKeyOrigValue = graphState.currentlySelectedKeyframe->value;
                             }//if
                         }//if
@@ -1206,8 +1234,12 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                         graphState.selectedEntity = TempoChange;
                         handleBPMFrameClickBase();
                         updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
-                        sequencer->clearSelectedEntryBlock();
-                        graphState.currentlySelectedEntryBlock.reset();
+
+                        if (graphState.displayMode == DisplayMode::Sequencer) {
+                            sequencer->clearSelectedEntryBlock();
+                            graphState.currentlySelectedEntryBlock.reset();
+                        }//if
+
                         graphDrawingArea->queue_draw();
                     }//if
 
@@ -1277,17 +1309,22 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                             curMouseUnderTick = graphState.verticalPixelTickValues[event->x];
                         }//if
 
-                        if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(curMouseUnderTick) != NULL) {
-                            menuStr = "Keyframe exists at this tick";
-                        }//if
+                        if (event->x > graphState.zeroithTickPixel) { 
+                            if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(curMouseUnderTick) != NULL) {
+                                menuStr = "Keyframe exists at this tick";
+                            }//if
 
-                        m_refActionGroup->add(Gtk::Action::create("ContextAddKeyframe", menuStr.c_str()), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleAddKeyframe));
-                        ui_info =
-                            "<ui>"
-                            "  <popup name='PopupMenu'>"
-                            "    <menuitem action='ContextAddKeyframe'/>"
-                            "  </popup>"
-                            "</ui>";
+                            m_refActionGroup->add(Gtk::Action::create("ContextAddKeyframe", menuStr.c_str()), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleAddKeyframe));
+                            ui_info =
+                                "<ui>"
+                                "  <popup name='PopupMenu'>"
+                                "    <menuitem action='ContextAddKeyframe'/>"
+                                "  </popup>"
+                                "</ui>";
+                        } else {
+                            std::cout << "context at tick: " << curMouseUnderTick << "   zeroith: " << graphState.zeroithTickPixel << std::endl;
+                            return false;
+                        }//if
                     } else {
                         graphState.selectedEntity = KeyValue;
 
@@ -1375,7 +1412,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
                 else if (graphState.selectedEntity == KeyValue) {
                     if (true == graphState.didMoveKey) {                        
                         //Move key back to where it was
-                        graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe->tick);
+                        graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
                         std::swap(graphState.currentlySelectedKeyframe->tick, graphState.movingKeyOrigTick);
                         std::swap(graphState.currentlySelectedKeyframe->value, graphState.movingKeyOrigValue);
                         graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);

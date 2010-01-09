@@ -68,6 +68,8 @@ public:
     boost::shared_ptr<Animation> getCurve();
     boost::shared_ptr<Animation> getSecondaryCurve();
 
+    int *getRawStartTick();
+
     void renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
@@ -132,6 +134,8 @@ public:
     SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
     void doInit(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
     ~SequencerEntry();
+
+    double sample(int tick);
 
     const boost::shared_ptr<SequencerEntryImpl> getImpl();
     boost::shared_ptr<SequencerEntryImpl> getImplClone();

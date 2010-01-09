@@ -134,8 +134,8 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
     valuesPerPixel = std::numeric_limits<double>::max();
     offsetY = 0;
 
-    curve.reset(new Animation);
-    secondaryCurve.reset(new Animation);
+    curve.reset(new Animation(this));
+    secondaryCurve.reset(new Animation(this));
 }//constructor
 
 double SequencerEntryBlock::getValuesPerPixel()
@@ -192,6 +192,11 @@ int SequencerEntryBlock::getStartTick() const
 {
     return startTick;
 }//getStartTick
+
+int *SequencerEntryBlock::getRawStartTick()
+{
+    return &startTick;
+}//getRawStartTick
 
 int SequencerEntryBlock::getDuration() const
 {
@@ -269,6 +274,9 @@ void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
 
     ar & BOOST_SERIALIZATION_NVP(curve);
     ar & BOOST_SERIALIZATION_NVP(secondaryCurve);
+
+    curve->startTick = &startTick;
+    secondaryCurve->startTick = &startTick;
 }//serialize
 
 template<class Archive>
@@ -714,6 +722,20 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
     }//if
 }//getEntryBlock
 
+double SequencerEntry::sample(int tick)
+{
+    if (entryBlocks.empty() == true) {
+        return 0;
+    }//if
+
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryBlockIter = entryBlocks.upper_bound(tick);
+    if (entryBlockIter != entryBlocks.begin()) {
+        entryBlockIter--;
+    }//if
+
+    return entryBlockIter->second->getCurve()->sample(tick);
+}//sample
+
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
     doInit(entryGlade_, parentWidget_, mainWindow_);
@@ -900,6 +922,10 @@ boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, i
 
     if (x < 0) {
         selectedEntryBlock = (*entries.begin()).first->getEntryBlock(0);
+
+if (selectedEntryBlock == NULL) {
+    std::cout << "clearSelectedEntryBlock3" << std::endl;
+}//if
         return selectedEntryBlock;
     }//if
 
@@ -911,6 +937,10 @@ boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, i
             if (true == setSelection) {
                 selectedEntryBlock = selectionInfo.entryBlock;
                 selectionInfo.entry->select();
+
+if (selectedEntryBlock == NULL) {
+    std::cout << "clearSelectedEntryBlock2" << std::endl;
+}//if
             }//if
             return selectedEntryBlock;
         }//if
@@ -921,6 +951,7 @@ boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, i
 
 void Sequencer::clearSelectedEntryBlock()
 {
+std::cout << "clearSelectedEntryBlock" << std::endl;
     selectedEntryBlock.reset();
 }//clearSelectedEntryBlock
 

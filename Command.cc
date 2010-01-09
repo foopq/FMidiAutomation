@@ -389,8 +389,20 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_)
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
-    curMouseUnderTick = curMouseUnderTick_;
-    curMouseUnderValue = curMouseUnderValue_;
+    //curMouseUnderTick = curMouseUnderTick_;
+    //curMouseUnderValue = curMouseUnderValue_;
+
+    assert(currentlySelectedEntryBlock != NULL);
+    //if ((currentlySelectedEntryBlock == NULL) || (mainWindow->getGraphState().displayMode != DisplayMode::Curve)) {
+    //    return;
+    //}//if
+
+    boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
+
+    newKeyframe->tick = curMouseUnderTick_;
+    newKeyframe->value = curMouseUnderValue_;
+
+    keyframe = newKeyframe;
 }//constructor
 
 AddKeyframeCommand::~AddKeyframeCommand()
@@ -400,25 +412,12 @@ AddKeyframeCommand::~AddKeyframeCommand()
 
 void AddKeyframeCommand::doAction()
 {
-    assert(currentlySelectedEntryBlock != NULL);
-    //if ((currentlySelectedEntryBlock == NULL) || (mainWindow->getGraphState().displayMode != DisplayMode::Curve)) {
-    //    return;
-    //}//if
-
-    boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
-
-    newKeyframe->tick = curMouseUnderTick;
-    newKeyframe->value = curMouseUnderValue;
-
-    boost::shared_ptr<Animation> curve = currentlySelectedEntryBlock->getCurve();
-    curve->addKey(newKeyframe);
+    currentlySelectedEntryBlock->getCurve()->addKey(keyframe);
 }//doAction
 
 void AddKeyframeCommand::undoAction()
 {
-    currentlySelectedEntryBlock->getCurve()->deleteKey(curMouseUnderTick);
-
-    mainWindow->queue_draw();
+    currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
 }//undoAction
 
 DeleteKeyframeCommand::DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_)

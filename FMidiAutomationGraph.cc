@@ -404,7 +404,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
 
     context->set_source_rgba(1.0, 0.1, 1.0, 0.7);
     BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
-        int keyTick = keyPair.second->tick;
+        int keyTick = keyPair.second->tick + *startTick;
         int keyValue = keyPair.second->value + 0.5;
 
         if (keyPair.second->value < 0) {
@@ -625,7 +625,7 @@ void GraphState::doInit()
     barsSubdivisionAmount = 1;
     ticksPerPixel = 2;
     inMotion = false;
-    zeroithTickPixel = std::numeric_limits<int>::min();
+    zeroithTickPixel = std::numeric_limits<int>::max();
     curPointerTick = 0;
     curPointerTickXPixel = 0;
     selectedEntity = Nobody;
@@ -727,6 +727,13 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 
+    int zeroithTickCount = 0;
+    if ((displayMode == DisplayMode::Curve) && (currentlySelectedEntryBlock != NULL)) {
+        zeroithTickCount = currentlySelectedEntryBlock->getStartTick();
+    }//if
+
+    int realZeroithTickPixel = std::numeric_limits<int>::max();
+
     //Determine frame ticks
     bool toggle = true;
     verticalPixelTickValues.clear();
@@ -744,6 +751,10 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 
             verticalPixelTickValues.push_back(tickCount);
 
+            if ((zeroithTickCount > tickCount) && (x > 0)) {
+                zeroithTickPixel = x - 1;                    
+            }//if
+
 ////            std::cout << "absTickCountModded: " << absTickCountModded << "  --  tickCount: " << tickCount << "   offsetX: " << offsetX << "   x: " << x << std::endl;
             if (absTickCountModded < ticksPerPixel) { //XXX: <=??
                 tickCount = tickCount - (tickCount % 1000);
@@ -757,7 +768,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 verticalLines.push_back(std::make_pair(x, SecondLine));
 
                 if ((0 == tickCount) && (x > 0)) {
-                    zeroithTickPixel = x - 1;                    
+                    realZeroithTickPixel = x - 1;                    
                 }//if
 
                 std::ostringstream tmpSS;
@@ -779,6 +790,10 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 absTickCountModded = -absTickCountModded;
             }//if
 
+            if ((zeroithTickCount > tickCount) && (x > 0)) {
+                zeroithTickPixel = x - 1;
+            }//if
+
             if (0 == absTickCountModded) {
                 tickCount = tickCount - (tickCount % tickCountGroupSize);
 
@@ -794,8 +809,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                     tickCount = -tickCount;
                 }//if
 
-                if ((0 == tickCount) && (x > 0)) {
-                    zeroithTickPixel = x - 1;
+                 if ((0 == tickCount) && (x > 0)) {
+                    realZeroithTickPixel = x - 1;
                 }//if
 
                 if ((ticksPerPixel >= -42) || (true == toggle)) {
@@ -811,9 +826,11 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
         }//if
     }//for
 
+std::cout << "zeroith set: " << zeroithTickPixel << std::endl;
+
     //Our vertical tick values might not be correct for negative ticks
-    if (zeroithTickPixel != std::numeric_limits<int>::max()) {
-        for (int pos = 0; pos < zeroithTickPixel; ++pos) {
+    if (realZeroithTickPixel != std::numeric_limits<int>::max()) {
+        for (int pos = 0; pos < realZeroithTickPixel; ++pos) {
             if (verticalPixelTickValues[pos] > 0) {
                 verticalPixelTickValues[pos] = -verticalPixelTickValues[pos];
             }//if
@@ -828,6 +845,12 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
         }//if
     }//if
     
+
+//    for (int pos = 0; pos < verticalPixelTickValues.size(); ++pos) {
+//        std::cout << "verticalPixelTickValues[" << pos << "]: " << verticalPixelTickValues[pos] << std::endl;
+//    }//foreach
+//    std::cout << std::endl;
+
 }//refreshVerticalLines
 
 void GraphState::setOffsetCenteredOnValue(double value, int drawingAreaHeight)

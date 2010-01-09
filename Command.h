@@ -202,8 +202,7 @@ struct UpdateTempoChangeCommand : public Command
 struct AddKeyframeCommand : public Command
 {
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
-    int curMouseUnderTick;
-    int curMouseUnderValue;
+    boost::shared_ptr<Keyframe> keyframe;
 
     AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
     ~AddKeyframeCommand();

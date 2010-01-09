@@ -169,6 +169,7 @@ class FMidiAutomationMainWindow
     Gtk::Entry *positionTickEntry;
     Gtk::Entry *positionValueEntry;
     Gtk::Label *positionValueLabel;
+    Gtk::Entry *currentSampledValue;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
