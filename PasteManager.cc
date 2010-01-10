@@ -77,9 +77,9 @@ void PasteSequencerEntryBlockCommand::doPaste()
         }//if
 
         boost::shared_ptr<SequencerEntryBlock> newentryBlock(new SequencerEntryBlock(selectedEntry, globals.graphState->curPointerTick, boost::shared_ptr<SequencerEntryBlock>()));
-        newentryBlock->setTitle(entryBlock->getTitle());
+        newentryBlock->setTitle(entryBlock->getTitle());        
 
-        //FIXME: and clone the curves, etc...
+        newentryBlock->cloneCurves(entryBlock);
         boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newentryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand);
     }//if

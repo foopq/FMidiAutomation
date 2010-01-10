@@ -357,7 +357,12 @@ int determineTickCountGroupSize(int ticksPerPixel)
 
 void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
-    if (keyframes.empty() == true) {
+    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    if (instanceOf != NULL) {
+        curKeyframes = &instanceOf->keyframes;
+    }//if
+
+    if (curKeyframes->empty() == true) {
         return;
     }//if
 
@@ -403,7 +408,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     int selectedRectY = std::numeric_limits<int>::min();
 
     context->set_source_rgba(1.0, 0.1, 1.0, 0.7);
-    BOOST_FOREACH (KeyframeMapType keyPair, keyframes) {
+    BOOST_FOREACH (KeyframeMapType keyPair, *curKeyframes) {
         int keyTick = keyPair.second->tick + *startTick;
         int keyValue = keyPair.second->value + 0.5;
 
@@ -447,6 +452,8 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
 
         keyPair.second->drawnStartX = timePointerPixel - 4;
         keyPair.second->drawnStartY = areaHeight - valuePointerPixel - 4;
+
+//        std::cout << "drawnStartX: " << keyPair.second->drawnStartX << "  --  " << keyPair.second->drawnStartY << std::endl;
 
         context->reset_clip();
         context->rectangle(timePointerPixel - 4, areaHeight - valuePointerPixel - 4, 9, 9);
@@ -752,7 +759,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             verticalPixelTickValues.push_back(tickCount);
 
             if ((zeroithTickCount > tickCount) && (x > 0)) {
-                zeroithTickPixel = x - 1;                    
+                zeroithTickPixel = x;
             }//if
 
 ////            std::cout << "absTickCountModded: " << absTickCountModded << "  --  tickCount: " << tickCount << "   offsetX: " << offsetX << "   x: " << x << std::endl;
@@ -768,7 +775,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 verticalLines.push_back(std::make_pair(x, SecondLine));
 
                 if ((0 == tickCount) && (x > 0)) {
-                    realZeroithTickPixel = x - 1;                    
+                    realZeroithTickPixel = x - 1;
                 }//if
 
                 std::ostringstream tmpSS;
@@ -791,7 +798,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             }//if
 
             if ((zeroithTickCount > tickCount) && (x > 0)) {
-                zeroithTickPixel = x - 1;
+                zeroithTickPixel = x;
             }//if
 
             if (0 == absTickCountModded) {
@@ -825,8 +832,6 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             }//if
         }//if
     }//for
-
-std::cout << "zeroith set: " << zeroithTickPixel << std::endl;
 
     //Our vertical tick values might not be correct for negative ticks
     if (realZeroithTickPixel != std::numeric_limits<int>::max()) {

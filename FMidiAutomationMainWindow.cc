@@ -68,7 +68,7 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
     eventY -= 60;
 
     int newTick = graphState.verticalPixelTickValues[eventX];
-    newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel]);
+    newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel+1]);
     double newValue = graphState.horizontalPixelValues[eventY];
 
     newValue = std::max((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue);
@@ -754,6 +754,9 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     positionValueEntry->show_all();
     positionValueLabel->show_all();
 
+    graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
+    curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
@@ -1191,6 +1194,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                                 graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
                                 graphState.currentlySelectedEntryBlock = entryBlock;
 
+                                positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
+
                                 menuCopy->set_sensitive(true);
                                 menuCut->set_sensitive(true);
                             }//if
@@ -1322,7 +1327,6 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                                 "  </popup>"
                                 "</ui>";
                         } else {
-                            std::cout << "context at tick: " << curMouseUnderTick << "   zeroith: " << graphState.zeroithTickPixel << std::endl;
                             return false;
                         }//if
                     } else {

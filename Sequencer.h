@@ -49,6 +49,8 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
 public:    
     SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
 
+    void cloneCurves(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+
     void moveBlock(int startTick);
 //    void setDuration(int duration);
     void setTitle(const Glib::ustring &title);

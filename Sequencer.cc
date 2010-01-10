@@ -134,8 +134,13 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
     valuesPerPixel = std::numeric_limits<double>::max();
     offsetY = 0;
 
-    curve.reset(new Animation(this));
-    secondaryCurve.reset(new Animation(this));
+    if (instanceOf == NULL) {
+        curve.reset(new Animation(this, boost::shared_ptr<Animation>()));
+        secondaryCurve.reset(new Animation(this, boost::shared_ptr<Animation>()));
+    } else {
+        curve.reset(new Animation(this, instanceOf->curve));
+        secondaryCurve.reset(new Animation(this, instanceOf->secondaryCurve));
+    }//if
 }//constructor
 
 double SequencerEntryBlock::getValuesPerPixel()
@@ -182,6 +187,12 @@ void SequencerEntryBlock::moveBlock(int startTick_)
 //{
 //    duration = duration_;
 //}//setDuration
+
+void SequencerEntryBlock::cloneCurves(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    curve->absorbCurve(entryBlock->curve);
+    secondaryCurve->absorbCurve(entryBlock->secondaryCurve);
+}//cloneCurves
 
 void SequencerEntryBlock::setTitle(const Glib::ustring &title_)
 {
@@ -244,7 +255,7 @@ boost::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
 
 boost::shared_ptr<Animation> SequencerEntryBlock::getCurve()
 {
-    return curve;
+   return curve;
 }//getCurve
 
 boost::shared_ptr<Animation> SequencerEntryBlock::getSecondaryCurve()
