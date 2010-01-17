@@ -316,6 +316,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("positionValueEntry", positionValueEntry);
     uiXml->get_widget("positionValueLabel", positionValueLabel);
 
+    positionTickEntry->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox));
+
     Gtk::Label *statusBar;
     uiXml->get_widget("statusLabel", statusBar);
     statusBar->set_text("    Welcome to FMidiAutomation");
@@ -723,6 +725,10 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     positionValueEntry->hide_all();
     positionValueLabel->hide_all();
 
+    positionTickEntry->property_editable() = true;
+
+    PasteManager::Instance().clearCommand();
+
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
@@ -736,6 +742,8 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     if (selectedEntryBlock == NULL) {
         return;
     }//if
+
+    positionTickEntry->property_editable() = false;
 
     positionValueEntry->set_text("");
 
@@ -756,6 +764,8 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
 
     graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
     curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+
+    PasteManager::Instance().clearCommand();
 
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
@@ -864,6 +874,27 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnCursorTickEntryBox(GdkEventKey *
     }//try/catch
 }//handleKeyEntryOnCursorTickEntryBox
 
+bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey *event)
+{
+    if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
+        return false;
+    }//if
+
+    try {
+        int curTick = boost::lexical_cast<int>(positionTickEntry->get_text());
+        if (curTick >= 0) {
+            curTick = std::max(0, curTick);
+            graphState.currentlySelectedEntryBlock->moveBlock(curTick);
+            graphDrawingArea->queue_draw();
+            return true;
+        } else {
+            return false;
+        }//if
+    } catch(...) {
+        return false;
+    }//try/catch
+}//handleKeyEntryOnPositionTickEntryBox
+
 void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 {
     drawingAreaWidth = allocation.get_width();
@@ -884,18 +915,32 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 void FMidiAutomationMainWindow::on_menuCopy()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
+        PasteManager::Instance().setPasteOnly(false);
         if (graphState.currentlySelectedEntryBlock != NULL) {
             boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
             PasteManager::Instance().setNewCommand(pasteSequencerEntryBlockCommand);
+        }//if
+    } else {
+        PasteManager::Instance().setPasteOnly(true);
+        if (graphState.currentlySelectedKeyframe != NULL) {
+            boost::shared_ptr<PasteSequencerKeyframeCommand> pasteSequencerKeyframeCommand(new PasteSequencerKeyframeCommand(graphState.currentlySelectedKeyframe));
+            PasteManager::Instance().setNewCommand(pasteSequencerKeyframeCommand);
         }//if
     }//if
 }//on_menuCopy
 
 void FMidiAutomationMainWindow::on_menuCut()
 {
-    if (graphState.currentlySelectedEntryBlock != NULL) {
-        handleDeleteSeqencerEntryBlock();
-        on_menuCopy();
+    if (graphState.displayMode == DisplayMode::Sequencer) {
+        if (graphState.currentlySelectedEntryBlock != NULL) {
+            handleDeleteSeqencerEntryBlock();
+            on_menuCopy();
+        }//if
+    } else {
+        if (graphState.currentlySelectedKeyframe != NULL) {
+            on_menuCopy();
+            curveEditor->handleDeleteKeyframe();
+        }//if
     }//if
 }//on_menuCut
 
@@ -1209,6 +1254,12 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                                 graphState.didMoveKey = false;
                                 graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick - graphState.currentlySelectedEntryBlock->getStartTick();
                                 graphState.movingKeyOrigValue = graphState.currentlySelectedKeyframe->value;
+
+                                menuCopy->set_sensitive(true);
+                                menuCut->set_sensitive(true);
+                            } else {
+                                menuCopy->set_sensitive(false);
+                                menuCut->set_sensitive(false);
                             }//if
                         }//if
 
@@ -1624,6 +1675,14 @@ bool FMidiAutomationMainWindow::on_idle()
 
     return true;
 }//on_idle
+
+void FMidiAutomationMainWindow::handleDeleteKeyframe()
+{
+    menuCopy->set_sensitive(false);
+    menuCut->set_sensitive(false);
+
+    curveEditor->handleDeleteKeyframe();
+}//handleDeleteKeyframe
 
 void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
 {

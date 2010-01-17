@@ -2,6 +2,7 @@
 #include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
 #include "Command.h"
+#include "Animation.h"
 
 PasteManager &PasteManager::Instance()
 {
@@ -41,6 +42,11 @@ void PasteManager::doPasteInstance()
         command->doPasteInstance();
     }//if
 }//doPasteInstance
+
+void PasteManager::clearCommand()
+{
+    command.reset();
+}//clearcommand
 
 void PasteManager::setNewCommand(boost::shared_ptr<PasteCommand> command_)
 {
@@ -106,6 +112,44 @@ void PasteSequencerEntryBlockCommand::doPasteInstance()
         boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newentryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand);
     }//if
+}//doPasteInstance
+
+PasteSequencerKeyframeCommand::PasteSequencerKeyframeCommand(boost::shared_ptr<Keyframe> keyframe_)
+{
+    keyframe = keyframe_;
+}//constructor
+
+PasteSequencerKeyframeCommand::~PasteSequencerKeyframeCommand()
+{
+    //Nothing
+}//destructor
+
+void PasteSequencerKeyframeCommand::doPaste()
+{
+    Globals &globals = Globals::Instance();
+    
+    if (globals.graphState->displayMode != DisplayMode::Curve) {
+        return;
+    }//if
+
+    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->currentlySelectedEntryBlock;
+    if (currentlySelectedEntryBlock == NULL) {
+        return;
+    }//if
+
+    int tick = globals.graphState->curPointerTick;
+
+    if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(tick) != NULL) {
+        return;
+    }//if
+
+    boost::shared_ptr<Command> addKeyframeCommand(new AddKeyframeCommand(currentlySelectedEntryBlock, keyframe, tick - currentlySelectedEntryBlock->getStartTick()));
+    CommandManager::Instance().setNewCommand(addKeyframeCommand);
+}//doPaste
+
+void PasteSequencerKeyframeCommand::doPasteInstance()
+{
+    doPaste();
 }//doPasteInstance
 
 

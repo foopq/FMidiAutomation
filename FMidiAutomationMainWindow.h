@@ -225,6 +225,7 @@ class FMidiAutomationMainWindow
     bool handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnRightTickEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnCursorTickEntryBox(GdkEventKey *event);
+    bool handleKeyEntryOnPositionTickEntryBox(GdkEventKey *event);
 
     bool handleBPMFrameClick(GdkEventButton *event);
     void handleBPMFrameClickBase();
@@ -246,6 +247,8 @@ class FMidiAutomationMainWindow
     void handleDeleteSeqencerEntryBlock();
     void handleSequencerEntryProperties();
     void handleSequencerEntryCurve();
+
+    void handleDeleteKeyframe();
 
     void updateCursorTick(int tick, bool updateJack);
 

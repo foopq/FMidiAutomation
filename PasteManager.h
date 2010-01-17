@@ -12,6 +12,7 @@ struct FMidiAutomationData;
 class Sequencer;
 class SequencerEntry;
 class SequencerEntryBlock;
+struct Keyframe;
 
 struct PasteCommand
 {
@@ -34,6 +35,7 @@ public:
 
     void setMenuItems(Gtk::ImageMenuItem *menuPaste, Gtk::ImageMenuItem *menuPasteInstance);
     void setPasteOnly(bool pasteOnly);
+    void clearCommand();
 
     void doPaste();
     void doPasteInstance();
@@ -50,6 +52,18 @@ struct PasteSequencerEntryBlockCommand : public PasteCommand
     void doPaste();
     void doPasteInstance();
 };//PasteSequencerEntryBlockCommand
+
+struct PasteSequencerKeyframeCommand : public PasteCommand
+{
+    boost::shared_ptr<Keyframe> keyframe;
+
+    PasteSequencerKeyframeCommand(boost::shared_ptr<Keyframe> keyframe);
+    ~PasteSequencerKeyframeCommand();
+
+    void doPaste();
+    void doPasteInstance();
+};//PasteSequencerKeyframeCommand
+
 
 #endif
 

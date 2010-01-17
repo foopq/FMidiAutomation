@@ -386,6 +386,20 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
     entry->setNewDataImpl(origImpl);
 }//undoAction
 
+AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, boost::shared_ptr<Keyframe> origKeyframe, int newTick)
+{
+    currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
+    assert(currentlySelectedEntryBlock != NULL);
+
+    boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
+
+    *newKeyframe = *origKeyframe;
+    newKeyframe->tick = newTick;
+    newKeyframe->isSelected = false;
+
+    keyframe = newKeyframe;
+}//constructor
+
 AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_)
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;

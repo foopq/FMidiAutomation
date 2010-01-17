@@ -829,7 +829,6 @@
                               <object class="GtkEntry" id="positionTickEntry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="editable">False</property>
                                 <property name="invisible_char">&#x25CF;</property>
                                 <property name="width_chars">10</property>
                               </object>
