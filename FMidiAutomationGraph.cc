@@ -378,7 +378,9 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     typedef std::pair<int, boost::shared_ptr<Keyframe> > KeyframeMapType;
 
     //Render curve
-    context->set_source_rgba(0.6, 0.3, 0.7, 0.6);
+    int lastTimePixel = std::numeric_limits<int>::min();
+    int lastValuePixel = std::numeric_limits<int>::min();
+
     int tickValuesSize = graphState.verticalPixelTickValues.size();
     for (unsigned int index = 0; index < tickValuesSize; ++index) {
         int keyTick = graphState.verticalPixelTickValues[index];
@@ -397,18 +399,38 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         int midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
         unsigned int valuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
 
+
+        context->set_source_rgba(0.6, 0.3, 0.7, 0.6);
         context->reset_clip();
         context->rectangle(index - 1, areaHeight - valuePointerPixel - 1, 2, 2);
         context->clip();
         context->paint();
+
+        //Draw a faint line between this point and the last one, to ease any discontinuities
+        if (lastTimePixel != std::numeric_limits<int>::min()) {
+            context->reset_clip();
+            context->set_source_rgba(0.2, 0.4, 0.1, 0.5);
+            context->set_line_width(1.0);
+
+            context->move_to(index, areaHeight - valuePointerPixel);
+            context->line_to(lastTimePixel, lastValuePixel);
+
+            context->stroke();
+        }//if
+
+        lastTimePixel = index;
+        lastValuePixel = areaHeight - valuePointerPixel;
     }//foreach
 
     //Render keys
     int selectedRectX = std::numeric_limits<int>::min();
     int selectedRectY = std::numeric_limits<int>::min();
 
-    context->set_source_rgba(1.0, 0.1, 1.0, 0.7);
+    CurveType::CurveType lastCurveType = CurveType::Init;
+
     BOOST_FOREACH (KeyframeMapType keyPair, *curKeyframes) {
+        context->set_source_rgba(1.0, 0.1, 1.0, 0.7);
+
         int keyTick = keyPair.second->tick + *startTick;
         int keyValue = keyPair.second->value + 0.5;
 
@@ -419,6 +441,12 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         if ((keyTick < minTick) || (keyTick > maxTick) || (keyValue < minValue) || (keyValue > maxValue)) {
             keyPair.second->drawnStartX = std::numeric_limits<int>::min();
             keyPair.second->drawnStartY = std::numeric_limits<int>::min();
+
+            keyPair.second->drawnOutX = std::numeric_limits<int>::min();
+            keyPair.second->drawnOutY = std::numeric_limits<int>::min();
+
+            keyPair.second->drawnInX = std::numeric_limits<int>::min();
+            keyPair.second->drawnInY = std::numeric_limits<int>::min();
 
             continue;
         }//if
@@ -459,6 +487,65 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         context->rectangle(timePointerPixel - 4, areaHeight - valuePointerPixel - 4, 9, 9);
         context->clip();
         context->paint();
+
+        //And tangent points, if any
+        if ((keyPair.second->curveType == CurveType::Bezier) || (lastCurveType == CurveType::Bezier)) {
+            //Out
+            timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyPair.second->outTangent[0] + keyTick);
+            if (timeBound != graphState.verticalPixelTickValues.end()) {
+                unsigned int outTangentTimePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
+
+                valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->outTangent[1] + keyValue);
+                if (valueIterPair.first != valueIterPair.second) {
+                    midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
+                    unsigned int outTangentValuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
+
+                    context->set_source_rgba(0.1, 0.4, 0.8, 0.7);
+                    context->reset_clip();
+                    context->rectangle(outTangentTimePointerPixel - 4, areaHeight - outTangentValuePointerPixel - 4, 9, 9);
+                    context->clip();
+                    context->paint();
+
+                    context->reset_clip();
+                    context->set_source_rgba(0.2, 0.4, 0.9, 0.5);
+                    context->set_line_width(1.0);
+
+                    context->move_to(timePointerPixel, areaHeight - valuePointerPixel);
+                    context->line_to(outTangentTimePointerPixel, areaHeight - outTangentValuePointerPixel);
+
+                    context->stroke();
+                }//if
+            }//if
+
+            //In
+            timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyTick - keyPair.second->inTangent[0]);
+            if (timeBound != graphState.verticalPixelTickValues.end()) {
+                unsigned int inTangentTimePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
+
+                valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->inTangent[1] + keyValue);
+                if (valueIterPair.first != valueIterPair.second) {
+                    midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
+                    unsigned int inTangentValuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
+
+                    context->set_source_rgba(0.1, 0.4, 0.8, 0.7);
+                    context->reset_clip();
+                    context->rectangle(inTangentTimePointerPixel - 4, areaHeight - inTangentValuePointerPixel - 4, 9, 9);
+                    context->clip();
+                    context->paint();
+
+                    context->reset_clip();
+                    context->set_source_rgba(0.2, 0.4, 0.9, 0.5);
+                    context->set_line_width(1.0);
+
+                    context->move_to(timePointerPixel, areaHeight - valuePointerPixel);
+                    context->line_to(inTangentTimePointerPixel, areaHeight - inTangentValuePointerPixel);
+
+                    context->stroke();
+                }//if
+            }//if
+        }//if
+
+        lastCurveType = keyPair.second->curveType;
     }//foreach
 
     if (selectedRectX != std::numeric_limits<int>::min()) {

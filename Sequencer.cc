@@ -183,6 +183,23 @@ void SequencerEntryBlock::moveBlock(int startTick_)
     owningEntry_->addEntryBlock(startTick, shared_from_this());
 }//moveBlock
 
+boost::shared_ptr<Keyframe> SequencerEntryBlock::getNextKeyframe(boost::shared_ptr<Keyframe> keyframe)
+{
+    boost::shared_ptr<Keyframe> afterFirst = curve->getNextKeyframe(keyframe);
+
+    if (afterFirst != NULL) {
+        return afterFirst;
+    }//if
+
+    boost::shared_ptr<Keyframe> afterSecond = secondaryCurve->getNextKeyframe(keyframe);
+
+    if (afterSecond != NULL) {
+        return afterSecond;
+    }//if
+
+    return boost::shared_ptr<Keyframe>();
+}//getNextKeyframe
+
 //void SequencerEntryBlock::setDuration(int duration_)
 //{
 //    duration = duration_;

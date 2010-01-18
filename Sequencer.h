@@ -19,6 +19,7 @@ class SequencerEntry;
 class SequencerEntryBlock;
 class FMidiAutomationMainWindow;
 class Animation;
+struct Keyframe;
 
 struct SequencerEntryBlockSelectionInfo
 {
@@ -69,6 +70,8 @@ public:
 
     boost::shared_ptr<Animation> getCurve();
     boost::shared_ptr<Animation> getSecondaryCurve();
+
+    boost::shared_ptr<Keyframe> getNextKeyframe(boost::shared_ptr<Keyframe> keyframe);
 
     int *getRawStartTick();
 
