@@ -95,7 +95,7 @@ Keyframe::Keyframe()
     outTangent[0] = std::numeric_limits<int>::min();
     outTangent[1] = std::numeric_limits<int>::min();
     curveType = CurveType::Init;
-    isSelected = false;
+    selectedState = KeySelectedType::NotSelected;
 };//constructor
 
 Animation::Animation(SequencerEntryBlock *owningEntryBlock_, boost::shared_ptr<Animation> instanceOf_)
@@ -147,29 +147,43 @@ void Animation::addKey(boost::shared_ptr<Keyframe> keyframe)
         (*curKeyframes)[keyframe->tick] = keyframe;
         std::map<int, boost::shared_ptr<Keyframe> >::iterator keyIter = curKeyframes->find(keyframe->tick);
         std::map<int, boost::shared_ptr<Keyframe> >::iterator nextKeyIter = keyIter;
+        std::map<int, boost::shared_ptr<Keyframe> >::iterator prevKeyIter = keyIter;
+        if (curKeyframes->begin() == prevKeyIter) {
+            prevKeyIter = curKeyframes->end();
+        } else {
+            prevKeyIter--;
+        }//if
         ++nextKeyIter;
 
-        if (nextKeyIter != curKeyframes->end()) {
-            int tickDiff = (nextKeyIter->second->tick - keyframe->tick) / 3;
-
-            if (keyframe->outTangent[0] < 0) {
-                keyframe->outTangent[0] = tickDiff;
-            }//if
-
-            if (nextKeyIter->second->inTangent[0] < 0) {
-                nextKeyIter->second->inTangent[0] = tickDiff;
-            }//if
-        }//if
-
         if (CurveType::Init == keyframe->curveType) {
-            if (keyIter != curKeyframes->begin()) {
-                keyIter--;
-                keyframe->curveType = keyIter->second->curveType;
+            if (prevKeyIter != curKeyframes->end()) {
+                keyframe->curveType = prevKeyIter->second->curveType;
+
+                if (prevKeyIter->second->curveType == CurveType::Bezier) {
+                    int prevTickDiff = (keyframe->tick - prevKeyIter->second->tick) / 3;
+                    keyframe->inTangent[0] = prevTickDiff;
+                    keyframe->inTangent[1] = 0;
+
+                    if (prevKeyIter->second->outTangent[0] == std::numeric_limits<int>::min()) {
+                        prevKeyIter->second->outTangent[0] = prevTickDiff;
+                        prevKeyIter->second->outTangent[1] = 0;
+                    }//if
+
+                    if (nextKeyIter != curKeyframes->end()) {
+                        int tickDiff = (nextKeyIter->second->tick - keyframe->tick) / 3;
+                        keyframe->outTangent[0] = tickDiff;
+                        keyframe->outTangent[1] = 0;
+
+                        if (nextKeyIter->second->inTangent[0] == std::numeric_limits<int>::min()) {
+                            nextKeyIter->second->inTangent[0] = tickDiff;
+                            nextKeyIter->second->inTangent[1] = 0;
+                        }//if
+                    }//if
+                }//if
             } else {
                 keyframe->curveType = CurveType::Linear;
             }//if
         }//if
-
 //        std::cout << "addKey: " << keyframe->tick << "  --  " << curKeyframes->size() << std::endl;
     }//if
 }//addKey

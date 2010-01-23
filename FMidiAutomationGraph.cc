@@ -381,8 +381,11 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     int lastTimePixel = std::numeric_limits<int>::min();
     int lastValuePixel = std::numeric_limits<int>::min();
 
+    int maxEntryBlockValue = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->maxValue;
+    int minEntryBlockValue = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue;
+    
     int tickValuesSize = graphState.verticalPixelTickValues.size();
-    for (unsigned int index = 0; index < tickValuesSize; ++index) {
+    for (int index = 0; index < tickValuesSize; ++index) {
         int keyTick = graphState.verticalPixelTickValues[index];
         double keyValueBase = sample(keyTick);
         int keyValue = keyValueBase + 0.5;
@@ -394,11 +397,13 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
             continue;
         }//if
 
+        keyValue = std::min(keyValue, maxEntryBlockValue);
+        keyValue = std::max(keyValue, minEntryBlockValue);
+
         std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyValue);
         assert(valueIterPair.first != valueIterPair.second);
         int midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
         unsigned int valuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
-
 
         context->set_source_rgba(0.6, 0.3, 0.7, 0.6);
         context->reset_clip();
@@ -427,8 +432,20 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     int selectedRectY = std::numeric_limits<int>::min();
 
     CurveType::CurveType lastCurveType = CurveType::Init;
+    boost::shared_ptr<Keyframe> lastDrawnKey;
 
-    BOOST_FOREACH (KeyframeMapType keyPair, *curKeyframes) {
+    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->begin();
+    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator nextKeyIter = keyIter;
+    if (nextKeyIter != curKeyframes->end()) {
+        ++nextKeyIter;
+    }//if
+
+    //BOOST_FOREACH (KeyframeMapType keyPair, *curKeyframes) {
+    for (/*nothing*/; keyIter != curKeyframes->end(); ++keyIter) {
+        KeyframeMapType keyPair;
+        keyPair.first = keyIter->first;
+        keyPair.second = keyIter->second;
+
         context->set_source_rgba(1.0, 0.1, 1.0, 0.7);
 
         int keyTick = keyPair.second->tick + *startTick;
@@ -447,6 +464,13 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
 
             keyPair.second->drawnInX = std::numeric_limits<int>::min();
             keyPair.second->drawnInY = std::numeric_limits<int>::min();
+
+            lastCurveType = keyPair.second->curveType;
+            lastDrawnKey = keyPair.second;
+
+            if (nextKeyIter != curKeyframes->end()) {
+                ++nextKeyIter;
+            }//if
 
             continue;
         }//if
@@ -473,7 +497,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         }//if
         */
 
-        if (true == keyPair.second->isSelected) {
+        if (KeySelectedType::Key == keyPair.second->selectedState) {
             selectedRectX = timePointerPixel - 4;
             selectedRectY = areaHeight - valuePointerPixel - 4;
         }//if
@@ -489,63 +513,117 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         context->paint();
 
         //And tangent points, if any
-        if ((keyPair.second->curveType == CurveType::Bezier) || (lastCurveType == CurveType::Bezier)) {
+        if ( ((graphState.currentlySelectedKeyframe == keyPair.second) || ((graphState.currentlySelectedKeyframe == lastDrawnKey)) || ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == graphState.currentlySelectedKeyframe)) ) && 
+             ((keyPair.second->curveType == CurveType::Bezier) || (lastCurveType == CurveType::Bezier) || (nextKeyIter->second->curveType == CurveType::Bezier)) ) {
+
+            bool shouldDrawOutTangent = false;
+            bool shouldDrawInTangent = false;
+
+            if ( ((graphState.currentlySelectedKeyframe == keyPair.second) || ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == graphState.currentlySelectedKeyframe))) && 
+                  (keyPair.second->curveType == CurveType::Bezier) ) {
+                shouldDrawOutTangent = true;
+            }//if
+
+            if (lastCurveType == CurveType::Bezier) {
+                shouldDrawInTangent = true;
+            }//if
+
             //Out
-            timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyPair.second->outTangent[0] + keyTick);
-            if (timeBound != graphState.verticalPixelTickValues.end()) {
-                unsigned int outTangentTimePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
+            if (true == shouldDrawOutTangent) {
+                timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyPair.second->outTangent[0] + keyTick);
 
-                valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->outTangent[1] + keyValue);
-                if (valueIterPair.first != valueIterPair.second) {
-                    midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
-                    unsigned int outTangentValuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
+                if (timeBound != graphState.verticalPixelTickValues.end()) {
+                    unsigned int outTangentTimePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
 
-                    context->set_source_rgba(0.1, 0.4, 0.8, 0.7);
-                    context->reset_clip();
-                    context->rectangle(outTangentTimePointerPixel - 4, areaHeight - outTangentValuePointerPixel - 4, 9, 9);
-                    context->clip();
-                    context->paint();
+                    valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->outTangent[1] + keyValue);
+                    if (valueIterPair.first != valueIterPair.second) {
+                        midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
+                    } else {
+                        midValOffset = 0;
+                        valueIterPair.first = std::lower_bound(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->outTangent[1] + keyValue);
+                    }//if
 
-                    context->reset_clip();
-                    context->set_source_rgba(0.2, 0.4, 0.9, 0.5);
-                    context->set_line_width(1.0);
+                    if (valueIterPair.first == graphState.roundedHorizontalValues.rbegin()) {
+                        if ((*graphState.roundedHorizontalValues.rbegin()) > keyPair.second->outTangent[1] + keyValue) {
+                            valueIterPair.first = graphState.roundedHorizontalValues.rend();
+                        }//if
+                    }//if
 
-                    context->move_to(timePointerPixel, areaHeight - valuePointerPixel);
-                    context->line_to(outTangentTimePointerPixel, areaHeight - outTangentValuePointerPixel);
+                    if (valueIterPair.first != graphState.roundedHorizontalValues.rend()) {
+                        unsigned int outTangentValuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
 
-                    context->stroke();
+                        context->set_source_rgba(0.1, 0.4, 0.8, 0.7);
+                        context->reset_clip();
+                        context->rectangle(outTangentTimePointerPixel - 4, areaHeight - outTangentValuePointerPixel - 4, 9, 9);
+                        context->clip();
+                        context->paint();
+
+                        context->reset_clip();
+                        context->set_source_rgba(0.2, 0.4, 0.9, 0.5);
+                        context->set_line_width(1.0);
+
+                        context->move_to(timePointerPixel, areaHeight - valuePointerPixel);
+                        context->line_to(outTangentTimePointerPixel, areaHeight - outTangentValuePointerPixel);
+
+                        context->stroke();
+
+                        keyPair.second->drawnOutX = outTangentTimePointerPixel - 4;
+                        keyPair.second->drawnOutY = areaHeight - outTangentValuePointerPixel - 4;
+                    }//if
                 }//if
             }//if
 
             //In
-            timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyTick - keyPair.second->inTangent[0]);
-            if (timeBound != graphState.verticalPixelTickValues.end()) {
-                unsigned int inTangentTimePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
+            if (true == shouldDrawInTangent) {
+                timeBound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), keyTick - keyPair.second->inTangent[0]);
+                if (timeBound != graphState.verticalPixelTickValues.end()) {
+                    unsigned int inTangentTimePointerPixel = std::distance(graphState.verticalPixelTickValues.begin(), timeBound);
 
-                valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->inTangent[1] + keyValue);
-                if (valueIterPair.first != valueIterPair.second) {
-                    midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
-                    unsigned int inTangentValuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
+                    valueIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->inTangent[1] + keyValue);
+                    if (valueIterPair.first != valueIterPair.second) {
+                        midValOffset = ((double)std::distance(valueIterPair.first, valueIterPair.second) / 2.0);
+                    } else {
+                        midValOffset = 0;
+                        valueIterPair.first = std::lower_bound(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), keyPair.second->inTangent[1] + keyValue);
+                    }//if
 
-                    context->set_source_rgba(0.1, 0.4, 0.8, 0.7);
-                    context->reset_clip();
-                    context->rectangle(inTangentTimePointerPixel - 4, areaHeight - inTangentValuePointerPixel - 4, 9, 9);
-                    context->clip();
-                    context->paint();
+                    if (valueIterPair.first == graphState.roundedHorizontalValues.rbegin()) {
+                        if ((*graphState.roundedHorizontalValues.rbegin()) > keyPair.second->inTangent[1] + keyValue) {
+                            valueIterPair.first = graphState.roundedHorizontalValues.rend();
+                        }//if
+                    }//if
 
-                    context->reset_clip();
-                    context->set_source_rgba(0.2, 0.4, 0.9, 0.5);
-                    context->set_line_width(1.0);
+                    if (valueIterPair.first != graphState.roundedHorizontalValues.rend()) {
+                        unsigned int inTangentValuePointerPixel = std::distance(graphState.roundedHorizontalValues.rbegin(), valueIterPair.first) + midValOffset;
 
-                    context->move_to(timePointerPixel, areaHeight - valuePointerPixel);
-                    context->line_to(inTangentTimePointerPixel, areaHeight - inTangentValuePointerPixel);
+                        context->set_source_rgba(0.1, 0.4, 0.8, 0.7);
+                        context->reset_clip();
+                        context->rectangle(inTangentTimePointerPixel - 4, areaHeight - inTangentValuePointerPixel - 4, 9, 9);
+                        context->clip();
+                        context->paint();
 
-                    context->stroke();
+                        context->reset_clip();
+                        context->set_source_rgba(0.2, 0.4, 0.9, 0.5);
+                        context->set_line_width(1.0);
+
+                        context->move_to(timePointerPixel, areaHeight - valuePointerPixel);
+                        context->line_to(inTangentTimePointerPixel, areaHeight - inTangentValuePointerPixel);
+
+                        context->stroke();
+
+                        keyPair.second->drawnInX = inTangentTimePointerPixel - 4;
+                        keyPair.second->drawnInY = areaHeight - inTangentValuePointerPixel - 4;
+                    }//if
                 }//if
             }//if
         }//if
 
         lastCurveType = keyPair.second->curveType;
+        lastDrawnKey = keyPair.second;
+
+        if (nextKeyIter != curKeyframes->end()) {
+            ++nextKeyIter;
+        }//if
     }//foreach
 
     if (selectedRectX != std::numeric_limits<int>::min()) {
@@ -625,7 +703,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), maxValue);
 
         if (maxIterPair.first != graphState.roundedHorizontalValues.rend()) {
-            int rangeDist = std::distance(maxIterPair.first, maxIterPair.second) / 2.0;
+            //int rangeDist = std::distance(maxIterPair.first, maxIterPair.second) / 2.0;
             std::vector<int>::reverse_iterator maxIter = maxIterPair.second;
 ////            std::advance(maxIter, rangeDist);
 
@@ -642,7 +720,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         //std::vector<int>::reverse_iterator minIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), minValue);
         std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> minIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), minValue);
         if (minIterPair.first != graphState.roundedHorizontalValues.rend()) {
-            int rangeDist = std::distance(minIterPair.first, minIterPair.second) / 2.0;
+            //int rangeDist = std::distance(minIterPair.first, minIterPair.second) / 2.0;
             std::vector<int>::reverse_iterator minIter = minIterPair.first;
 
             unsigned int dist = std::distance(graphState.roundedHorizontalValues.rbegin(), minIter);
@@ -884,6 +962,7 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
                 absTickCountModded = -absTickCountModded;
             }//if
 
+//std::cout << "x: " << x << "     zeroithTickCount: " << zeroithTickCount << "      tickCount: " << tickCount << std::endl;                
             if ((zeroithTickCount > tickCount) && (x > 0)) {
                 zeroithTickPixel = x;
             }//if
@@ -936,13 +1015,20 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
             upperLineText.erase(upperLineText.begin());
         }//if
     }//if
+
+    //Another ugly kluge
+    if (std::numeric_limits<int>::max() == zeroithTickPixel) {
+        zeroithTickPixel = realZeroithTickPixel;
+    }//if
     
-
-//    for (int pos = 0; pos < verticalPixelTickValues.size(); ++pos) {
-//        std::cout << "verticalPixelTickValues[" << pos << "]: " << verticalPixelTickValues[pos] << std::endl;
-//    }//foreach
-//    std::cout << std::endl;
-
+/*
+    for (int pos = 0; pos < verticalPixelTickValues.size(); ++pos) {
+        std::cout << "verticalPixelTickValues[" << pos << "]: " << verticalPixelTickValues[pos] << std::endl;
+    }//foreach
+    std::cout << std::endl;
+    std::cout << "zeroithTickPixel: " << zeroithTickPixel << std::endl;
+    std::cout << std::endl;
+*/
 }//refreshVerticalLines
 
 void GraphState::setOffsetCenteredOnValue(double value, int drawingAreaHeight)

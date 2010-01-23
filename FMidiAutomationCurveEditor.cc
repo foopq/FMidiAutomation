@@ -193,12 +193,12 @@ void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
         if (afterSelectedKey != NULL) {
             int tickDiff = (afterSelectedKey->tick - selectedKey->tick) / 3;
 
-            if (selectedKey->outTangent[0] < 0) {
+            if (selectedKey->outTangent[0] == std::numeric_limits<int>::min()) {
                 selectedKey->outTangent[0] = tickDiff;
                 selectedKey->outTangent[1] = 0;
             }//if
 
-            if (afterSelectedKey->inTangent[0] < 0) {
+            if (afterSelectedKey->inTangent[0] == std::numeric_limits<int>::min()) {
                 afterSelectedKey->inTangent[0] = tickDiff;
                 afterSelectedKey->inTangent[1] = 0;
             }//if
@@ -295,30 +295,33 @@ boost::shared_ptr<Keyframe> CurveEditor::getKeySelection(GraphState &graphState,
 
 //    std::cout << "getKeySelection: " << numKeys << std::endl;
 
+    SelectedEntity selectedEntity = Nobody;
     for (int index = 0; index < numKeys; ++index) {
         boost::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
-        curKey->isSelected = false;
+        curKey->selectedState = KeySelectedType::NotSelected;
 
         if ( (curKey->drawnStartX <= mousePressDownX) && (curKey->drawnStartX + 9 >= mousePressDownX) &&
              (curKey->drawnStartY <= mousePressDownY) && (curKey->drawnStartY + 9 >= mousePressDownY) ) {
             selectedKey = curKey;
+            selectedEntity = KeyValue;
         }//if
 
-        if (curKey->curveType == CurveType::Bezier) {
-            if ( (curKey->drawnOutX <= mousePressDownX) && (curKey->drawnOutX + 9 >= mousePressDownX) &&
-                 (curKey->drawnOutY <= mousePressDownY) && (curKey->drawnOutY + 9 >= mousePressDownY) ) {
-                selectedKey = curKey;
-            }//if
+        if ( (curKey->drawnOutX <= mousePressDownX) && (curKey->drawnOutX + 9 >= mousePressDownX) &&
+             (curKey->drawnOutY <= mousePressDownY) && (curKey->drawnOutY + 9 >= mousePressDownY) ) {
+            selectedKey = curKey;
+            selectedEntity = OutTangent;
+        }//if
 
-            if ( (curKey->drawnInX <= mousePressDownX) && (curKey->drawnInX + 9 >= mousePressDownX) &&
-                 (curKey->drawnInY <= mousePressDownY) && (curKey->drawnInY + 9 >= mousePressDownY) ) {
-                selectedKey = curKey;
-            }//if
+        if ( (curKey->drawnInX <= mousePressDownX) && (curKey->drawnInX + 9 >= mousePressDownX) &&
+             (curKey->drawnInY <= mousePressDownY) && (curKey->drawnInY + 9 >= mousePressDownY) ) {
+            selectedKey = curKey;
+            selectedEntity = InTangent;
         }//if
     }//for
 
     if (selectedKey != NULL) {
-        selectedKey->isSelected = true;
+        selectedKey->selectedState = KeySelectedType::Key;
+        graphState.selectedEntity = selectedEntity;
 
 //        std::cout << "found key: " << mousePressDownX << " - " << mousePressDownY << std::endl;
     }//if
@@ -345,6 +348,8 @@ void CurveEditor::setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared
                 break;
             case CurveType::Bezier:
                 comboBox->set_active(0);
+                break;
+            default:
                 break;
         }//switch
     }//if

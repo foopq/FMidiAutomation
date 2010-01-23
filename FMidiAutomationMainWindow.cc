@@ -62,13 +62,15 @@ bool handleGraphValueScroll(GdkEventMotion *event, GraphState &graphState, gdoub
 void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
 {
     int eventX = std::max(0, (int)event->x);
-    eventX = std::min(eventX, drawingAreaWidth);
+    eventX = std::min(eventX, drawingAreaWidth-1);
     int eventY = std::max(60, (int)event->y);
     eventY = std::min(eventY, drawingAreaHeight);
     eventY -= 60;
 
     int newTick = graphState.verticalPixelTickValues[eventX];
-    newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel+1]);
+    if (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) {
+        newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel+1]);
+    }//if
     double newValue = graphState.horizontalPixelValues[eventY];
 
     newValue = std::max((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue);
@@ -80,6 +82,8 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
     }//if
 
     graphState.didMoveKey = true;
+    graphState.didMoveKeyOutTangent = true;
+    graphState.didMoveKeyInTangent = true;
 
     graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
 
@@ -88,6 +92,30 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
 
     graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
 }//handleKeyScroll
+
+void handleKeyTangentScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
+{
+    int eventX = std::max(0, (int)event->x);
+    eventX = std::min(eventX, drawingAreaWidth-1);
+    int eventY = std::max(60, (int)event->y);
+    eventY = std::min(eventY, drawingAreaHeight);
+    eventY -= 60;
+
+    int newTick = graphState.verticalPixelTickValues[eventX];
+    double newValue = graphState.horizontalPixelValues[eventY];
+
+    if (InTangent == graphState.selectedEntity) {
+        graphState.didMoveKeyInTangent = true;
+
+        graphState.currentlySelectedKeyframe->inTangent[0] = graphState.currentlySelectedKeyframe->tick - newTick;
+        graphState.currentlySelectedKeyframe->inTangent[1] = newValue - graphState.currentlySelectedKeyframe->value;
+    } else {
+        graphState.didMoveKeyOutTangent = true;
+
+        graphState.currentlySelectedKeyframe->outTangent[0] = newTick - graphState.currentlySelectedKeyframe->tick;
+        graphState.currentlySelectedKeyframe->outTangent[1] = newValue - graphState.currentlySelectedKeyframe->value;
+    }//if
+}//handleKeyTangentScroll
 
 void handleGraphTimeScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth)
 {
@@ -1148,7 +1176,7 @@ void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
 
     if (graphState.displayMode == DisplayMode::Curve) {
         if (graphState.currentlySelectedEntryBlock != NULL) {
-            double sampledValueBase = graphState.currentlySelectedEntryBlock->getCurve()->sample(graphState.curPointerTick);
+            double sampledValueBase = graphState.currentlySelectedEntryBlock->getOwningEntry()->sample(graphState.curPointerTick);
             int sampledValue = sampledValueBase + 0.5;
             if (sampledValueBase < 0) {
                 sampledValue = sampledValueBase - 0.5;
@@ -1249,7 +1277,6 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                             curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
 
                             if (graphState.currentlySelectedKeyframe != NULL) {
-                                graphState.selectedEntity = KeyValue;
 
                                 graphState.didMoveKey = false;
                                 graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick - graphState.currentlySelectedEntryBlock->getStartTick();
@@ -1582,6 +1609,12 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 
         else if (graphState.selectedEntity == KeyValue) {
             handleKeyScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
+            curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+            graphDrawingArea->queue_draw();
+        }//if
+
+        else if ((graphState.selectedEntity == InTangent) || (graphState.selectedEntity == OutTangent)) {
+            handleKeyTangentScroll(event, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
             curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
             graphDrawingArea->queue_draw();
         }//if

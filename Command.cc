@@ -395,7 +395,7 @@ AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> cu
 
     *newKeyframe = *origKeyframe;
     newKeyframe->tick = newTick;
-    newKeyframe->isSelected = false;
+    newKeyframe->selectedState = KeySelectedType::NotSelected;
 
     keyframe = newKeyframe;
 }//constructor

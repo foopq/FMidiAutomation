@@ -642,6 +642,7 @@ Gtk::Widget *SequencerEntry::getHookWidget()
 bool SequencerEntry::handleEntryFocus(GdkEventFocus*)
 {
     mouseButtonPressed(NULL);
+    return true;
 }//handleEntryFocus
 
 bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
@@ -761,7 +762,12 @@ double SequencerEntry::sample(int tick)
         entryBlockIter--;
     }//if
 
-    return entryBlockIter->second->getCurve()->sample(tick);
+    double val = entryBlockIter->second->getCurve()->sample(tick);
+
+    val = std::min(val, (double)impl->maxValue);
+    val = std::max(val, (double)impl->minValue);
+
+    return val;
 }//sample
 
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
@@ -1059,7 +1065,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
         mapIter->second = y1;
         int absEntryStartY = mapIter->second + 1;
 
-        if (((absEntryStartY + height) >= (drawingAreaStartY + 60)) && (absEntryStartY < (drawingAreaStartY + areaHeight))) {
+        if (((absEntryStartY + height) >= (drawingAreaStartY + 60)) && (absEntryStartY < (drawingAreaStartY + (int)areaHeight))) {
 //std::cout << "absEntryStartY: " << absEntryStartY << "    drawingAreaStartY: " << drawingAreaStartY << std::endl;            
             int relativeStartY = (absEntryStartY - drawingAreaStartY);
             int relativeEndY = height;

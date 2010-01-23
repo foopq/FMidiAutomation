@@ -112,6 +112,8 @@ struct GraphState
     int rightMarkerTickXPixel;
 
     bool didMoveKey;
+    bool didMoveKeyOutTangent;
+    bool didMoveKeyInTangent;
     int movingKeyOrigTick;
     double movingKeyOrigValue;
 

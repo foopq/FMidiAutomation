@@ -24,6 +24,16 @@ enum CurveType
 };//CurveType
 }//namespace CurveType
 
+namespace KeySelectedType {
+enum KeySelectedType
+{
+    NotSelected,
+    Key,
+    InTangent,
+    OutTangent
+};//KeySelectedType
+}//namespace KeySelectedType
+
 struct Keyframe
 {
     Keyframe();
@@ -41,7 +51,8 @@ struct Keyframe
     int drawnInX;
     int drawnInY;
 
-    bool isSelected;
+    //bool isSelected;
+    KeySelectedType::KeySelectedType selectedState;
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
