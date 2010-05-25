@@ -11,6 +11,7 @@
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/thread.hpp>
 #include <jack/transport.h>
 
 struct TempoGlobals;
@@ -198,6 +199,17 @@ class FMidiAutomationMainWindow
     boost::shared_ptr<FMidiAutomationData> datas;
     GraphState graphState;
     boost::shared_ptr<Sequencer> sequencer;
+
+    Gtk::Label *statusBar;
+    float statusTextAlpha;
+    Glib::ustring currentStatusText;
+    bool needsStatusTextUpdate;
+    void statusTextThreadFunc();
+    boost::thread statusTextThread;
+    void setStatusText(Glib::ustring text);
+    boost::mutex statusTextMutex;
+
+    bool recordMidi;
     
     void handleGraphResize(Gtk::Allocation&);
     
@@ -214,6 +226,7 @@ class FMidiAutomationMainWindow
     void on_menuCopy();
     void on_menuCut();
     void on_menuPaste();
+    void on_menuPorts();
     void on_menuPasteInstance();
 
 
@@ -242,6 +255,10 @@ class FMidiAutomationMainWindow
     void handleRewPressed();
     void handlePlayPressed();
     void handlePausePressed();
+    void handleRecordPressed();
+
+    boost::shared_ptr<boost::thread> recordThread;
+    void startRecordThread();
 
     bool handleEntryWindowScroll(Gtk::ScrollType, double);
 

@@ -5,14 +5,14 @@ CXX=/bin/g++
 MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 
 # Libraries to be included
-LDLIBS=`pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 --libs` -lboost_filesystem-mt -lboost_serialization-mt -lboost_thread-mt
+LDLIBS=`pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 libgnomecanvasmm-2.6 --libs` -lboost_filesystem-mt -lboost_serialization-mt -lboost_thread-mt -lflowcanvas
 
 # Flagas
-CXXFLAGS=-Wall -g `pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 --cflags` -I.
+CXXFLAGS=-Wall -g `pkg-config jack alsa gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 libgnomecanvasmm-2.6 --cflags` -I.
 
 # Variables
 SRCS = main.cc FMidiAutomationGraph.cc FMidiAutomationMainWindow.cc FMidiAutomationData.cc Tempo.cc Command.cc jack.cc Sequencer.cc EntryBlockProperties.cc \
-       PasteManager.cc EntryProperties.cc FMidiAutomationCurveEditor.cc Animation.cc
+       PasteManager.cc EntryProperties.cc FMidiAutomationCurveEditor.cc Animation.cc jackPortDialog.cc
 OBJS = $(SRCS:.cc=.o)
 
 #Application name

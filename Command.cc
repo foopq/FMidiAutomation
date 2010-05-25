@@ -45,7 +45,7 @@ void CommandManager::doRedo()
     undoStack.push(command);
     menuUndo->set_sensitive(true);
 
-    command->doAction();    
+    command->doAction();
 
     mainWindow->queue_draw();
 }//doRedo
@@ -90,7 +90,7 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command)
 }//setNewcommand
 
 //UpdateTempoChangeCommand
-UpdateTempoChangeCommand::UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar, 
+UpdateTempoChangeCommand::UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,
                                                     unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData_)
 {
     old_bpm = new_bpm;
@@ -120,7 +120,7 @@ void UpdateTempoChangeCommand::undoAction()
 }//undoAction
 
 //AddTempoChangeCommand
-AddTempoChangeCommand::AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_, 
+AddTempoChangeCommand::AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_,
                                                 boost::shared_ptr<FMidiAutomationData> datas_,
                                                 boost::function<void (void)> updateTempoChangesUIData_)
 {
@@ -150,7 +150,7 @@ void AddTempoChangeCommand::undoAction()
 }//undoAction
 
 //DeleteTempoChangeCommand
-DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_, 
+DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,
                                                     boost::shared_ptr<FMidiAutomationData> datas_,
                                                     boost::function<void (void)> updateTempoChangesUIData_)
 {

@@ -12,13 +12,15 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread/mutex.hpp> 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 #include "jack.h"
 #include "Sequencer.h"
 #include "EntryBlockProperties.h"
 #include "PasteManager.h"
 #include "EntryProperties.h"
 #include "Animation.h"
+#include "jackPortDialog.h"
 
 namespace
 {
@@ -345,10 +347,13 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("positionValueLabel", positionValueLabel);
 
     positionTickEntry->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox));
-
-    Gtk::Label *statusBar;
+ 
     uiXml->get_widget("statusLabel", statusBar);
-    statusBar->set_text("    Welcome to FMidiAutomation");
+    statusTextAlpha = 1.0;
+    needsStatusTextUpdate = false;
+    setStatusText(Glib::ustring("Welcome to FMidiAutomation"));
+    boost::function<void (void)> statusThreadFunc = boost::lambda::bind(boost::mem_fn(&FMidiAutomationMainWindow::statusTextThreadFunc), this);
+    statusTextThread = boost::thread(statusThreadFunc);
 
     setThemeColours();
 
@@ -385,6 +390,14 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     menuPaste->add_accelerator("activate", accelGroup, GDK_V, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     menuPasteInstance->add_accelerator("activate", accelGroup, GDK_V, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
 
+    Gtk::ImageMenuItem *menuPorts;
+    uiXml->get_widget("menu_ports", menuPorts);
+    menuPorts->add_accelerator("activate", accelGroup, GDK_P, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    menuPorts->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuPorts));
+
+
+    recordMidi = false;
+
 //    Glib::signal_idle().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle) );
     Glib::signal_timeout().connect( sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_idle), 20 );
 
@@ -394,6 +407,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handlePlayPressed) );
     uiXml->get_widget("pauseButton", button);
     button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handlePausePressed) );
+    uiXml->get_widget("recButton", button);
+    button->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleRecordPressed) );
 
     datas->entryGlade = readEntryGlade();
 
@@ -618,6 +633,76 @@ void FMidiAutomationMainWindow::handlePausePressed()
     JackSingleton &jackSingleton = JackSingleton::Instance();
     jackSingleton.setTransportState(JackTransportStopped);
 }//handlePausePressed
+
+void FMidiAutomationMainWindow::handleRecordPressed()
+{
+    boost::function<void (void)> startRecordFunc = boost::lambda::bind(boost::mem_fn(&FMidiAutomationMainWindow::startRecordThread), this);
+
+    if (recordThread != NULL) {
+        recordThread->detach();
+    }//if
+
+    recordThread.reset(new boost::thread(startRecordFunc));
+}//handleRecordPressed
+
+void FMidiAutomationMainWindow::startRecordThread()
+{
+    if (false == recordMidi) {
+        for (unsigned int count = 4; count > 0; --count) {
+            Glib::ustring statusText = "Starting record in ";
+            statusText = statusText + boost::lexical_cast<Glib::ustring>(count);
+            setStatusText(statusText);
+
+            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+        }//if
+
+        setStatusText(Glib::ustring("Recording started"));
+
+        recordMidi = true;
+
+        JackSingleton &jackSingleton = JackSingleton::Instance();
+        jackSingleton.setTransportState(JackTransportRolling);
+
+    } else {
+        recordMidi = false;
+
+        JackSingleton &jackSingleton = JackSingleton::Instance();
+        jackSingleton.setTransportState(JackTransportStopped);
+
+////        std::vector<unsigned char> &recordedBuffer = getRecordBuffer();
+    }//if
+}//startRecordThread
+
+void FMidiAutomationMainWindow::setStatusText(Glib::ustring text)
+{
+    needsStatusTextUpdate = true;
+    statusTextAlpha = 1.0;
+    currentStatusText = Glib::ustring("    ") + text;
+    needsStatusTextUpdate = true;
+
+    statusTextMutex.unlock();
+}//setStatusText
+
+void FMidiAutomationMainWindow::statusTextThreadFunc()
+{
+    while (1) {
+        if (statusTextAlpha > 0.5) {
+            boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+            statusTextAlpha -= 0.05;
+        } else {
+            if (statusTextAlpha > 0.1) {
+                boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+                statusTextAlpha -= 0.01;
+            } else {
+                currentStatusText = Glib::ustring("");
+                needsStatusTextUpdate = true;
+                statusTextMutex.lock();
+            }//if
+        }//if
+
+        needsStatusTextUpdate = true;
+    }//while
+}//statusTextThreadFunc
 
 void FMidiAutomationMainWindow::handleAddPressed()
 {
@@ -983,6 +1068,11 @@ void FMidiAutomationMainWindow::on_menuPasteInstance()
     PasteManager::Instance().doPasteInstance();
     graphDrawingArea->queue_draw();
 }//on_menuPasteInstance
+
+void FMidiAutomationMainWindow::on_menuPorts()
+{
+    JackPortDialog portsDialog(uiXml);
+}//on_menuPorts
 
 void FMidiAutomationMainWindow::on_menuQuit()
 {
@@ -1704,6 +1794,17 @@ bool FMidiAutomationMainWindow::on_idle()
 //            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
 //            graphDrawingArea->queue_draw();
         }//if
+    }//if
+
+    if (true == needsStatusTextUpdate) {
+        statusBar->set_text(currentStatusText);
+
+        Gdk::Color textColour;
+        int colourComponent = 65535.0 * statusTextAlpha;
+        textColour.set_rgb(colourComponent, colourComponent, colourComponent);
+
+        statusBar->modify_fg(Gtk::STATE_NORMAL, textColour);
+        needsStatusTextUpdate = false;
     }//if
 
     return true;

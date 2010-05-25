@@ -1,12 +1,18 @@
 #include "FMidiAutomationMainWindow.h"
 #include "jack.h"
 #include <iostream>
+#include <libgnomecanvasmm.h>
+#include <glibmm/exception.h>
 
 FMidiAutomationMainWindow *mainWindow;
 
 int main(int argc, char** argv) 
 {
     srand(time(NULL));
+
+    Glib::thread_init();
+    Gnome::Canvas::init();
+
     Gtk::Main kit(argc, argv);
 
     mainWindow = new FMidiAutomationMainWindow();
