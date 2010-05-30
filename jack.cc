@@ -132,6 +132,7 @@ void JackSingleton::setInputPorts(std::vector<std::string> ports)
     BOOST_FOREACH (std::string portName, removedPorts) {
         jack_port_t *port = inputPorts[portName];
         jack_port_unregister(jackClient, port);
+        inputPorts.erase(inputPorts.find(portName));
     }//foreach
 
     BOOST_FOREACH (std::string portName, newPorts) {
@@ -172,6 +173,7 @@ void JackSingleton::setOutputPorts(std::vector<std::string> ports)
     BOOST_FOREACH (std::string portName, removedPorts) {
         jack_port_t *port = outputPorts[portName];
         jack_port_unregister(jackClient, port);
+        outputPorts.erase(outputPorts.find(portName));
     }//foreach
 
     BOOST_FOREACH (std::string portName, newPorts) {
