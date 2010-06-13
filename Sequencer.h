@@ -5,6 +5,8 @@
 #include <gtkmm.h>
 #include <vector>
 #include <map>
+#include <set>
+#include <jack/jack.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -126,6 +128,9 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     int curIndex;
     std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
+    std::set<jack_port_t *> inputPorts;
+    std::set<jack_port_t *> outputPorts;
+
     bool inHandler;
     void handleSwitchPressed();
     bool handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event);
@@ -163,6 +168,11 @@ public:
     void addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
     boost::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
+
+    std::set<jack_port_t *> getInputPorts() const;
+    std::set<jack_port_t *> getOutputPorts() const;
+    void setInputPorts(std::set<jack_port_t *> ports);
+    void setOutputPorts(std::set<jack_port_t *> ports);
 
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
                             boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);
@@ -203,6 +213,7 @@ public:
 
     unsigned int getEntryIndex(boost::shared_ptr<SequencerEntry> entry);
     boost::shared_ptr<SequencerEntry> getSelectedEntry();
+    std::pair<std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator> getEntryPair() const;
     unsigned int getNumEntries() const;
  
     void doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next);

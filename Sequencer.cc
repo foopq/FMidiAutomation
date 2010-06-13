@@ -751,6 +751,26 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
     }//if
 }//getEntryBlock
 
+std::set<jack_port_t *> SequencerEntry::getInputPorts() const
+{
+    return inputPorts;
+}//getInputPorts
+
+std::set<jack_port_t *> SequencerEntry::getOutputPorts() const
+{
+    return outputPorts;
+}//getOutputPorts
+
+void SequencerEntry::setInputPorts(std::set<jack_port_t *> ports)
+{
+    inputPorts = ports;
+}//setInputPorts
+
+void SequencerEntry::setOutputPorts(std::set<jack_port_t *> ports)
+{
+    outputPorts = ports;
+}//setOutputPorts
+
 double SequencerEntry::sample(int tick)
 {
     if (entryBlocks.empty() == true) {
@@ -915,6 +935,11 @@ boost::shared_ptr<SequencerEntry> Sequencer::getSelectedEntry()
 
     return boost::shared_ptr<SequencerEntry>();
 }//getSelectedEntry
+
+std::pair<std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator> Sequencer::getEntryPair() const
+{
+    return std::make_pair(entries.begin(), entries.end());
+}//getEntryPair
 
 void Sequencer::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
 {

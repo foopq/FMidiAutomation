@@ -819,8 +819,11 @@ GraphState::~GraphState()
 void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
     if (displayMode != DisplayMode::Curve) {
+        std::cout << "refreshHorizontalLines1" << std::endl;
         return;
     }//if
+
+    std::cout << "refreshHorizontalLines2" << std::endl;
 
     if (std::numeric_limits<double>::max() == valuesPerPixel) {
         const boost::shared_ptr<SequencerEntryImpl> entryImpl = currentlySelectedEntryBlock->getOwningEntry()->getImpl();

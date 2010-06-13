@@ -100,6 +100,28 @@ JackSingleton &JackSingleton::Instance()
     return jackSingleton;
 }//Instance
 
+std::string JackSingleton::getOutputPortName(jack_port_t *port)
+{
+    for (std::map<std::string, jack_port_t *>::const_iterator iter = outputPorts.begin(); iter != outputPorts.end(); ++iter) {
+        if (iter->second == port) {
+            return iter->first;
+        }//if
+    }//for
+
+    return "";
+}//getOutputPortName
+
+std::string JackSingleton::getInputPortName(jack_port_t *port)
+{
+    for (std::map<std::string, jack_port_t *>::const_iterator iter = inputPorts.begin(); iter != inputPorts.end(); ++iter) {
+        if (iter->second == port) {
+            return iter->first;
+        }//if
+    }//for
+
+    return "";
+}//getInputPortName
+
 std::vector<std::string> JackSingleton::getInputPorts()
 {
     boost::mutex::scoped_lock lock(mutex);
@@ -181,6 +203,24 @@ void JackSingleton::setOutputPorts(std::vector<std::string> ports)
         outputPorts[portName] = newOutputPort;
     }//foreach
 }//setOutputPorts
+
+jack_port_t *JackSingleton::getOutputPort(const std::string &portName)
+{
+    if (inputPorts.find(portName) != inputPorts.end()) {
+        return inputPorts[portName];
+    } else {
+        return NULL;
+    }//if
+}//getOutputPort
+
+jack_port_t *JackSingleton::getInputPort(const std::string &portName)
+{
+    if (outputPorts.find(portName) != outputPorts.end()) {
+        return outputPorts[portName];
+    } else {
+        return NULL;
+    }//if
+}//getInputPort
 
 void JackSingleton::setRecordMidi(bool record)
 {

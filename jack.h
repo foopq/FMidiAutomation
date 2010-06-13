@@ -46,6 +46,12 @@ public:
     std::vector<std::string> getOutputPorts();
     void setOutputPorts(std::vector<std::string> ports);
 
+    jack_port_t *getOutputPort(const std::string &portName);
+    jack_port_t *getInputPort(const std::string &portName);
+
+    std::string getOutputPortName(jack_port_t *port);
+    std::string getInputPortName(jack_port_t *port);
+
     //Do not use these:
     int process(jack_nframes_t nframes, void *arg);
     void error(const char *desc);

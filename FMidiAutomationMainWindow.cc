@@ -851,6 +851,8 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 
 void FMidiAutomationMainWindow::handleCurveButtonPressed()
 {
+std::cout << "HERE" << std::endl;
+
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (selectedEntryBlock == NULL) {
         return;
@@ -1012,7 +1014,9 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 {
     drawingAreaWidth = allocation.get_width();
     drawingAreaHeight = allocation.get_height();
-    
+ 
+    std::cout << "graph resize: " << drawingAreaHeight << std::endl;
+
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
@@ -1623,20 +1627,22 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
     graphState.curMousePosY = event->y;
 
     if (false == leftMouseCurrentlyPressed) {
-        int tick = 0;
-        int value = 0;
+        if (graphState.displayMode == DisplayMode::Curve) {
+            int tick = 0;
+            int value = 0;
 
-        if (event->x > 60) {
-            tick = graphState.verticalPixelTickValues[event->x];
-            positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(tick));
+            if (event->x > 60) {
+                tick = graphState.verticalPixelTickValues[event->x];
+                positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(tick));
+            }//if
+
+            if (event->y > 60) {
+                value = (int)(graphState.horizontalPixelValues[event->y-60] + 0.5);
+                positionValueEntry->set_text(boost::lexical_cast<Glib::ustring>(value));
+            }//if
+
+            curveEditor->setUnderMouseTickValue(tick, value);
         }//if
-
-        if (event->y > 60) {
-            value = (int)(graphState.horizontalPixelValues[event->y-60] + 0.5);
-            positionValueEntry->set_text(boost::lexical_cast<Glib::ustring>(value));
-        }//if
-
-        curveEditor->setUnderMouseTickValue(tick, value);
 
         return false;
     }//if
@@ -1887,8 +1893,9 @@ void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<S
 
 void FMidiAutomationMainWindow::doTestInit()
 {
-//    return; 
+    return; 
 
+    /*
     boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, true));
     CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
 
@@ -1919,6 +1926,7 @@ void FMidiAutomationMainWindow::doTestInit()
     updateCursorTick(graphState.curPointerTick, false);
 
     handleCurveButtonPressed();
+    */
 }//doTestInit
 
 
