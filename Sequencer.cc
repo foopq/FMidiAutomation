@@ -391,6 +391,8 @@ void SequencerEntry::doInit(const Glib::ustring &entryGlade, Sequencer *sequence
 //    uiXml->get_widget("smallEntryFrame", smallFrame);
     uiXml->get_widget("smallEntryViewport", smallFrame);
 
+    uiXml->get_widget("activeCheckButton", activeCheckButton);
+
 //std::cout << "largeFrame: " << largeFrame << "   --    " << this << std::endl;
 //largeFrame->get_label();
 
@@ -670,6 +672,8 @@ bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
 void SequencerEntry::select()
 {
     mouseButtonPressed(NULL);
+    activeCheckButton->set_active(true);
+//    std::cout << "select: " << getTitle() << std::endl;
 }//select
 
 void SequencerEntry::deselect()
@@ -690,6 +694,9 @@ void SequencerEntry::deselect()
     smallFrame->modify_bg(Gtk::STATE_NORMAL, bgColour);
     smallFrame->modify_fg(Gtk::STATE_NORMAL, bgColour);
     smallFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
+
+    activeCheckButton->set_active(false);
+//    std::cout << "deselect: " << getTitle() << std::endl;
 }//deselect
 
 void SequencerEntry::addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock)
@@ -966,6 +973,10 @@ void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
     }//if
 
     selectedEntry = selectedEntry_;
+
+    if (selectedEntry != NULL) {
+        selectedEntry->select();
+    }//if
 
     mainWindow->unsetAllCurveFrames();
 }//notifySelected

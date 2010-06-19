@@ -335,6 +335,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     uiXml->get_widget("selectedKeyframeFrame", selectedKeyframeFrame);
 
+    uiXml->get_widget("bpmFrameCheckButton", bpmFrameCheckButton);
+
     Gtk::Viewport *bpmFrame;
     uiXml->get_widget("viewport8", bpmFrame);
     bpmFrame->signal_button_press_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleBPMFrameClick) );
@@ -898,7 +900,8 @@ void FMidiAutomationMainWindow::unsetAllCurveFrames()
 
     Gtk::Frame *bpmFrame;
     uiXml->get_widget("bpmFrame", bpmFrame);
-    bpmFrame->modify_bg(Gtk::STATE_NORMAL, black);
+    ////bpmFrame->get_parent()->modify_bg(Gtk::STATE_NORMAL, black);
+    bpmFrameCheckButton->set_active(false);
 
     Globals &globals = Globals::Instance();
     globals.tempoGlobals.tempoDataSelected = false;
@@ -921,9 +924,10 @@ void FMidiAutomationMainWindow::handleBPMFrameClickBase()
 
     Gtk::Frame *bpmFrame;
     uiXml->get_widget("bpmFrame", bpmFrame);
-    bpmFrame->modify_bg(Gtk::STATE_NORMAL, yellow);
+////    bpmFrame->get_parent()->modify_bg(Gtk::STATE_NORMAL, yellow);
 
     globals.tempoGlobals.tempoDataSelected = true;
+    bpmFrameCheckButton->set_active(true);
 }//handleBPMFrameClickBase
 
 bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *event)

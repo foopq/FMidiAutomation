@@ -124,6 +124,7 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     Gtk::Frame *largeFrame;
 //    Gtk::Frame *smallFrame;
     Gtk::Viewport *smallFrame;
+    Gtk::CheckButton *activeCheckButton;
     bool isFullBox;
     int curIndex;
     std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;

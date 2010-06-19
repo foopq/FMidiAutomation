@@ -27,7 +27,6 @@
                         <child>
                           <object class="GtkVBox" id="vbox5">
                             <property name="visible">True</property>
-                            <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkEventBox" id="indexLabelEventBox">
                                 <property name="visible">True</property>
@@ -79,7 +78,6 @@
                         <child>
                           <object class="GtkVBox" id="vbox4">
                             <property name="visible">True</property>
-                            <property name="orientation">vertical</property>
                             <property name="homogeneous">True</property>
                             <child>
                               <object class="GtkToggleButton" id="recButton">
@@ -130,7 +128,6 @@
                         <child>
                           <object class="GtkVBox" id="vbox1">
                             <property name="visible">True</property>
-                            <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkEntry" id="titleEntry">
                                 <property name="visible">True</property>
@@ -151,7 +148,6 @@
                                 <child>
                                   <object class="GtkVBox" id="vbox3">
                                     <property name="visible">True</property>
-                                    <property name="orientation">vertical</property>
                                     <child>
                                       <object class="GtkFrame" id="frame3">
                                         <property name="visible">True</property>
@@ -233,7 +229,6 @@
                                 <child>
                                   <object class="GtkVBox" id="vbox2">
                                     <property name="visible">True</property>
-                                    <property name="orientation">vertical</property>
                                     <child>
                                       <object class="GtkFrame" id="frame2">
                                         <property name="visible">True</property>
@@ -438,10 +433,12 @@
                       <object class="GtkHBox" id="vbox6">
                         <property name="visible">True</property>
                         <child>
-                          <object class="GtkLabel" id="indexLabel1">
+                          <object class="GtkCheckButton" id="activeCheckButton">
                             <property name="visible">True</property>
-                            <property name="ypad">10</property>
-                            <property name="label" translatable="yes">###</property>
+                            <property name="sensitive">False</property>
+                            <property name="can_focus">False</property>
+                            <property name="receives_default">False</property>
+                            <property name="draw_indicator">True</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -450,13 +447,10 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkButton" id="toggleButton1">
-                            <property name="width_request">24</property>
+                          <object class="GtkLabel" id="indexLabel1">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="image">image2</property>
-                            <property name="image_position">top</property>
+                            <property name="ypad">10</property>
+                            <property name="label" translatable="yes">###</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -476,11 +470,13 @@
                         <property name="visible">True</property>
                         <property name="homogeneous">True</property>
                         <child>
-                          <object class="GtkToggleButton" id="recButton1">
-                            <property name="label" translatable="yes">R</property>
+                          <object class="GtkButton" id="toggleButton1">
+                            <property name="width_request">24</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="image">image2</property>
+                            <property name="image_position">top</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -489,8 +485,8 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkToggleButton" id="muteButton1">
-                            <property name="label" translatable="yes">M</property>
+                          <object class="GtkToggleButton" id="recButton1">
+                            <property name="label" translatable="yes">R</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
@@ -502,8 +498,8 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkToggleButton" id="soloButton1">
-                            <property name="label" translatable="yes">S</property>
+                          <object class="GtkToggleButton" id="muteButton1">
+                            <property name="label" translatable="yes">M</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
@@ -522,6 +518,19 @@
                       </packing>
                     </child>
                     <child>
+                      <object class="GtkToggleButton" id="soloButton1">
+                        <property name="label" translatable="yes">S</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkEntry" id="titleEntry1">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
@@ -532,7 +541,7 @@
                         <property name="expand">False</property>
                         <property name="fill">False</property>
                         <property name="padding">4</property>
-                        <property name="position">2</property>
+                        <property name="position">3</property>
                       </packing>
                     </child>
                   </object>

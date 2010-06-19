@@ -173,6 +173,7 @@ class FMidiAutomationMainWindow
     Gtk::Entry *positionValueEntry;
     Gtk::Label *positionValueLabel;
     Gtk::Entry *currentSampledValue;
+    Gtk::CheckButton *bpmFrameCheckButton;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
