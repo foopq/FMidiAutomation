@@ -809,14 +809,14 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
             if (entryPort->isInput() == true) {
                 std::cout << "Module " << entryModule->name() << " has input to " << portName << std::endl;
 
-                jack_port_t *jackPortPtr = jackSingleton.getOutputPort(portName);
+                jack_port_t *jackPortPtr = jackSingleton.getInputPort(portName);
                 assert(jackPortPtr != NULL);
 
                 entryInputMap[entryModule]->insert(jackPortPtr);
             } else {
                 std::cout << "Module " << entryModule->name() << " has output to " << portName << std::endl;
 
-                jack_port_t *jackPortPtr = jackSingleton.getInputPort(portName);
+                jack_port_t *jackPortPtr = jackSingleton.getOutputPort(portName);
                 assert(jackPortPtr != NULL);
 
                 entryOutputMap[entryModule]->insert(jackPortPtr);

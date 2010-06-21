@@ -8,6 +8,18 @@
 #include <boost/thread/thread.hpp>
 #include <map>
 #include <vector>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/access.hpp>
+
+struct MidiInputInfoHeader
+{
+    jack_port_t *port;
+    int curFrame;
+    unsigned int bufferPos;
+    unsigned int length;
+};//MidiInputInfoHeader
 
 class JackSingleton
 {
@@ -20,6 +32,7 @@ class JackSingleton
 
     bool recordMidi;
     std::vector<unsigned char> midiRecordBuffer;
+    std::vector<MidiInputInfoHeader> midiRecordBufferHeaders;
 
     std::map<std::string, jack_port_t *> inputPorts;
     std::map<std::string, jack_port_t *> outputPorts;
@@ -59,6 +72,10 @@ public:
 
     void setRecordMidi(bool record);
     std::vector<unsigned char> &getRecordBuffer();
+    std::vector<MidiInputInfoHeader> &getMidiRecordBufferHeaders();
+
+    void doLoad(boost::archive::xml_iarchive &inputArchive);
+    void doSave(boost::archive::xml_oarchive &outputArchive);
 };//JackSingleton
 
 #endif

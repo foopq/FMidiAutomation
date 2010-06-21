@@ -1,6 +1,7 @@
 #include "Sequencer.h"
 #include "FMidiAutomationMainWindow.h"
 #include "Animation.h"
+#include "jack.h"
 #include <iostream>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -405,13 +406,15 @@ void SequencerEntry::doInit(const Glib::ustring &entryGlade, Sequencer *sequence
 
     Gtk::Entry *entryBox;
     uiXml->get_widget("titleEntry", entryBox);
-    entryBox->set_text("Automation " + boost::lexical_cast<std::string>(entryNum));
+    entryBox->set_text("qAutomation " + boost::lexical_cast<std::string>(entryNum)); //!!!!!!!!!!!!!!!!!!!!!!!!! q!
     entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleKeyEntryOnLargeTitleEntryBox));
     uiXml->get_widget("titleEntry1", entryBox);
-    entryBox->set_text("Automation " + boost::lexical_cast<std::string>(entryNum));
-    impl->title = std::string("Automation ") + boost::lexical_cast<std::string>(entryNum);
+    entryBox->set_text("qAutomation " + boost::lexical_cast<std::string>(entryNum)); //!!!!!!!!!!!!!!!!!!!!!!!!! q!
+    impl->title = std::string("2Automation ") + boost::lexical_cast<std::string>(entryNum); //!!!!!!!!!!!!!!!!!!! q!
     entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleKeyEntryOnSmallTitleEntryBox));
     entryBox->signal_focus_in_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleEntryFocus));
+
+    std::cout << "doInit: " << (std::string("qAutomation ") + boost::lexical_cast<std::string>(entryNum)) << std::endl;
 
     Gtk::EventBox *eventBox;
     uiXml->get_widget("eventbox1", eventBox);
@@ -457,6 +460,8 @@ void SequencerEntry::setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl_)
     entryBox->set_text(impl->title);
     uiXml->get_widget("titleEntry1", entryBox);
     entryBox->set_text(impl->title);
+
+    std::cout << "setNewDataImpl: " << impl->title << std::endl;
 }//setNewDataImpl
 
 void SequencerEntry::setThemeColours()
@@ -530,6 +535,8 @@ bool SequencerEntry::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
 
     impl->title = title;
 
+    std::cout << "handleKeyEntryOnLaterTitle...: " << impl->title << std::endl;
+
     return true;
 }//handleKeyEntryOnLargeTitleEntryBox
 
@@ -544,6 +551,8 @@ bool SequencerEntry::handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event)
     entryBox->set_text(title);
 
     impl->title = title;
+
+std::cout << "hadnleKE..2: " << impl->title << std::endl;
 
     return true;
 }//handleKeyEntryOnSmallTitleEntryBox
@@ -619,6 +628,10 @@ Glib::ustring SequencerEntry::getTitle() const
 void SequencerEntry::setTitle(Glib::ustring title)
 {
     if (title.empty() == false) {
+
+    std::cout << "setTitle: " << title << std::endl;
+
+        impl->title = title;
         Gtk::Entry *entryBox;
         uiXml->get_widget("titleEntry", entryBox);
         entryBox->set_text(impl->title);
@@ -730,6 +743,49 @@ void SequencerEntry::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(isFullBox);
     ar & BOOST_SERIALIZATION_NVP(curIndex);
     ar & BOOST_SERIALIZATION_NVP(entryBlocks);
+
+    std::vector<std::string> inputPortsStr;
+    std::vector<std::string> outputPortsStr;
+
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+
+    BOOST_FOREACH (jack_port_t *port, inputPorts) {
+        std::string portName = jackSingleton.getInputPortName(port);
+        std::cout << "IN1: " << portName << std::endl;
+
+        assert(portName.empty() == false);
+        inputPortsStr.push_back(portName);
+    }//foreach
+
+    BOOST_FOREACH (jack_port_t *port, outputPorts) {
+        std::string portName = jackSingleton.getOutputPortName(port);
+        std::cout << "OUT1: " << portName << std::endl;
+
+        assert(portName.empty() == false);
+        outputPortsStr.push_back(portName);
+    }//foreach
+
+    ar & BOOST_SERIALIZATION_NVP(inputPortsStr);
+    ar & BOOST_SERIALIZATION_NVP(outputPortsStr);
+
+    inputPorts.clear();
+    outputPorts.clear();
+
+    BOOST_FOREACH (std::string portStr, inputPortsStr) {
+        jack_port_t *port = jackSingleton.getInputPort(portStr);
+        inputPorts.insert(port);
+
+        std::cout << "IN2: " << portStr << " - " << port << std::endl;
+    }//foreach
+
+    BOOST_FOREACH (std::string portStr, outputPortsStr) {
+        jack_port_t *port = jackSingleton.getOutputPort(portStr);
+        outputPorts.insert(port);
+
+        std::cout << "OUT2: " << portStr << " - " << port << std::endl;
+    }//foreach
+
+    std::cout << "SE serialize: " << isFullBox << std::endl;
 }//serialize
 
 template<class Archive>
@@ -747,6 +803,8 @@ void SequencerEntryImpl::serialize(Archive &ar, const unsigned int version)
     std::string titleStr = Glib::locale_from_utf8(title);
     ar & BOOST_SERIALIZATION_NVP(titleStr);
     title = titleStr;
+
+    std::cout << "TITLE: " << title << std::endl;
 }//serialize
 
 boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
@@ -799,6 +857,8 @@ double SequencerEntry::sample(int tick)
 
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
+    std::cout << "Sequencer constructor" << std::endl;
+
     doInit(entryGlade_, parentWidget_, mainWindow_);
 }//constructor
 
@@ -836,6 +896,8 @@ void Sequencer::adjustFillerHeight()
     int labelHeight = height - totalHeight;
     labelHeight = std::max(labelHeight, -1);
     tmpLabel.set_size_request(-1, labelHeight);
+
+    std::cout << "adjustFillerHeight: " << labelHeight << std::endl;
 }//adjustFillerHeight
 
 void Sequencer::adjustEntryIndices()
@@ -902,6 +964,8 @@ void Sequencer::addEntry(boost::shared_ptr<SequencerEntry> entry, int index)
     adjustFillerHeight();
     adjustEntryIndices();
     notifyOnScroll(-1);
+
+std::cout << "entries: " << entries.size() << std::endl;
 }//addEntry
 
 boost::shared_ptr<SequencerEntry> Sequencer::addEntry(int index, bool useDefaults)
@@ -1043,13 +1107,23 @@ void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
 
     typedef std::pair<boost::shared_ptr<SequencerEntry>, int > SequencerEntryMapType;
     BOOST_FOREACH (SequencerEntryMapType entryPair, entries) {
-        Gtk::Widget *entryHookWidget = entryPair.first->getHookWidget();
-        parentWidget->children().insert(entryIter, Gtk::Box_Helpers::Element(*entryHookWidget));
+        std::string entryTitle = entryPair.first->getTitle();
         entryPair.first->doInit(entryGlade, this, entryNum);
+        entryPair.first->setTitle(entryTitle);
+        Gtk::Widget *entryHookWidget = entryPair.first->getHookWidget();
 
+std::cout << "HERE: " << entryHookWidget << " - " << entryTitle << " - " << entryPair.first->getTitle() << std::endl;
+
+        parentWidget->children().insert(entryIter, Gtk::Box_Helpers::Element(*entryHookWidget));
+        
+//        entries[entryPair.first] = entryNum;
         entryIter = parentWidget->children().end();
         entryNum++;
     }//foreach
+
+    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+
+    std::cout << "entries2: " << entries.size() <<  std::endl;
 
     adjustFillerHeight();
     adjustEntryIndices();

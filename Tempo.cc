@@ -319,6 +319,10 @@ void Tempo::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(beatsPerBar);
     ar & BOOST_SERIALIZATION_NVP(barSubDivisions);
 
+    ar & BOOST_SERIALIZATION_NVP(startBar);
+    ar & BOOST_SERIALIZATION_NVP(numBars);
+    ar & BOOST_SERIALIZATION_NVP(ticksPerBar);
+
     currentlySelected = false;
     xPixelPos = -1;
 }//serialize

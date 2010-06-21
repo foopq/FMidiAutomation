@@ -197,7 +197,7 @@ class Sequencer
     void adjustFillerHeight();
     void adjustEntryIndices();
 
-    Sequencer() {} //For serialization
+////    Sequencer() {} //For serialization
 
 public:
     Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);

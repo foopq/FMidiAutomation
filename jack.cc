@@ -5,6 +5,7 @@
 #include <boost/foreach.hpp>
 #include <iostream>
 #include "FMidiAutomationMainWindow.h"
+#include <boost/serialization/vector.hpp>
 
 //extern FMidiAutomationMainWindow *mainWindow;
 
@@ -206,8 +207,8 @@ void JackSingleton::setOutputPorts(std::vector<std::string> ports)
 
 jack_port_t *JackSingleton::getOutputPort(const std::string &portName)
 {
-    if (inputPorts.find(portName) != inputPorts.end()) {
-        return inputPorts[portName];
+    if (outputPorts.find(portName) != outputPorts.end()) {
+        return outputPorts[portName];
     } else {
         return NULL;
     }//if
@@ -215,8 +216,8 @@ jack_port_t *JackSingleton::getOutputPort(const std::string &portName)
 
 jack_port_t *JackSingleton::getInputPort(const std::string &portName)
 {
-    if (outputPorts.find(portName) != outputPorts.end()) {
-        return outputPorts[portName];
+    if (inputPorts.find(portName) != inputPorts.end()) {
+        return inputPorts[portName];
     } else {
         return NULL;
     }//if
@@ -227,6 +228,9 @@ void JackSingleton::setRecordMidi(bool record)
     if (true == record) {
         midiRecordBuffer.clear();
         midiRecordBuffer.reserve(1024 * 1024 * 10);
+
+        midiRecordBufferHeaders.clear();
+        midiRecordBufferHeaders.reserve(10000);
     }//if
 
     recordMidi = record;
@@ -236,6 +240,11 @@ std::vector<unsigned char> &JackSingleton::getRecordBuffer()
 {
     return midiRecordBuffer;
 }//getRecordBuffer
+
+std::vector<MidiInputInfoHeader> &JackSingleton::getMidiRecordBufferHeaders()
+{ 
+    return midiRecordBufferHeaders;
+}//getMidiRecordBufferHeaders
 
 int JackSingleton::process(jack_nframes_t nframes, void *arg)
 {
@@ -251,11 +260,13 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
 
 //    jack_midi_clear_buffer(port_buf_out);
 
+    jack_nframes_t frameRate = pos.frame_rate;
+
     //Transport
     {
         bool needsPotentialUpdate = false;
 
-        int newFrame = (int)(((float)pos.frame) / ((float)pos.frame_rate) * 1000.0f);
+        int newFrame = (int)(((float)pos.frame) / ((float)frameRate) * 1000.0f);
 
         if ((curTransportState != newTransportState) || (newFrame != curFrame)) {
             needsPotentialUpdate = true;
@@ -267,23 +278,38 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
         if (true == needsPotentialUpdate) {
 //            condition.notify_one();
         }//if
-    }
+    }//Transport
 
     //Record
     {
-    /*
-    if (0 < event_count) {
-        for(unsigned int i=0; i<event_count; i++) {
-            jack_midi_event_get(&in_event, port_buf, i);
+        if (true == recordMidi) {
+            jack_midi_event_t in_event;
+            for (std::map<std::string, jack_port_t *>::const_iterator portIter = inputPorts.begin(); portIter != inputPorts.end(); ++portIter) {
+                void *port_buf = jack_port_get_buffer(portIter->second, nframes);
+                jack_nframes_t event_count = jack_midi_get_event_count(port_buf);
 
-            //Copy all but footer and checksum
-            if (in_event.size > 2) {
-////                midiRecordBuffer.insert(in_event.buffer, in_event.buffer + in_event.size, midiRecordBuffer.end());
-            }//if
-        }//for
-    }//if
-    */
-    }
+                if (0 < event_count) {
+                    for(unsigned int i=0; i<event_count; i++) {
+                        jack_midi_event_get(&in_event, port_buf, i);
+
+                        //Copy all but footer and checksum
+                        if (in_event.size > 2) {
+                            int eventFrame = (int)(((float)in_event.time) / ((float)frameRate) * 1000.0f);
+
+                            MidiInputInfoHeader header;
+                            header.port = portIter->second;
+                            header.curFrame = eventFrame;
+                            header.bufferPos = midiRecordBuffer.size();
+                            header.length = in_event.size;
+
+                            midiRecordBufferHeaders.push_back(header);
+                            midiRecordBuffer.insert(midiRecordBuffer.end(), (unsigned char*)in_event.buffer, (unsigned char *)(in_event.buffer + in_event.size));
+                        }//if
+                    }//for
+                }//if            
+            }//for
+        }//if
+    }//Record
 
     return 0;
 }//process
@@ -329,5 +355,26 @@ void JackSingleton::setTime(int frame)
     jack_nframes_t jackFrame = (((float)pos.frame_rate) / 1000.0f * frame);
     jack_transport_locate(jackClient, jackFrame);
 }//setTime
+
+void JackSingleton::doLoad(boost::archive::xml_iarchive &inputArchive)
+{
+    std::vector<std::string> inputPorts;
+    std::vector<std::string> outputPorts;
+
+    inputArchive & BOOST_SERIALIZATION_NVP(inputPorts);
+    inputArchive & BOOST_SERIALIZATION_NVP(outputPorts);
+
+    setInputPorts(inputPorts);
+    setOutputPorts(outputPorts);
+}//doLoad
+
+void JackSingleton::doSave(boost::archive::xml_oarchive &outputArchive)
+{
+    std::vector<std::string> inputPorts = getInputPorts();
+    std::vector<std::string> outputPorts = getOutputPorts();
+
+    outputArchive & BOOST_SERIALIZATION_NVP(inputPorts);
+    outputArchive & BOOST_SERIALIZATION_NVP(outputPorts);
+}//doSave
 
 

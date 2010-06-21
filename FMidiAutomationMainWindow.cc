@@ -1124,6 +1124,10 @@ void FMidiAutomationMainWindow::on_menuSave()
 
         outputArchive & BOOST_SERIALIZATION_NVP(datas);
         outputArchive & BOOST_SERIALIZATION_NVP(graphState);
+
+        JackSingleton &jackSingleton = JackSingleton::Instance();
+        jackSingleton.doSave(outputArchive);
+
         sequencer->doSave(outputArchive);
 
         setTitle(currentFilename);
@@ -1139,7 +1143,7 @@ void FMidiAutomationMainWindow::on_menuSaveAs()
     Gtk::FileChooserDialog dialog("Save...", Gtk::FILE_CHOOSER_ACTION_SAVE);
 //    dialog.set_transient_for(*this);
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
-    dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
+    dialog.add_button(Gtk::Stock::SAVE, Gtk::RESPONSE_OK);
 
     Gtk::FileFilter filter_normal;
     filter_normal.set_name("Automation files (*.fma)");
@@ -1207,6 +1211,17 @@ void FMidiAutomationMainWindow::on_menuOpen()
 
             inputArchive & BOOST_SERIALIZATION_NVP(datas);
             inputArchive & BOOST_SERIALIZATION_NVP(graphState);
+
+            datas->entryGlade = readEntryGlade();
+
+            Gtk::VBox *entryVBox;
+            uiXml->get_widget("entryVBox", entryVBox);
+            sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
+            globals.sequencer = sequencer;
+
+            JackSingleton &jackSingleton = JackSingleton::Instance();
+            jackSingleton.doLoad(inputArchive);
+
             sequencer->doLoad(inputArchive);
 
             graphState.displayMode = DisplayMode::Sequencer;
@@ -1216,10 +1231,7 @@ void FMidiAutomationMainWindow::on_menuOpen()
 
             setTitle(currentFilename);
 
-            Gtk::VBox *entryVBox;
-            uiXml->get_widget("entryVBox", entryVBox);
-            sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
-            globals.sequencer = sequencer;
+            trackListWindow->queue_draw();
             break;
         }
         case(Gtk::RESPONSE_CANCEL):
