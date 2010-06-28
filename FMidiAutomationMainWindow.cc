@@ -634,6 +634,13 @@ void FMidiAutomationMainWindow::handlePausePressed()
 {
     JackSingleton &jackSingleton = JackSingleton::Instance();
     jackSingleton.setTransportState(JackTransportStopped);
+    jackSingleton.setRecordMidi(false);
+
+    if (true == recordMidi) {
+        processRecordedMidi();
+    }//if
+
+    recordMidi = false;
 }//handlePausePressed
 
 void FMidiAutomationMainWindow::handleRecordPressed()
@@ -663,6 +670,7 @@ void FMidiAutomationMainWindow::startRecordThread()
         recordMidi = true;
 
         JackSingleton &jackSingleton = JackSingleton::Instance();
+        jackSingleton.setRecordMidi(true);
         jackSingleton.setTransportState(JackTransportRolling);
 
     } else {
@@ -670,6 +678,11 @@ void FMidiAutomationMainWindow::startRecordThread()
 
         JackSingleton &jackSingleton = JackSingleton::Instance();
         jackSingleton.setTransportState(JackTransportStopped);
+        jackSingleton.setRecordMidi(false);
+
+        setStatusText(Glib::ustring("Recording stopped"));
+
+        processRecordedMidi();
 
 ////        std::vector<unsigned char> &recordedBuffer = getRecordBuffer();
     }//if

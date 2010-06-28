@@ -14,6 +14,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+#include "ProcessRecordedMidi.h"
 
 class Sequencer;
 struct GraphState;
@@ -102,6 +103,10 @@ struct SequencerEntryImpl
     unsigned char lsb;
     unsigned char channel;
 
+    bool recordMode;
+    bool soloMode;
+    bool muteMode;
+
     //UI specific
     Glib::ustring title;    
     int minValue;
@@ -132,12 +137,21 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     std::set<jack_port_t *> inputPorts;
     std::set<jack_port_t *> outputPorts;
 
+    std::vector<MidiToken> recordTokenBuffer;
+
     bool inHandler;
     void handleSwitchPressed();
     bool handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event);
     bool mouseButtonPressed(GdkEventButton *event);
     bool handleEntryFocus(GdkEventFocus*);
+
+    void handleRecPressed();
+    void handleRecSmPressed();
+    void handleSoloPressed();
+    void handleSoloSmPressed();
+    void handleMutePressed();
+    void handleMuteSmPressed();
 
     SequencerEntry() {} //For serialization
 
@@ -174,6 +188,10 @@ public:
     std::set<jack_port_t *> getOutputPorts() const;
     void setInputPorts(std::set<jack_port_t *> ports);
     void setOutputPorts(std::set<jack_port_t *> ports);
+
+    void clearRecordTokenBuffer();
+    void addRecordToken(MidiToken &token);
+    void commitRecordedTokens();
 
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
                             boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);

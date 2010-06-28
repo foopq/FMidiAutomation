@@ -279,6 +279,8 @@ class FMidiAutomationMainWindow
     void setTitle(Glib::ustring currentFilename);
     void setTitleChanged();
 
+    void processRecordedMidi();
+
     friend struct FMidiAutomationCurveEditor;
        
 public:    

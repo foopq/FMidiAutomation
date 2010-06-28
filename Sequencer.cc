@@ -342,6 +342,10 @@ SequencerEntryImpl::SequencerEntryImpl()
     maxValue = 127;
     sevenBit = true;
     useBothMSBandLSB = false; //implied true if sevenBit is true
+
+    recordMode = false;
+    soloMode = false;
+    muteMode = false;
 }//constructor
 
 SequencerEntryImpl::~SequencerEntryImpl()
@@ -369,6 +373,9 @@ bool SequencerEntryImpl::operator==(SequencerEntryImpl &other)
     diff |= this->useBothMSBandLSB != other.useBothMSBandLSB;
     diff |= this->channel != other.channel;
     diff |= this->title != other.title;
+    diff |= this->recordMode != other.recordMode;
+    diff |= this->soloMode != other.soloMode;
+    diff |= this->muteMode != other.muteMode;
 
     return !diff;
 }//operator==
@@ -422,6 +429,21 @@ void SequencerEntry::doInit(const Glib::ustring &entryGlade, Sequencer *sequence
     uiXml->get_widget("eventbox2", eventBox);
     eventBox->signal_button_press_event().connect ( sigc::mem_fun(*this, &SequencerEntry::mouseButtonPressed) );
 
+    Gtk::ToggleButton *toggleButton;
+    uiXml->get_widget("recButton", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleRecPressed) );
+    uiXml->get_widget("recButton1", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleRecSmPressed) );
+
+    uiXml->get_widget("muteButton", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleMutePressed) );
+    uiXml->get_widget("muteButton1", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleMuteSmPressed) );
+
+    uiXml->get_widget("soloButton", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSoloPressed) );
+    uiXml->get_widget("soloButton1", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSoloSmPressed) );
 
     mainWindow->get_parent()->remove(*mainWindow);
     smallWindow->get_parent()->remove(*smallWindow);
@@ -556,6 +578,90 @@ std::cout << "hadnleKE..2: " << impl->title << std::endl;
 
     return true;
 }//handleKeyEntryOnSmallTitleEntryBox
+
+void SequencerEntry::handleRecPressed()
+{
+    Gtk::ToggleButton *toggleButtonLg;
+    Gtk::ToggleButton *toggleButtonSm;
+
+    uiXml->get_widget("recButton", toggleButtonLg);
+    uiXml->get_widget("recButton1", toggleButtonSm);
+
+    bool isActive = toggleButtonLg->get_active();
+    toggleButtonSm->set_active(isActive);
+
+    impl->recordMode = isActive;
+}//handleRecPressed
+
+void SequencerEntry::handleRecSmPressed()
+{
+    Gtk::ToggleButton *toggleButtonLg;
+    Gtk::ToggleButton *toggleButtonSm;
+
+    uiXml->get_widget("recButton", toggleButtonLg);
+    uiXml->get_widget("recButton1", toggleButtonSm);
+
+    bool isActive = toggleButtonSm->get_active();
+    toggleButtonLg->set_active(isActive);
+
+    impl->recordMode = isActive;
+}//handleRecSmPressed
+
+void SequencerEntry::handleSoloPressed()
+{
+    Gtk::ToggleButton *toggleButtonLg;
+    Gtk::ToggleButton *toggleButtonSm;
+
+    uiXml->get_widget("soloButton", toggleButtonLg);
+    uiXml->get_widget("soloButton1", toggleButtonSm);
+
+    bool isActive = toggleButtonLg->get_active();
+    toggleButtonSm->set_active(isActive);
+
+    impl->soloMode = isActive;
+}//handleSoloPressed
+
+void SequencerEntry::handleSoloSmPressed()
+{
+    Gtk::ToggleButton *toggleButtonLg;
+    Gtk::ToggleButton *toggleButtonSm;
+
+    uiXml->get_widget("soloButton", toggleButtonLg);
+    uiXml->get_widget("soloButton1", toggleButtonSm);
+
+    bool isActive = toggleButtonSm->get_active();
+    toggleButtonLg->set_active(isActive);
+
+    impl->soloMode = isActive;
+}//handleSoloSmPressed
+
+void SequencerEntry::handleMutePressed()
+{
+    Gtk::ToggleButton *toggleButtonLg;
+    Gtk::ToggleButton *toggleButtonSm;
+
+    uiXml->get_widget("muteButton", toggleButtonLg);
+    uiXml->get_widget("muteButton1", toggleButtonSm);
+
+    bool isActive = toggleButtonLg->get_active();
+    toggleButtonSm->set_active(isActive);
+
+    impl->muteMode = isActive;
+}//handleMutePressed
+
+void SequencerEntry::handleMuteSmPressed()
+{
+    Gtk::ToggleButton *toggleButtonLg;
+    Gtk::ToggleButton *toggleButtonSm;
+
+    uiXml->get_widget("muteButton", toggleButtonLg);
+    uiXml->get_widget("muteButton1", toggleButtonSm);
+
+    bool isActive = toggleButtonSm->get_active();
+    toggleButtonLg->set_active(isActive);
+
+    impl->muteMode = isActive;
+}//handleMuteSmPressed
 
 void SequencerEntry::handleSwitchPressed()
 {
@@ -800,6 +906,10 @@ void SequencerEntryImpl::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(sevenBit);
     ar & BOOST_SERIALIZATION_NVP(useBothMSBandLSB);
 
+    ar & BOOST_SERIALIZATION_NVP(recordMode);
+    ar & BOOST_SERIALIZATION_NVP(soloMode);
+    ar & BOOST_SERIALIZATION_NVP(muteMode);
+
     std::string titleStr = Glib::locale_from_utf8(title);
     ar & BOOST_SERIALIZATION_NVP(titleStr);
     title = titleStr;
@@ -854,6 +964,32 @@ double SequencerEntry::sample(int tick)
 
     return val;
 }//sample
+
+void SequencerEntry::clearRecordTokenBuffer()
+{
+    recordTokenBuffer.clear();
+}//clearRecordTokenBuffer
+
+void SequencerEntry::addRecordToken(MidiToken &token)
+{
+    if (impl->recordMode == false) {
+        return;
+    }//if
+
+    if ((token.type == CC) && (impl->controllerType != SequencerEntryImpl::CC)) {
+        return;
+    }//if
+
+    if ((impl->channel != 16) && (impl->channel != token.channel)) {
+        return;
+    }//if
+
+    if ((token.type == CC) && (impl->msb != token.controller)) {
+        return;
+    }//if
+
+    recordTokenBuffer.push_back(token);
+}//addRecordToken
 
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {

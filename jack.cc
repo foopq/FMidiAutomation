@@ -261,12 +261,11 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
 //    jack_midi_clear_buffer(port_buf_out);
 
     jack_nframes_t frameRate = pos.frame_rate;
+    int newFrame = (int)(((float)pos.frame) / ((float)frameRate) * 1000.0f);
 
     //Transport
     {
         bool needsPotentialUpdate = false;
-
-        int newFrame = (int)(((float)pos.frame) / ((float)frameRate) * 1000.0f);
 
         if ((curTransportState != newTransportState) || (newFrame != curFrame)) {
             needsPotentialUpdate = true;
@@ -298,7 +297,7 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
 
                             MidiInputInfoHeader header;
                             header.port = portIter->second;
-                            header.curFrame = eventFrame;
+                            header.curFrame = eventFrame + newFrame;
                             header.bufferPos = midiRecordBuffer.size();
                             header.length = in_event.size;
 
