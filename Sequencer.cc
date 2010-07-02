@@ -965,6 +965,21 @@ double SequencerEntry::sample(int tick)
     return val;
 }//sample
 
+unsigned char SequencerEntry::sampleChar(int tick)
+{
+    double value = sample(tick);
+    value -= impl->minValue;
+    value /= (double)(impl->maxValue - impl->minValue);
+
+    if (true == impl->sevenBit) {
+        value *= 127.0 + 0.5;
+    } else {        
+        value *= 255.0 + 0.5;
+    }//if
+
+    return (unsigned char)value;
+}//sampleChar
+
 void SequencerEntry::clearRecordTokenBuffer()
 {
     recordTokenBuffer.clear();
@@ -973,18 +988,22 @@ void SequencerEntry::clearRecordTokenBuffer()
 void SequencerEntry::addRecordToken(MidiToken &token)
 {
     if (impl->recordMode == false) {
+        std::cout << "out 1" << std::endl;
         return;
     }//if
 
     if ((token.type == CC) && (impl->controllerType != SequencerEntryImpl::CC)) {
+        std::cout << "out 2" << std::endl;
         return;
     }//if
 
     if ((impl->channel != 16) && (impl->channel != token.channel)) {
+        std::cout << "out 3" << std::endl;
         return;
     }//if
 
     if ((token.type == CC) && (impl->msb != token.controller)) {
+        std::cout << "out 4" << std::endl;
         return;
     }//if
 

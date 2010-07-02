@@ -427,6 +427,11 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     CommandManager::Instance().setTitleStar(titleStarFunc);
 
     setTitle("Unknown");
+
+    Gtk::ToggleButton *toggleButton;
+    uiXml->get_widget("jackEnabledToggleButton", toggleButton);
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleJackPressed) );
+    toggleButton->set_active(true);
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -609,6 +614,17 @@ bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollTy
     graphDrawingArea->queue_draw();
     return true;
 }//handleEntryWindowScroll
+
+void FMidiAutomationMainWindow::handleJackPressed()
+{
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+
+    Gtk::ToggleButton *toggleButton;
+    uiXml->get_widget("jackEnabledToggleButton", toggleButton);
+    bool isActive = toggleButton->get_active();
+
+    jackSingleton.setProcessingMidi(isActive);
+}//handleJackPressed
 
 void FMidiAutomationMainWindow::handleRewPressed()
 {
@@ -1358,6 +1374,26 @@ bool FMidiAutomationMainWindow::key_released(GdkEventKey *event)
 
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
+    //Good idea to sync up the bucky bits
+    if (event->state & GDK_CONTROL_MASK) {
+        ctrlCurrentlyPressed = true;
+    } else {
+        ctrlCurrentlyPressed = false;
+    }//if
+
+    if (event->state & GDK_SHIFT_MASK) {
+        shiftCurrentlyPressed = true;
+    } else {
+        shiftCurrentlyPressed = false;
+    }//if
+
+    if (event->state & GDK_MOD1_MASK) {
+        altCurrentlyPressed = true;
+    } else {
+        altCurrentlyPressed = false;
+    }//if
+
+    //And actually handle the event
     switch (event->button) {
         case 1: //Left
         {

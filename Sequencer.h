@@ -161,6 +161,7 @@ public:
     ~SequencerEntry();
 
     double sample(int tick);
+    unsigned char sampleChar(int tick);
 
     const boost::shared_ptr<SequencerEntryImpl> getImpl();
     boost::shared_ptr<SequencerEntryImpl> getImplClone();

@@ -258,6 +258,8 @@ class FMidiAutomationMainWindow
     void handlePausePressed();
     void handleRecordPressed();
 
+    void handleJackPressed();
+
     boost::shared_ptr<boost::thread> recordThread;
     void startRecordThread();
 

@@ -5,6 +5,7 @@
 #include <boost/foreach.hpp>
 #include <iostream>
 #include "FMidiAutomationMainWindow.h"
+#include "Sequencer.h"
 #include <boost/serialization/vector.hpp>
 
 //extern FMidiAutomationMainWindow *mainWindow;
@@ -87,6 +88,7 @@ JackSingleton::JackSingleton()
     assert(true == activated);    
 
     recordMidi = false;
+    processingMidi = true;
 }//constuctor
 
 JackSingleton::~JackSingleton()
@@ -100,6 +102,16 @@ JackSingleton &JackSingleton::Instance()
 
     return jackSingleton;
 }//Instance
+
+bool JackSingleton::areProcessingMidi() const
+{
+    return processingMidi;
+}//areProcessingMidi
+
+void JackSingleton::setProcessingMidi(bool processing)
+{
+    processingMidi = processing;
+}//setProcessingMidi
 
 std::string JackSingleton::getOutputPortName(jack_port_t *port)
 {
@@ -246,6 +258,30 @@ std::vector<MidiInputInfoHeader> &JackSingleton::getMidiRecordBufferHeaders()
     return midiRecordBufferHeaders;
 }//getMidiRecordBufferHeaders
 
+bool JackSingleton::hasValueChanged(jack_port_t *port, unsigned int channel, unsigned int msb, unsigned int lsb, 
+                                    SequencerEntryImpl::ControlType controllerType, unsigned int sampledValue)
+{
+    if (SequencerEntryImpl::CC == controllerType) {
+        std::map<unsigned int /*channel*/, std::map<unsigned int /*controller*/, unsigned char /*value*/> > &ccValueCache_ChannelControllerValueMap = ccValueCache[port];
+
+        std::map<unsigned int /*controller*/, unsigned char /*value*/> &ccValueCache_ControllerValueMap = ccValueCache_ChannelControllerValueMap[channel];
+
+        if (ccValueCache_ControllerValueMap.find(lsb) == ccValueCache_ControllerValueMap.end()) {
+            ccValueCache_ControllerValueMap[lsb] = sampledValue;
+            return true;
+        } else {
+            if (ccValueCache_ControllerValueMap[lsb] != sampledValue) {
+                ccValueCache_ControllerValueMap[lsb] = sampledValue;
+                return true;
+            } else {
+                return false;
+            }//if
+        }//if
+    }//if
+
+    return false;
+}//hasValueChanged
+
 int JackSingleton::process(jack_nframes_t nframes, void *arg)
 {
     boost::mutex::scoped_lock lock(mutex);
@@ -281,7 +317,7 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
 
     //Record
     {
-        if (true == recordMidi) {
+        if ((true == recordMidi) && (true == processingMidi)) {
             jack_midi_event_t in_event;
             for (std::map<std::string, jack_port_t *>::const_iterator portIter = inputPorts.begin(); portIter != inputPorts.end(); ++portIter) {
                 void *port_buf = jack_port_get_buffer(portIter->second, nframes);
@@ -309,6 +345,72 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
             }//for
         }//if
     }//Record
+
+    // remember processingMidi for midi out
+    {
+        if (true == processingMidi) {
+            Globals &globals = Globals::Instance();
+
+            size_t maxPortSize = std::numeric_limits<size_t>::max();
+
+            for (std::map<std::string, jack_port_t *>::const_iterator outPortIter = outputPorts.begin(); outPortIter != outputPorts.end(); ++outPortIter) {
+                void* port_buf_out = jack_port_get_buffer(outPortIter->second, nframes);
+                jack_midi_clear_buffer(port_buf_out);
+
+                maxPortSize = std::min(jack_midi_max_event_size(port_buf_out), maxPortSize);
+
+                midiOutputBuffersRaw[outPortIter->second] = port_buf_out;
+                std::vector<unsigned char> &portVec = midiOutputBuffers[outPortIter->second];
+                portVec.clear();
+                portVec.reserve(maxPortSize);
+            }//for
+
+            typedef std::pair<boost::shared_ptr<SequencerEntry>, int> EntryPairType;
+            BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
+////////// CHECK TO SEE IF WE SHOULD SAMPLE THIS ENTRY                
+                unsigned char sampledValue = entry.first->sampleChar(curFrame);
+
+                unsigned char channel = entry.first->getImpl()->channel;
+                unsigned char msb = entry.first->getImpl()->msb;
+                unsigned char lsb = entry.first->getImpl()->lsb;
+
+                SequencerEntryImpl::ControlType controllerType = entry.first->getImpl()->controllerType;
+
+                std::set<jack_port_t *> ports = entry.first->getOutputPorts();
+                BOOST_FOREACH (jack_port_t *port, ports) {
+                    if (hasValueChanged(port, channel, msb, lsb, controllerType, sampledValue) == false) {                        
+                        continue;
+                    }//if
+
+                    std::vector<unsigned char> &portVec = midiOutputBuffers[port];
+                    if (portVec.size() >= maxPortSize - 3) {
+                        std::cout << "jack out 2" << std::endl;
+                        continue;
+                    }//if
+
+                    if (SequencerEntryImpl::CC == controllerType) {
+                        portVec.push_back(0xb0 | (channel & 0x0f));
+                        portVec.push_back(msb);
+                        portVec.push_back(sampledValue);
+                    }//if
+
+                    if (SequencerEntryImpl::RPN == controllerType) {
+                        //Not impl yet...
+                    }//if
+                }//foreach
+            }//foreach
+
+            for (std::map<std::string, jack_port_t *>::const_iterator outPortIter = outputPorts.begin(); outPortIter != outputPorts.end(); ++outPortIter) {
+                std::vector<unsigned char> &portVec = midiOutputBuffers[outPortIter->second];
+                if (portVec.empty() == true) {
+                    continue;
+                }//if
+
+                int result = jack_midi_event_write(midiOutputBuffersRaw[outPortIter->second], 0, &portVec[0], portVec.size());                
+            }//for
+
+        }//if (true == processingMidi) {
+    }//Midi out
 
     return 0;
 }//process

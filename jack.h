@@ -12,6 +12,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+#include "Sequencer.h"
 
 struct MidiInputInfoHeader
 {
@@ -37,10 +38,20 @@ class JackSingleton
     std::map<std::string, jack_port_t *> inputPorts;
     std::map<std::string, jack_port_t *> outputPorts;
 
+    std::map<jack_port_t *, void *> midiOutputBuffersRaw;
+    std::map<jack_port_t *, std::vector<unsigned char> > midiOutputBuffers;
+
+    std::map<jack_port_t *, std::map<unsigned int /*channel*/, std::map<unsigned int /*controller*/, unsigned char /*value*/> > > ccValueCache;
+
+    bool processingMidi;
+
 //.... N/M input/output ports/buffers, add, delete, rename?
 //       -> process iterates over input ports, etc...
 
     JackSingleton();
+
+    bool hasValueChanged(jack_port_t *port, unsigned int channel, unsigned int msb, unsigned int lsb, 
+                            SequencerEntryImpl::ControlType controllerType, unsigned int sampledValue);
 
 public:
     ~JackSingleton();
@@ -73,6 +84,9 @@ public:
     void setRecordMidi(bool record);
     std::vector<unsigned char> &getRecordBuffer();
     std::vector<MidiInputInfoHeader> &getMidiRecordBufferHeaders();
+
+    bool areProcessingMidi() const;
+    void setProcessingMidi(bool processing);
 
     void doLoad(boost::archive::xml_iarchive &inputArchive);
     void doSave(boost::archive::xml_oarchive &outputArchive);
