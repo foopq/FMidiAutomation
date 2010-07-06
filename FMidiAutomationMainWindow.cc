@@ -432,6 +432,9 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("jackEnabledToggleButton", toggleButton);
     toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleJackPressed) );
     toggleButton->set_active(true);
+
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    jackSingleton.setTime(0);
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -624,11 +627,22 @@ void FMidiAutomationMainWindow::handleJackPressed()
     bool isActive = toggleButton->get_active();
 
     jackSingleton.setProcessingMidi(isActive);
+
+    if (true == isActive) {
+        setStatusText("Connected to Jack daemon");
+    } else {
+        setStatusText("Disconnected from Jack daemon");
+    }//if
 }//handleJackPressed
 
 void FMidiAutomationMainWindow::handleRewPressed()
 {
     JackSingleton &jackSingleton = JackSingleton::Instance();
+    if (false == jackSingleton.areProcessingMidi()) {
+        setStatusText("Can't rewind while not connected to the Jack daemon");
+        return;
+    }//if
+
     jackSingleton.setTime(0);
 
     cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(0));
@@ -643,12 +657,22 @@ void FMidiAutomationMainWindow::handleRewPressed()
 void FMidiAutomationMainWindow::handlePlayPressed()
 {
     JackSingleton &jackSingleton = JackSingleton::Instance();
+    if (false == jackSingleton.areProcessingMidi()) {
+        setStatusText("Can't play while not connected to the Jack daemon");
+        return;
+    }//if
+
     jackSingleton.setTransportState(JackTransportRolling);
 }//handlePlayPressed
 
 void FMidiAutomationMainWindow::handlePausePressed()
 {
     JackSingleton &jackSingleton = JackSingleton::Instance();
+    if (false == jackSingleton.areProcessingMidi()) {
+        setStatusText("Can't pause while not connected to the Jack daemon");
+        return;
+    }//if
+
     jackSingleton.setTransportState(JackTransportStopped);
     jackSingleton.setRecordMidi(false);
 
@@ -661,6 +685,12 @@ void FMidiAutomationMainWindow::handlePausePressed()
 
 void FMidiAutomationMainWindow::handleRecordPressed()
 {
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    if (false == jackSingleton.areProcessingMidi()) {
+        setStatusText("Can't record while not connected to the Jack daemon");
+        return;
+    }//if
+
     boost::function<void (void)> startRecordFunc = boost::lambda::bind(boost::mem_fn(&FMidiAutomationMainWindow::startRecordThread), this);
 
     if (recordThread != NULL) {
@@ -741,7 +771,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
 
     if (false == globals.tempoGlobals.tempoDataSelected) {
         boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, false));
-        CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
+        CommandManager::Instance().setNewCommand(addSequencerEntryCommand, true);
         trackListWindow->queue_draw();
     }//if
 
@@ -763,7 +793,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
 
                     boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
                     boost::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions, callback));
-                    CommandManager::Instance().setNewCommand(updateTempoChangeCommand);
+                    CommandManager::Instance().setNewCommand(updateTempoChangeCommand, true);
 
                     foundSelected = true;
                     break;
@@ -783,7 +813,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
 
                     boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
                     boost::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas, callback));
-                    CommandManager::Instance().setNewCommand(addTempoChangeCommand);
+                    CommandManager::Instance().setNewCommand(addTempoChangeCommand, true);
                 }//if
             }//if
 
@@ -806,7 +836,7 @@ void FMidiAutomationMainWindow::handleDeletePressed()
             if (true == mapIter->second->currentlySelected) {
                 boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
                 boost::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas, callback));
-                CommandManager::Instance().setNewCommand(deleteTempoChangeCommand);
+                CommandManager::Instance().setNewCommand(deleteTempoChangeCommand, true);
 
                 graphDrawingArea->queue_draw();
                 break;
@@ -817,7 +847,7 @@ void FMidiAutomationMainWindow::handleDeletePressed()
 
         if (entry != NULL) {
             boost::shared_ptr<Command> deleteSequencerEntryCommand(new DeleteSequencerEntryCommand(sequencer, entry));
-            CommandManager::Instance().setNewCommand(deleteSequencerEntryCommand);
+            CommandManager::Instance().setNewCommand(deleteSequencerEntryCommand, true);
         }//if
     }//if
 }//handleDeletePressed
@@ -832,7 +862,7 @@ void FMidiAutomationMainWindow::handleUpButtonPressed()
         }//if
 
         boost::shared_ptr<Command> sequencerEntryUpCommand(new SequencerEntryUpCommand(sequencer, entry));
-        CommandManager::Instance().setNewCommand(sequencerEntryUpCommand);
+        CommandManager::Instance().setNewCommand(sequencerEntryUpCommand, true);
     }//if
 }//handleUpPressed
 
@@ -846,7 +876,7 @@ void FMidiAutomationMainWindow::handleDownButtonPressed()
         }//if
 
         boost::shared_ptr<Command> sequencerEntryDownCommand(new SequencerEntryDownCommand(sequencer, entry));
-        CommandManager::Instance().setNewCommand(sequencerEntryDownCommand);
+        CommandManager::Instance().setNewCommand(sequencerEntryDownCommand, true);
     }//if
 }//handleDownButtonPressed
 
@@ -1645,7 +1675,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
             else if (event->y > 60) {
                 if (graphState.selectedEntity == SequencerEntrySelection) {
                     boost::shared_ptr<Command> moveSequencerEntryBlockCommand(new MoveSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock, graphState.currentlySelectedEntryOriginalStartTick, graphState.currentlySelectedEntryBlock->getStartTick()));
-                    CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand);
+                    CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand, true);
 
                     graphDrawingArea->queue_draw();                    
                 }
@@ -1659,7 +1689,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
                         graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
 
                         boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframeCommand(graphState.currentlySelectedEntryBlock, graphState.currentlySelectedKeyframe, graphState.movingKeyOrigTick, graphState.movingKeyOrigValue));
-                        CommandManager::Instance().setNewCommand(moveKeyframeCommand);
+                        CommandManager::Instance().setNewCommand(moveKeyframeCommand, true);
                     }//if
                 }//if
             }//if
@@ -1900,7 +1930,7 @@ void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
         boost::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(selectedEntry, graphState.curPointerTick, boost::shared_ptr<SequencerEntryBlock>()));
 
         boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
-        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand);
+        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
 
         graphDrawingArea->queue_draw();
     }//if
@@ -1911,7 +1941,7 @@ void FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock()
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (selectedEntryBlock != NULL) {
         boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(selectedEntryBlock));
-        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand);
+        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
 
         graphDrawingArea->queue_draw();
     }//if
@@ -1928,7 +1958,7 @@ void FMidiAutomationMainWindow::handleSequencerEntryProperties()
 
     if (entryBlockProperties.wasChanged == true) {
         boost::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockPropertiesCommand(selectedEntryBlock, entryBlockProperties.newTitle));
-        CommandManager::Instance().setNewCommand(changeSequencerEntryBlockTitleCommand);
+        CommandManager::Instance().setNewCommand(changeSequencerEntryBlockTitleCommand, true);
 
         graphDrawingArea->queue_draw();
     }//if
@@ -1946,7 +1976,7 @@ void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<S
     if (true == entryProperties.wasChanged) {
         if (true == createUpdatePoint) {
             boost::shared_ptr<Command> changeSequencerEntryPropertiesCommand(new ChangeSequencerEntryPropertiesCommand(entry, entryProperties.origImpl, entryProperties.newImpl));
-            CommandManager::Instance().setNewCommand(changeSequencerEntryPropertiesCommand);
+            CommandManager::Instance().setNewCommand(changeSequencerEntryPropertiesCommand, true);
 
             graphDrawingArea->queue_draw();
         } else {

@@ -98,6 +98,14 @@ Keyframe::Keyframe()
     selectedState = KeySelectedType::NotSelected;
 };//constructor
 
+boost::shared_ptr<Keyframe> Keyframe::deepClone()
+{
+    boost::shared_ptr<Keyframe> clone(new Keyframe);
+    *clone = *this;
+
+    return clone;
+}//deepClone
+
 Animation::Animation(SequencerEntryBlock *owningEntryBlock_, boost::shared_ptr<Animation> instanceOf_)
 {
     startTick = owningEntryBlock_->getRawStartTick();
@@ -108,6 +116,19 @@ Animation::~Animation()
 {
     //Nothing
 }//destructor
+
+boost::shared_ptr<Animation> Animation::deepClone()
+{
+    boost::shared_ptr<Animation> clone(new Animation);
+
+    for(std::map<int, boost::shared_ptr<Keyframe> >::const_iterator mapIter = keyframes.begin(); mapIter != keyframes.end(); ++mapIter) {
+        clone->keyframes[mapIter->first] = mapIter->second->deepClone();
+    }//for
+
+    clone->startTick = startTick;
+
+    return clone;
+}//deepClone
 
 void Animation::absorbCurve(boost::shared_ptr<Animation> otherAnim)
 {

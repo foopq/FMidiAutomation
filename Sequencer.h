@@ -15,6 +15,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
 #include "ProcessRecordedMidi.h"
+#include "VectorStreambuf.h"
 
 class Sequencer;
 struct GraphState;
@@ -23,6 +24,7 @@ class SequencerEntryBlock;
 class FMidiAutomationMainWindow;
 class Animation;
 struct Keyframe;
+struct ProcessRecordedMidiCommand;
 
 struct SequencerEntryBlockSelectionInfo
 {
@@ -49,6 +51,9 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     double offsetY;
 
     SequencerEntryBlock() {} //For serialization
+
+protected:
+    void setInstanceOf(boost::shared_ptr<SequencerEntryBlock> instanceOf);
 
 public:    
     SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
@@ -78,10 +83,13 @@ public:
 
     int *getRawStartTick();
 
+    boost::shared_ptr<SequencerEntryBlock> deepClone();
+
     void renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
+    friend class SequencerEntry;
 };//SequencerEntryBlock
 
 struct SequencerEntryImpl
@@ -153,7 +161,7 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     void handleMutePressed();
     void handleMuteSmPressed();
 
-    SequencerEntry() {} //For serialization
+    SequencerEntry() {} //For serialization and clone
 
 public:
     SequencerEntry(const Glib::ustring &entryGlade, Sequencer *sequencer, unsigned int entryNum);
@@ -194,6 +202,8 @@ public:
     void addRecordToken(MidiToken &token);
     void commitRecordedTokens();
 
+    boost::shared_ptr<SequencerEntry> deepClone();
+
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
                             boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);
 
@@ -217,6 +227,9 @@ class Sequencer
     void adjustEntryIndices();
 
 ////    Sequencer() {} //For serialization
+
+protected:
+    void setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > entryMap);
 
 public:
     Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
@@ -246,6 +259,15 @@ public:
 
     void doLoad(boost::archive::xml_iarchive &inputArchive);
     void doSave(boost::archive::xml_oarchive &outputArchive);
+
+    //For midi processing
+    void cloneEntryMap();
+    std::map<boost::shared_ptr<SequencerEntry>, int > getEntryMap();    
+
+//    boost::shared_ptr<VectorStreambuf> serializeEntryMap();
+//    void deserializeEntryMap(boost::shared_ptr<VectorStreambuf> streambuf);
+
+    friend struct ProcessRecordedMidiCommand;
 };//Sequencer
 
 

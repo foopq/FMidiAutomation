@@ -71,7 +71,7 @@ void CommandManager::doUndo()
     mainWindow->queue_draw();
 }//doUndo
 
-void CommandManager::setNewCommand(boost::shared_ptr<Command> command)
+void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool applyCommand)
 {
     while (redoStack.empty() == false) {
         redoStack.pop();
@@ -82,7 +82,9 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command)
     undoStack.push(command);
     menuUndo->set_sensitive(true);
 
-    command->doAction();
+    if (true == applyCommand) {
+        command->doAction();
+    }//if
 
     titleStarFunc();
 
@@ -483,5 +485,28 @@ void MoveKeyframeCommand::undoAction()
     doAction();
 }//undoAction
 
+
+ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap_)
+{
+    origEntryMap = origEntryMap_;
+    newEntryMap = newEntryMap_;
+}//constructor
+
+ProcessRecordedMidiCommand::~ProcessRecordedMidiCommand()
+{
+    //Nothing
+}//destructor
+
+void ProcessRecordedMidiCommand::doAction()
+{
+    Globals &globals = Globals::Instance();
+    globals.sequencer->setEntryMap(newEntryMap);
+}//doAction
+
+void ProcessRecordedMidiCommand::undoAction()
+{
+    Globals &globals = Globals::Instance();
+    globals.sequencer->setEntryMap(origEntryMap);
+}//undoAction
 
 

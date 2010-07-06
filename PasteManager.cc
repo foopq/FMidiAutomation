@@ -87,7 +87,7 @@ void PasteSequencerEntryBlockCommand::doPaste()
 
         newentryBlock->cloneCurves(entryBlock);
         boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newentryBlock));
-        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand);
+        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
     }//if
 }//doPaste
 
@@ -110,7 +110,7 @@ void PasteSequencerEntryBlockCommand::doPasteInstance()
 
         //FIXME: and clone the curves, etc...
         boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newentryBlock));
-        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand);
+        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
     }//if
 }//doPasteInstance
 
@@ -144,7 +144,7 @@ void PasteSequencerKeyframeCommand::doPaste()
     }//if
 
     boost::shared_ptr<Command> addKeyframeCommand(new AddKeyframeCommand(currentlySelectedEntryBlock, keyframe, tick - currentlySelectedEntryBlock->getStartTick()));
-    CommandManager::Instance().setNewCommand(addKeyframeCommand);
+    CommandManager::Instance().setNewCommand(addKeyframeCommand, true);
 }//doPaste
 
 void PasteSequencerKeyframeCommand::doPasteInstance()

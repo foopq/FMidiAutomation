@@ -12,6 +12,7 @@ class SequencerEntry;
 class SequencerEntryBlock;
 struct SequencerEntryImpl;
 struct Keyframe;
+class CommandManager;
 
 struct Command
 {
@@ -36,7 +37,7 @@ public:
 
     void doRedo();
     void doUndo();
-    void setNewCommand(boost::shared_ptr<Command> command);
+    void setNewCommand(boost::shared_ptr<Command> command, bool applyCommand);
 };//CommandManager
 
 struct ChangeSequencerEntryPropertiesCommand : public Command
@@ -237,5 +238,18 @@ struct MoveKeyframeCommand : public Command
     void doAction();
     void undoAction();
 };//MoveKeyframeCommand
+
+struct ProcessRecordedMidiCommand : public Command
+{
+    std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap;
+    std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap;
+
+    ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap);
+    ~ProcessRecordedMidiCommand();
+
+    void doAction();
+    void undoAction();
+};//ProcessRecordedMidiCommand
+
 
 #endif

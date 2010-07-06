@@ -11,6 +11,9 @@
 #include <boost/serialization/weak_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
 
 static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
 static const unsigned int smallEntryWindowHeight = 46 + 4; //size plus padding
@@ -143,6 +146,34 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
         secondaryCurve.reset(new Animation(this, instanceOf->secondaryCurve));
     }//if
 }//constructor
+
+boost::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone()
+{
+    boost::shared_ptr<SequencerEntryBlock> clone(new SequencerEntryBlock);
+
+    clone->owningEntry = owningEntry;
+    clone->title = title;
+    clone->startTick = startTick;
+
+    //clone->boost::shared_ptr<SequencerEntryBlock> instanceOf;
+    //int duration; //in ticks, or unused if instanceOf isn't NULL
+    
+    clone->curve = curve->deepClone();
+    clone->secondaryCurve = secondaryCurve->deepClone();
+
+    clone->valuesPerPixel = valuesPerPixel;
+    clone->offsetY = offsetY;
+
+    return clone;
+}//deepClone
+
+void SequencerEntryBlock::setInstanceOf(boost::shared_ptr<SequencerEntryBlock> instanceOf_)
+{
+    instanceOf = instanceOf_;
+
+    curve.reset(new Animation(this, instanceOf->curve));
+    secondaryCurve.reset(new Animation(this, instanceOf->secondaryCurve));
+}//setInstanceOf
 
 double SequencerEntryBlock::getValuesPerPixel()
 {
@@ -462,6 +493,47 @@ SequencerEntry::~SequencerEntry()
 {
     //Nothing
 }//destructor
+
+boost::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
+{
+    boost::shared_ptr<SequencerEntry> clone(new SequencerEntry);
+
+    clone->impl.reset(new SequencerEntryImpl);
+
+    *clone->impl = *impl;
+
+    clone->sequencer = sequencer;
+    clone->uiXml = uiXml;
+    clone->mainWindow = mainWindow;
+    clone->smallWindow = smallWindow;
+    clone->largeFrame = largeFrame;
+    clone->smallFrame = smallFrame;
+    clone->activeCheckButton = activeCheckButton;
+    clone->isFullBox = isFullBox;
+    clone->curIndex = curIndex;
+ 
+    std::map<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> > oldNewMap;
+
+    for(std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = entryBlocks.begin(); mapIter != entryBlocks.end(); ++mapIter) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlockClone = mapIter->second->deepClone();
+        clone->entryBlocks[mapIter->first] = entryBlockClone;
+
+        oldNewMap[mapIter->second] = entryBlockClone;
+    }//for
+
+    for (std::map<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = oldNewMap.begin(); mapIter != oldNewMap.end(); ++mapIter) {
+        if (mapIter->second->getInstanceOf() != NULL) {
+            boost::shared_ptr<SequencerEntryBlock> entryBlockClone = oldNewMap[mapIter->second->getInstanceOf()];
+            assert(entryBlockClone != NULL);
+            mapIter->second->setInstanceOf(entryBlockClone);
+        }//if
+    }//for
+
+    clone->inputPorts = inputPorts;
+    clone->outputPorts = outputPorts;
+
+    return clone;
+}//deepClone
 
 boost::shared_ptr<SequencerEntryImpl> SequencerEntry::getImplClone()
 {
@@ -1240,7 +1312,6 @@ if (selectedEntryBlock == NULL) {
 
 void Sequencer::clearSelectedEntryBlock()
 {
-std::cout << "clearSelectedEntryBlock" << std::endl;
     selectedEntryBlock.reset();
 }//clearSelectedEntryBlock
 
@@ -1293,6 +1364,81 @@ void Sequencer::doSave(boost::archive::xml_oarchive &outputArchive)
     outputArchive & BOOST_SERIALIZATION_NVP(selectedEntryBlock);
     outputArchive & BOOST_SERIALIZATION_NVP(selectionInfos);
 }//doSave
+
+void Sequencer::cloneEntryMap()
+{
+    std::map<boost::shared_ptr<SequencerEntry>, int > entriesClone;
+    std::map<int, boost::shared_ptr<SequencerEntry> > entriesCloneRev;
+    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+        boost::shared_ptr<SequencerEntry> entryClone = mapIter->first->deepClone();
+        entriesClone[entryClone] = mapIter->second;
+        entriesCloneRev[mapIter->second] = entryClone;
+
+        parentWidget->children().remove(*mapIter->first->getHookWidget());
+    }//for
+
+    entries.swap(entriesClone);
+
+    assert(entries.size() == entriesCloneRev.size());
+
+    for (std::map<int, boost::shared_ptr<SequencerEntry> >::iterator mapIter = entriesCloneRev.begin(); mapIter != entriesCloneRev.end(); ++mapIter) {
+        Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
+        parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
+    }//for
+}//cloneEntryMap
+
+void Sequencer::setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > entryMap)
+{
+////!!!! Unset selected entry block
+////!!!! Switch select selected entry
+
+    std::map<int, boost::shared_ptr<SequencerEntry> > entriesRev;
+
+    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+        entriesRev[mapIter->second] = mapIter->first;
+        parentWidget->children().remove(*mapIter->first->getHookWidget());
+    }//for
+
+    entries = entryMap;
+
+    for (std::map<int, boost::shared_ptr<SequencerEntry> >::iterator mapIter = entriesRev.begin(); mapIter != entriesRev.end(); ++mapIter) {
+        Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
+        parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
+    }//for
+}//setEntryMap
+
+std::map<boost::shared_ptr<SequencerEntry>, int > Sequencer::getEntryMap()
+{
+    return entries;
+}//getEntryMap
+
+/*
+boost::shared_ptr<VectorStreambuf> Sequencer::serializeEntryMap()
+{
+    boost::shared_ptr<VectorStreambuf> outputStream(new VectorStreambuf);
+
+    boost::archive::binary_oarchive outputArchive(*outputStream, boost::archive::no_codecvt | boost::archive::no_header);
+
+    outputArchive & BOOST_SERIALIZATION_NVP(entries);
+
+    return outputStream;
+}//serializeEntryMap
+
+void Sequencer::deserializeEntryMap(boost::shared_ptr<VectorStreambuf> streambuf)
+{
+    boost::archive::binary_iarchive inputArchive(*streambuf, boost::archive::no_codecvt | boost::archive::no_header);
+
+    entries.clear();
+    inputArchive & BOOST_SERIALIZATION_NVP(entries);
+
+    CommandManager::Instance().refreshActualPointerData();
+    clearSelectedEntryBlock();
+
+    ... properly clear selected entry and entry block
+    ... do command for process midi data
+    ... fill in refreshAPD for commands
+}//deserializeEntryMap
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Rendering code

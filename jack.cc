@@ -439,6 +439,10 @@ int JackSingleton::getTransportFrame()
 
 void JackSingleton::setTransportState(jack_transport_state_t state)
 {
+    if (false == processingMidi) {
+        return;
+    }//if
+
     if (state == JackTransportRolling) {
         jack_transport_start(jackClient);
     }//if
@@ -450,6 +454,10 @@ void JackSingleton::setTransportState(jack_transport_state_t state)
 
 void JackSingleton::setTime(int frame)
 {
+    if (false == processingMidi) {
+        return;
+    }//if
+
     jack_position_t pos;
     (void)jack_transport_query(jackClient, &pos);
 

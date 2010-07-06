@@ -13,6 +13,7 @@
 #include "FMidiAutomationMainWindow.h"
 
 class SequencerEntryBlock;
+class SequencerEntry;
 
 namespace CurveType {
 enum CurveType
@@ -54,6 +55,8 @@ struct Keyframe
     //bool isSelected;
     KeySelectedType::KeySelectedType selectedState;
 
+    boost::shared_ptr<Keyframe> deepClone();
+
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
 };//Keyframe
@@ -71,6 +74,8 @@ class Animation
 public:
     Animation(SequencerEntryBlock *owningEntryBlock, boost::shared_ptr<Animation> instanceOf);
     ~Animation();
+
+    boost::shared_ptr<Animation> deepClone();
 
     void addKey(boost::shared_ptr<Keyframe> keyframe);
     //void deleteKey(int tick);

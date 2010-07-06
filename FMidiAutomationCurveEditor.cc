@@ -265,7 +265,7 @@ void CurveEditor::handleAddKeyframe()
     }//if
 
     boost::shared_ptr<Command> addKeyframeCommand(new AddKeyframeCommand(currentlySelectedEntryBlock, curMouseUnderTick - currentlySelectedEntryBlock->getStartTick(), curMouseUnderValue));
-    CommandManager::Instance().setNewCommand(addKeyframeCommand);
+    CommandManager::Instance().setNewCommand(addKeyframeCommand, true);
 }//handleAddKeyframe
 
 void CurveEditor::handleDeleteKeyframe()
@@ -277,7 +277,7 @@ void CurveEditor::handleDeleteKeyframe()
     }//if
 
     boost::shared_ptr<Command> deleteKeyframeCommand(new DeleteKeyframeCommand(currentlySelectedEntryBlock, selectedKey));
-    CommandManager::Instance().setNewCommand(deleteKeyframeCommand);
+    CommandManager::Instance().setNewCommand(deleteKeyframeCommand, true);
 }//handleDeletedKeyframe
 
 boost::shared_ptr<Keyframe> CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY)

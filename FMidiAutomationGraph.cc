@@ -795,7 +795,7 @@ void GraphState::doInit()
     offsetX = 0;
     offsetY = 0;
     barsSubdivisionAmount = 1;
-    ticksPerPixel = 2;
+    ticksPerPixel = 50;
     inMotion = false;
     zeroithTickPixel = std::numeric_limits<int>::max();
     curPointerTick = 0;
