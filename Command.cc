@@ -9,6 +9,11 @@
 
 extern FMidiAutomationMainWindow *mainWindow;
 
+Command::Command(Glib::ustring commandStr_)
+{
+    commandStr = commandStr_;
+}//constructor
+
 CommandManager &CommandManager::Instance()
 {
     static CommandManager manager;
@@ -25,6 +30,9 @@ void CommandManager::setMenuItems(Gtk::ImageMenuItem *menuUndo_, Gtk::ImageMenuI
     menuUndo = menuUndo_;
     menuRedo = menuRedo_;
 
+    menuUndo->set_label("Undo");
+    menuRedo->set_label("Redo");
+
     menuUndo->set_sensitive(false);
     menuRedo->set_sensitive(false);
 }//setMenuItems
@@ -39,11 +47,15 @@ void CommandManager::doRedo()
     redoStack.pop();
 
     if (redoStack.empty() == true) {
+        menuRedo->set_label("Redo");
         menuRedo->set_sensitive(false);
+    } else {
+        menuRedo->set_label("Redo " + redoStack.top()->commandStr);
     }//if
 
     undoStack.push(command);
     menuUndo->set_sensitive(true);
+    menuUndo->set_label("Undo " + command->commandStr);
 
     command->doAction();
 
@@ -60,11 +72,15 @@ void CommandManager::doUndo()
     undoStack.pop();
 
     if (undoStack.empty() == true) {
+        menuUndo->set_label("Undo");
         menuUndo->set_sensitive(false);
+    } else {
+        menuUndo->set_label("Undo " + undoStack.top()->commandStr);
     }//if
 
     redoStack.push(command);
     menuRedo->set_sensitive(true);
+    menuRedo->set_label("Redo " + command->commandStr);
 
     command->undoAction();
 
@@ -81,6 +97,7 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool appl
 
     undoStack.push(command);
     menuUndo->set_sensitive(true);
+    menuUndo->set_label("Undo " + command->commandStr);
 
     if (true == applyCommand) {
         command->doAction();
@@ -93,7 +110,7 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool appl
 
 //UpdateTempoChangeCommand
 UpdateTempoChangeCommand::UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,
-                                                    unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData_)
+                                                    unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData_) : Command("Update Tempo Change")
 {
     old_bpm = new_bpm;
     old_beatsPerBar = new_beatsPerBar;
@@ -124,7 +141,7 @@ void UpdateTempoChangeCommand::undoAction()
 //AddTempoChangeCommand
 AddTempoChangeCommand::AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_,
                                                 boost::shared_ptr<FMidiAutomationData> datas_,
-                                                boost::function<void (void)> updateTempoChangesUIData_)
+                                                boost::function<void (void)> updateTempoChangesUIData_) : Command("Add Tempo Change")
 {
     datas = datas_;
     tempo = tempo_;
@@ -154,7 +171,7 @@ void AddTempoChangeCommand::undoAction()
 //DeleteTempoChangeCommand
 DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,
                                                     boost::shared_ptr<FMidiAutomationData> datas_,
-                                                    boost::function<void (void)> updateTempoChangesUIData_)
+                                                    boost::function<void (void)> updateTempoChangesUIData_) : Command("Delete Tempo Change")
 {
     datas = datas_;
     tick = tick_;
@@ -184,7 +201,7 @@ void DeleteTempoChangeCommand::undoAction()
     updateTempoChangesUIData();
 }//undoAction
 
-AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, bool useDefaults_)
+AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, bool useDefaults_) : Command("Add Sequencer Entry")
 {
     sequencer = sequencer_;
     useDefaults = useDefaults_;
@@ -209,7 +226,7 @@ void AddSequencerEntryCommand::undoAction()
     sequencer->deleteEntry(entry);
 }//undoAction
 
-DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_)
+DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Delete Sequencer Entry")
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -231,7 +248,7 @@ void DeleteSequencerEntryCommand::undoAction()
     sequencer->addEntry(entry, entryIndex);
 }//undoAction
 
-SequencerEntryUpCommand::SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_)
+SequencerEntryUpCommand::SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Up")
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -255,7 +272,7 @@ void SequencerEntryUpCommand::undoAction()
     sequencer->addEntry(entry, origIndex);
 }//undoAction
 
-SequencerEntryDownCommand::SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_)
+SequencerEntryDownCommand::SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Down")
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -279,7 +296,7 @@ void SequencerEntryDownCommand::undoAction()
     sequencer->addEntry(entry, origIndex);
 }//undoAction
 
-AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_)
+AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Add Sequencer Entry Block")
 {
     entry = entry_;
     entryBlock = entryBlock_;
@@ -300,7 +317,7 @@ void AddSequencerEntryBlockCommand::undoAction()
     entry->removeEntryBlock(entryBlock);
 }//undoAction
 
-DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_)
+DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Delete Sequencer Entry Block")
 {
     entryBlock = entryBlock_;
     entry = entryBlock->getOwningEntry();
@@ -321,7 +338,7 @@ void DeleteSequencerEntryBlockCommand::undoAction()
     entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
 }//undoAction
 
-ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_)
+ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_) : Command("Change Sequencer Entry Block Properties")
 {
     entryBlock = entryBlock_;
     prevTitle = newTitle_;
@@ -344,7 +361,7 @@ void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
     doAction();
 }//undoAction
 
-MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, int origTick_, int newTick_)
+MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, int origTick_, int newTick_) : Command("Move Sequencer Entry Block")
 {
     entryBlock = entryBlock_;
     origTick = origTick_;
@@ -366,7 +383,7 @@ void MoveSequencerEntryBlockCommand::undoAction()
     entryBlock->moveBlock(origTick);
 }//undoAction
 
-ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryImpl> origImpl_, boost::shared_ptr<SequencerEntryImpl> newImpl_)
+ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryImpl> origImpl_, boost::shared_ptr<SequencerEntryImpl> newImpl_) : Command("Change Sequencer Entry Properties")
 {
     entry = entry_;
     origImpl = origImpl_;
@@ -388,7 +405,7 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
     entry->setNewDataImpl(origImpl);
 }//undoAction
 
-AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, boost::shared_ptr<Keyframe> origKeyframe, int newTick)
+AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, boost::shared_ptr<Keyframe> origKeyframe, int newTick) : Command("Add Keyframe")
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     assert(currentlySelectedEntryBlock != NULL);
@@ -402,7 +419,7 @@ AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> cu
     keyframe = newKeyframe;
 }//constructor
 
-AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_)
+AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_) : Command("Add Keyframe")
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     //curMouseUnderTick = curMouseUnderTick_;
@@ -436,7 +453,7 @@ void AddKeyframeCommand::undoAction()
     currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
 }//undoAction
 
-DeleteKeyframeCommand::DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_)
+DeleteKeyframeCommand::DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_) : Command("Delete Keyframe")
 {
     entryBlock = entryBlock_;
     keyframe = keyframe_;
@@ -457,7 +474,7 @@ void DeleteKeyframeCommand::undoAction()
     entryBlock->getCurve()->addKey(keyframe);
 }//undoAction
 
-MoveKeyframeCommand::MoveKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_, int movingKeyOrigTick_, double movingKeyOrigValue_)
+MoveKeyframeCommand::MoveKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_, int movingKeyOrigTick_, double movingKeyOrigValue_) : Command("Move Keyframe")
 {
     entryBlock = entryBlock_;
     keyframe = keyframe_;
@@ -486,7 +503,7 @@ void MoveKeyframeCommand::undoAction()
 }//undoAction
 
 
-ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap_)
+ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap_) : Command("Process Recorded Midi")
 {
     origEntryMap = origEntryMap_;
     newEntryMap = newEntryMap_;

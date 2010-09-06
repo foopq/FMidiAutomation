@@ -648,8 +648,24 @@ void FMidiAutomationMainWindow::refreshGraphBackground()
 //    scaleImage(backingImage, scaledImagePixbuf, drawingAreaWidth, drawingAreaHeight, true);
 }//refreshGraphBackground
 
+void FMidiAutomationMainWindow::doUIQueuedThreadStuff()
+{
+    switch (queuedUIThreadOperation) {
+        default:
+        case UIThreadOperation::Nothing:
+            break;
+
+        case UIThreadOperation::finishProcessRecordedMidiOp:
+            finishProcessRecordedMidi();
+            queuedUIThreadOperation = UIThreadOperation::Nothing;
+            break;
+    }//switch
+}//doUIQueuedThreadStuff
+
 bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 {
+    doUIQueuedThreadStuff();
+
     if (false == graphDrawingArea->is_realized()) {
     	return false;
     }//if

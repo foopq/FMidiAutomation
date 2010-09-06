@@ -13,7 +13,13 @@ int main(int argc, char** argv)
     Glib::thread_init();
     Gnome::Canvas::init();
 
+//    g_threads_init();
+//    gdk_threads_init();
+//    gtk_init();
+
+    //gdk_threads_enter();
     Gtk::Main kit(argc, argv);
+//    gdk_threads_leave();
 
     mainWindow = new FMidiAutomationMainWindow();
     JackSingleton &jackSingleton = JackSingleton::Instance();

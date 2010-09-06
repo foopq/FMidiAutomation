@@ -77,6 +77,15 @@ enum DisplayMode
 };//DisplayMode
 }//DisplayMode
 
+namespace UIThreadOperation
+{
+enum UIThreadOperation
+{
+    Nothing,
+    finishProcessRecordedMidiOp,
+};//UIThreadOperation
+}//UIThreadOperation
+
 struct GraphState
 {    
     double baseOffsetX; //when actively scrolling
@@ -210,6 +219,8 @@ class FMidiAutomationMainWindow
     void setStatusText(Glib::ustring text);
     boost::mutex statusTextMutex;
 
+    UIThreadOperation::UIThreadOperation queuedUIThreadOperation;
+
     bool recordMidi;
     
     void handleGraphResize(Gtk::Allocation&);
@@ -282,6 +293,9 @@ class FMidiAutomationMainWindow
     void setTitleChanged();
 
     void processRecordedMidi();
+    void finishProcessRecordedMidi();
+
+    void doUIQueuedThreadStuff();
 
     friend struct FMidiAutomationCurveEditor;
        

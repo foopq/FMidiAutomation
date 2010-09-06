@@ -16,6 +16,10 @@ class CommandManager;
 
 struct Command
 {
+    Command(Glib::ustring commandStr);
+
+    Glib::ustring commandStr;
+
     virtual void doAction() = 0;
     virtual void undoAction() = 0;
 };//Command

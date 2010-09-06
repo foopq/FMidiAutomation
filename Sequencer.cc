@@ -532,6 +532,8 @@ boost::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
     clone->inputPorts = inputPorts;
     clone->outputPorts = outputPorts;
 
+    clone->recordTokenBuffer = recordTokenBuffer;
+
     return clone;
 }//deepClone
 
@@ -1054,6 +1056,7 @@ unsigned char SequencerEntry::sampleChar(int tick)
 
 void SequencerEntry::clearRecordTokenBuffer()
 {
+    std::cout << "clearRecordTokenBuffer" << std::endl;
     recordTokenBuffer.clear();
 }//clearRecordTokenBuffer
 
@@ -1079,6 +1082,7 @@ void SequencerEntry::addRecordToken(MidiToken &token)
         return;
     }//if
 
+    std::cout << "add token" << std::endl;
     recordTokenBuffer.push_back(token);
 }//addRecordToken
 
@@ -1374,17 +1378,29 @@ void Sequencer::cloneEntryMap()
         entriesClone[entryClone] = mapIter->second;
         entriesCloneRev[mapIter->second] = entryClone;
 
-        parentWidget->children().remove(*mapIter->first->getHookWidget());
+        //parentWidget->children().remove(*mapIter->first->getHookWidget());
     }//for
 
     entries.swap(entriesClone);
 
     assert(entries.size() == entriesCloneRev.size());
 
+    parentWidget->children().clear();
+
     for (std::map<int, boost::shared_ptr<SequencerEntry> >::iterator mapIter = entriesCloneRev.begin(); mapIter != entriesCloneRev.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
         parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
     }//for
+
+    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+
+    adjustFillerHeight();
+    adjustEntryIndices();
+    notifyOnScroll(-1);
+
+    selectedEntry = NULL;
+
+ std::cout << "cEM 5" << std::endl;   
 }//cloneEntryMap
 
 void Sequencer::setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > entryMap)
@@ -1396,15 +1412,25 @@ void Sequencer::setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > en
 
     for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         entriesRev[mapIter->second] = mapIter->first;
-        parentWidget->children().remove(*mapIter->first->getHookWidget());
+        //parentWidget->children().remove(*mapIter->first->getHookWidget());
     }//for
 
     entries = entryMap;
+
+    parentWidget->children().clear();
 
     for (std::map<int, boost::shared_ptr<SequencerEntry> >::iterator mapIter = entriesRev.begin(); mapIter != entriesRev.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
         parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
     }//for
+
+    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+
+    adjustFillerHeight();
+    adjustEntryIndices();
+    notifyOnScroll(-1);
+
+    selectedEntry = NULL;
 }//setEntryMap
 
 std::map<boost::shared_ptr<SequencerEntry>, int > Sequencer::getEntryMap()
