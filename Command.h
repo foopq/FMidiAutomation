@@ -59,11 +59,15 @@ struct ChangeSequencerEntryPropertiesCommand : public Command
 
 struct MoveSequencerEntryBlockCommand : public Command
 {
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
-    int origTick;
-    int newTick;
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks;
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
-    MoveSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, int origTick, int newTick);
+
+    MoveSequencerEntryBlockCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks,
+                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryOriginalStartTicks,
+                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryNewStartTicks);
+
     ~MoveSequencerEntryBlockCommand();
 
     void doAction();
@@ -93,6 +97,17 @@ struct AddSequencerEntryBlockCommand : public Command
     void doAction();
     void undoAction();
 };//AddSequencerEntryBlockCommand
+
+struct DeleteSequencerEntryBlocksCommand : public Command
+{
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
+
+    DeleteSequencerEntryBlocksCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks);
+    ~DeleteSequencerEntryBlocksCommand();
+
+    void doAction();
+    void undoAction();
+};//DeleteSequencerEntryBlocksCommand
 
 struct DeleteSequencerEntryBlockCommand : public Command
 {

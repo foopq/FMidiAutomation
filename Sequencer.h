@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <deque>
 #include <jack/jack.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -25,6 +26,16 @@ class FMidiAutomationMainWindow;
 class Animation;
 struct Keyframe;
 struct ProcessRecordedMidiCommand;
+
+namespace EntryBlockMergePolicy
+{
+enum EntryBlockMergePolicy
+{
+    Replace,
+    Merge,  
+    Join    //include first keyframes up to start of second keyframes
+};//EntryBlockMergePolicy
+}//namespace EntryBlockMergePolicy
 
 struct SequencerEntryBlockSelectionInfo
 {
@@ -161,6 +172,12 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     void handleMutePressed();
     void handleMuteSmPressed();
 
+    void mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entry, std::deque<boost::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
+                              EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy);
+
+    boost::shared_ptr<SequencerEntryBlock> mergeEntryBlocks(boost::shared_ptr<SequencerEntryBlock> oldEntryBlock, boost::shared_ptr<SequencerEntryBlock> newEntryBlock,
+                                                             EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy);
+
     SequencerEntry() {} //For serialization and clone
 
 public:
@@ -192,6 +209,7 @@ public:
     void addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
     boost::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
+    std::pair<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> > splitEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock, int tick);
 
     std::set<jack_port_t *> getInputPorts() const;
     std::set<jack_port_t *> getOutputPorts() const;
@@ -204,8 +222,9 @@ public:
 
     boost::shared_ptr<SequencerEntry> deepClone();
 
-    void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo,
-                            boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock);
+    void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
+                            std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo, 
+                            std::map<boost::shared_ptr<SequencerEntryBlock>, int> selectedEntryBlocks);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;

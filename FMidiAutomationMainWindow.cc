@@ -49,7 +49,7 @@ bool handleGraphValueScroll(GdkEventMotion *event, GraphState &graphState, gdoub
     double newOffset = graphState.baseOffsetY + offsetY;
     double medianValue = (drawingAreaHeight-60) / 2.0 * graphState.valuesPerPixel + newOffset * graphState.valuesPerPixel;
 
-    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl();
     double minValue = entryImpl->minValue;
     double maxValue = entryImpl->maxValue;
 
@@ -75,11 +75,11 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
     }//if
     double newValue = graphState.horizontalPixelValues[eventY];
 
-    newValue = std::max((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue);
-    newValue = std::min((int)newValue, graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->maxValue);
+    newValue = std::max((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue);
+    newValue = std::min((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue);
 
-    if ( ((newTick - graphState.currentlySelectedEntryBlock->getStartTick()) != graphState.currentlySelectedKeyframe->tick) && 
-         (graphState.currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(newTick) != NULL) ) {
+    if ( ((newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) != graphState.currentlySelectedKeyframe->tick) && 
+         (graphState.getCurrentlySelectedEntryBlock()->getCurve()->getKeyframeAtTick(newTick) != NULL) ) {
         return;
     }//if
 
@@ -87,12 +87,12 @@ void handleKeyScroll(GdkEventMotion *event, GraphState &graphState, gdouble mous
     graphState.didMoveKeyOutTangent = true;
     graphState.didMoveKeyInTangent = true;
 
-    graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
+    graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
 
-    graphState.currentlySelectedKeyframe->tick = newTick - graphState.currentlySelectedEntryBlock->getStartTick();
+    graphState.currentlySelectedKeyframe->tick = newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
     graphState.currentlySelectedKeyframe->value = newValue;
 
-    graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
+    graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(graphState.currentlySelectedKeyframe);
 }//handleKeyScroll
 
 void handleKeyTangentScroll(GdkEventMotion *event, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
@@ -147,7 +147,7 @@ bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, 
     bool changed = true;
     //double curValuesPerPixel = graphState.valuesPerPixel;
 
-    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl();
     int minValue = entryImpl->minValue;
     int maxValue = entryImpl->maxValue;
 
@@ -276,11 +276,17 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("menu_paste", menuPaste);
     uiXml->get_widget("menu_paste_instance", menuPasteInstance);
 
+    uiXml->get_widget("menu_splitEntryBlock", menuSplitEntryBlock);
+    uiXml->get_widget("menu_joinEntryBlocks", menuJoinEntryBlocks);
+
     menuOpen->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuOpen));
     menuSave->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSave));
     menuSaveAs->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSaveAs));
     menuNew->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuNew));
     menuQuit->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuQuit));
+
+    menuSplitEntryBlock->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSplitEntryBlock));
+    menuJoinEntryBlocks->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuJoinEntryBlocks));
 
     menuCopy->set_sensitive(false);
     menuCut->set_sensitive(false);
@@ -1062,7 +1068,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey
         int curTick = boost::lexical_cast<int>(positionTickEntry->get_text());
         if (curTick >= 0) {
             curTick = std::max(0, curTick);
-            graphState.currentlySelectedEntryBlock->moveBlock(curTick);
+            graphState.getCurrentlySelectedEntryBlock()->moveBlock(curTick);
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -1096,8 +1102,8 @@ void FMidiAutomationMainWindow::on_menuCopy()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
         PasteManager::Instance().setPasteOnly(false);
-        if (graphState.currentlySelectedEntryBlock != NULL) {
-            boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock));
+        if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+            boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks));
             PasteManager::Instance().setNewCommand(pasteSequencerEntryBlockCommand);
         }//if
     } else {
@@ -1112,8 +1118,8 @@ void FMidiAutomationMainWindow::on_menuCopy()
 void FMidiAutomationMainWindow::on_menuCut()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
-        if (graphState.currentlySelectedEntryBlock != NULL) {
-            handleDeleteSeqencerEntryBlock();
+        if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+            handleDeleteSequencerEntryBlocks();
             on_menuCopy();
         }//if
     } else {
@@ -1145,6 +1151,20 @@ void FMidiAutomationMainWindow::on_menuQuit()
 {
     Gtk::Main::quit();
 }//on_menuQuit
+
+void FMidiAutomationMainWindow::on_menuSplitEntryBlock()
+{
+    if (graphState.getCurrentlySelectedEntryBlock() == NULL) {
+        return;
+    }//if
+
+////
+//graphState.currentlySelectedEntryBlock = graphState.currentlySelectedEntryBlock->getOwningEntry()->splitEntryBlock(graphState.currentlySelectedEntryBlock, graphState.curPointerTick).first; ...
+}//on_menuSplitEntryBlock
+
+void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
+{
+}//on_menuJoinEntryBlock
 
 void FMidiAutomationMainWindow::on_menuNew()
 {
@@ -1299,7 +1319,7 @@ void FMidiAutomationMainWindow::on_menuOpen()
             break;
     }//switch 
 
-    graphState.currentlySelectedEntryBlock.reset();
+    graphState.currentlySelectedEntryBlocks.clear();
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
@@ -1344,8 +1364,8 @@ void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
     }//if
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        if (graphState.currentlySelectedEntryBlock != NULL) {
-            double sampledValueBase = graphState.currentlySelectedEntryBlock->getOwningEntry()->sample(graphState.curPointerTick);
+        if (graphState.getCurrentlySelectedEntryBlock() != NULL) {
+            double sampledValueBase = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->sample(graphState.curPointerTick);
             int sampledValue = sampledValueBase + 0.5;
             if (sampledValueBase < 0) {
                 sampledValue = sampledValueBase - 0.5;
@@ -1450,16 +1470,23 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 
                                 menuCopy->set_sensitive(false);
                                 menuCut->set_sensitive(false);
-                                graphState.currentlySelectedEntryBlock.reset();
+
+                                graphState.currentlySelectedEntryBlocks.clear();
+                                graphState.currentlySelectedEntryOriginalStartTicks.clear();
                             } else {
                                 graphState.selectedEntity = SequencerEntrySelection;
-                                graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
-                                graphState.currentlySelectedEntryBlock = entryBlock;
 
-                                positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
+                                if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
+                                    graphState.currentlySelectedEntryOriginalStartTicks.clear();
+                                    graphState.currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getStartTick();
+                                    graphState.currentlySelectedEntryBlocks.clear();
+                                    graphState.currentlySelectedEntryBlocks[entryBlock->getStartTick()] = entryBlock;
 
-                                menuCopy->set_sensitive(true);
-                                menuCut->set_sensitive(true);
+                                    positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
+
+                                    menuCopy->set_sensitive(true);
+                                    menuCut->set_sensitive(true);
+                                }//if
                             }//if
                         } else {
                             graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY);
@@ -1468,7 +1495,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                             if (graphState.currentlySelectedKeyframe != NULL) {
 
                                 graphState.didMoveKey = false;
-                                graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick - graphState.currentlySelectedEntryBlock->getStartTick();
+                                graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
                                 graphState.movingKeyOrigValue = graphState.currentlySelectedKeyframe->value;
 
                                 menuCopy->set_sensitive(true);
@@ -1483,6 +1510,32 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                         (void)checkForTempoSelection(-100, datas->tempoChanges);
                         
                         graphDrawingArea->queue_draw();
+                    } else {
+                        if (graphState.displayMode == DisplayMode::Sequencer) {
+                            boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+
+                            if (entryBlock != NULL) {
+                                if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
+                                    std::cout << "adding new entry block" << std::endl;
+
+                                    graphState.currentlySelectedEntryOriginalStartTicks[entryBlock] = entryBlock->getStartTick();
+                                    graphState.currentlySelectedEntryBlocks[entryBlock->getStartTick()] = entryBlock;
+                                } else {
+std::cout << "removing entry block" << std::endl;
+
+                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator tickIter = graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock);
+                                    std::map<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryIter = graphState.currentlySelectedEntryBlocks.find(entryBlock->getStartTick());
+
+                                    assert(tickIter != graphState.currentlySelectedEntryOriginalStartTicks.end());
+                                    assert(entryIter != graphState.currentlySelectedEntryBlocks.end());
+
+                                    graphState.currentlySelectedEntryOriginalStartTicks.erase(tickIter);
+                                    graphState.currentlySelectedEntryBlocks.erase(entryIter);
+                                }//if
+                            } else {
+                                std::cout << "null entry block" << std::endl;
+                            }//if
+                        }//if
                     }//if
                 } else { //single click
                     if (event->type == GDK_2BUTTON_PRESS) {
@@ -1509,7 +1562,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 
                         if (graphState.displayMode == DisplayMode::Sequencer) {
                             sequencer->clearSelectedEntryBlock();
-                            graphState.currentlySelectedEntryBlock.reset();
+                            graphState.currentlySelectedEntryBlocks.clear();
                         }//if
 
                         graphDrawingArea->queue_draw();
@@ -1537,9 +1590,21 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                 Glib::ustring ui_info = "<ui><popup name='PopupMenu'></popup></ui>";
                 if (graphState.displayMode == DisplayMode::Sequencer) {
                     boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+
                     if (entryBlock != NULL) {
+                        if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
+                            std::cout << "adding new entry block 2" << std::endl;
+
+                            graphState.currentlySelectedEntryOriginalStartTicks[entryBlock] = entryBlock->getStartTick();
+                            graphState.currentlySelectedEntryBlocks[entryBlock->getStartTick()] = entryBlock;
+                        }//if
+
                         //Context menu to delete entry
-                        m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock));
+                        
+                        m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock));
+                        if (graphState.currentlySelectedEntryBlocks.size() > 1) {
+                            m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete All Selected Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks));
+                        }//if
                         m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
                         m_refActionGroup->add(Gtk::Action::create("ContextCurve", "Entry Block Curve"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryCurve));
                         ui_info =
@@ -1555,7 +1620,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                     } else {
                         if (sequencer->getSelectedEntry() != NULL) {
                             //Context menu to add entry
-                            m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSeqencerEntryBlock));
+                            m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSequencerEntryBlock));
                             ui_info =
                                 "<ui>"
                                 "  <popup name='PopupMenu'>"
@@ -1574,7 +1639,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
                         graphState.selectedEntity = Nobody;
 
                         std::string menuStr = "Add Keyframe";
-                        boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState.currentlySelectedEntryBlock;
+                        boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState.getCurrentlySelectedEntryBlock();
 
                         int curMouseUnderTick = std::numeric_limits<int>::min();
                         if (event->x > 60) {
@@ -1646,6 +1711,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
             break;
     }//switch
 
+    graphDrawingArea->queue_draw();
+
     return true;
 }//mouseButtonPressed
 
@@ -1674,7 +1741,20 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
 
             else if (event->y > 60) {
                 if (graphState.selectedEntity == SequencerEntrySelection) {
-                    boost::shared_ptr<Command> moveSequencerEntryBlockCommand(new MoveSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlock, graphState.currentlySelectedEntryOriginalStartTick, graphState.currentlySelectedEntryBlock->getStartTick()));
+                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
+                    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); 
+                                blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
+                        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+
+                        entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
+                    }//for
+
+//                    graphState.currentlySelectedEntryBlocks.clear();
+//                    for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::const_iterator blockIter = entryNewStartTicks.begin(); blockIter != entryNewStartTicks.end(); ++blockIter) {
+//                        graphState.currentlySelectedEntryBlocks[blockIter->second] = blockIter->first;
+//                    }//for
+
+                    boost::shared_ptr<Command> moveSequencerEntryBlockCommand(new MoveSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks, graphState.currentlySelectedEntryOriginalStartTicks, entryNewStartTicks));
                     CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand, true);
 
                     graphDrawingArea->queue_draw();                    
@@ -1683,12 +1763,12 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
                 else if (graphState.selectedEntity == KeyValue) {
                     if (true == graphState.didMoveKey) {                        
                         //Move key back to where it was
-                        graphState.currentlySelectedEntryBlock->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
+                        graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
                         std::swap(graphState.currentlySelectedKeyframe->tick, graphState.movingKeyOrigTick);
                         std::swap(graphState.currentlySelectedKeyframe->value, graphState.movingKeyOrigValue);
-                        graphState.currentlySelectedEntryBlock->getCurve()->addKey(graphState.currentlySelectedKeyframe);
+                        graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(graphState.currentlySelectedKeyframe);
 
-                        boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframeCommand(graphState.currentlySelectedEntryBlock, graphState.currentlySelectedKeyframe, graphState.movingKeyOrigTick, graphState.movingKeyOrigValue));
+                        boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframeCommand(graphState.getCurrentlySelectedEntryBlock(), graphState.currentlySelectedKeyframe, graphState.movingKeyOrigTick, graphState.movingKeyOrigValue));
                         CommandManager::Instance().setNewCommand(moveKeyframeCommand, true);
                     }//if
                 }//if
@@ -1712,6 +1792,8 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
         default:
             break;
     }//switch
+
+    graphDrawingArea->queue_draw();
 
     return true;
 }//mouseButtonReleased
@@ -1738,7 +1820,6 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 
             curveEditor->setUnderMouseTickValue(tick, value);
         }//if
-
         return false;
     }//if
 
@@ -1815,20 +1896,28 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
             curX = std::max(0, curX);
             curX = std::min(curX, drawingAreaWidth-1);
             int diffTick = graphState.verticalPixelTickValues[curX] - graphState.verticalPixelTickValues[mousePressDownX];
-            int curTick = graphState.currentlySelectedEntryOriginalStartTick + diffTick;
+
+            int firstCurTick = std::numeric_limits<int>::min();
+            for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
+                int curTick = graphState.currentlySelectedEntryOriginalStartTicks[blockIter->second] + diffTick;
 
 //            std::cout << "x: " << curX << std::endl;
 //            std::cout << "diffTick: " << diffTick << "   --  curTick: " << curTick << std::endl;
 
-            graphState.currentlySelectedEntryBlock->moveBlock(curTick);
+                (blockIter->second)->moveBlock(curTick);
 
-            curTick = std::max(0, curTick);
-            positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(curTick));
+                if (std::numeric_limits<int>::min() == firstCurTick) {
+                    firstCurTick = curTick;
+                }//if
+            }//for
+
+            firstCurTick = std::max(0, firstCurTick);
+            positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(firstCurTick));
 
             graphDrawingArea->queue_draw();
         }//if
     }//if
-  
+
     return true;
 }//mouseMoved
 
@@ -1919,7 +2008,7 @@ void FMidiAutomationMainWindow::handleDeleteKeyframe()
     curveEditor->handleDeleteKeyframe();
 }//handleDeleteKeyframe
 
-void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
+void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
 {
     boost::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     if (selectedEntry != NULL) {
@@ -1934,18 +2023,33 @@ void FMidiAutomationMainWindow::handleAddSeqencerEntryBlock()
 
         graphDrawingArea->queue_draw();
     }//if
-}//handleAddSeqencerEntryBlock
+}//handleAddSequencerEntryBlock
 
-void FMidiAutomationMainWindow::handleDeleteSeqencerEntryBlock()
+void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
 {
-    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    if (selectedEntryBlock != NULL) {
-        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(selectedEntryBlock));
+    //boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+        boost::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(graphState.currentlySelectedEntryBlocks));
+        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlocksCommand, true);
+
+        graphDrawingArea->queue_draw();
+    }//if
+}//handleDeleteSequencerEntryBlock
+
+void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock()
+{
+    if (graphState.currentlySelectedEntryBlocks.empty() == true) {
+        return;
+    }//if
+
+    //boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks.begin()->second));
         CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
 
         graphDrawingArea->queue_draw();
     }//if
-}//handleDeleteSeqencerEntryBlock
+}//handleDeleteSequencerEntryBlock
 
 void FMidiAutomationMainWindow::handleSequencerEntryProperties()
 {

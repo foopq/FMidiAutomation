@@ -127,8 +127,8 @@ struct GraphState
     int movingKeyOrigTick;
     double movingKeyOrigValue;
 
-    int currentlySelectedEntryOriginalStartTick;
-    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
 
     boost::shared_ptr<Keyframe> currentlySelectedKeyframe;
 
@@ -138,6 +138,8 @@ struct GraphState
     GraphState();
     ~GraphState();
     void doInit();
+
+    boost::shared_ptr<SequencerEntryBlock> getCurrentlySelectedEntryBlock();
 
     void refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight);
     void refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight);
@@ -164,6 +166,8 @@ class FMidiAutomationMainWindow
     Gtk::ImageMenuItem *menuCut;
     Gtk::ImageMenuItem *menuPaste;
     Gtk::ImageMenuItem *menuPasteInstance;
+    Gtk::MenuItem *menuSplitEntryBlock;
+    Gtk::MenuItem *menuJoinEntryBlocks;
     Gtk::Entry *leftTickEntryBox;
     Gtk::Entry *rightTickEntryBox;
     Gtk::Entry *cursorTickEntryBox;
@@ -240,6 +244,8 @@ class FMidiAutomationMainWindow
     void on_menuPaste();
     void on_menuPorts();
     void on_menuPasteInstance();
+    void on_menuSplitEntryBlock();
+    void on_menuJoinEntryBlocks();
 
 
     bool key_pressed(GdkEventKey *event);
@@ -276,8 +282,9 @@ class FMidiAutomationMainWindow
 
     bool handleEntryWindowScroll(Gtk::ScrollType, double);
 
-    void handleAddSeqencerEntryBlock();
-    void handleDeleteSeqencerEntryBlock();
+    void handleAddSequencerEntryBlock();
+    void handleDeleteSequencerEntryBlocks();
+    void handleDeleteSequencerEntryBlock();
     void handleSequencerEntryProperties();
     void handleSequencerEntryCurve();
 

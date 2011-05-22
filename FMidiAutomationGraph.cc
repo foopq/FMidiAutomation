@@ -381,8 +381,8 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     int lastTimePixel = std::numeric_limits<int>::min();
     int lastValuePixel = std::numeric_limits<int>::min();
 
-    int maxEntryBlockValue = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->maxValue;
-    int minEntryBlockValue = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue;
+    int maxEntryBlockValue = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue;
+    int minEntryBlockValue = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue;
     
     int tickValuesSize = graphState.verticalPixelTickValues.size();
     for (int index = 0; index < tickValuesSize; ++index) {
@@ -711,7 +711,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//foreach
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+        const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
@@ -761,7 +761,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//if
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        graphState.currentlySelectedEntryBlock->renderCurves(context, graphState, drawingAreaWidth, drawingAreaHeight);
+        graphState.getCurrentlySelectedEntryBlock()->renderCurves(context, graphState, drawingAreaWidth, drawingAreaHeight);
         drawLeftBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
     }//if
 
@@ -832,6 +832,15 @@ GraphState::~GraphState()
     //Nothing
 }//destructor
 
+boost::shared_ptr<SequencerEntryBlock> GraphState::getCurrentlySelectedEntryBlock()
+{
+    if (currentlySelectedEntryBlocks.empty() == true) {
+        return boost::shared_ptr<SequencerEntryBlock>();
+    } else {
+        return ((*currentlySelectedEntryBlocks.begin()).second);
+    }//if
+}//getCurrentlySelectedEntryBlock
+
 void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
     if (displayMode != DisplayMode::Curve) {
@@ -839,7 +848,7 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
     }//if
 
     if (std::numeric_limits<double>::max() == valuesPerPixel) {
-        const boost::shared_ptr<SequencerEntryImpl> entryImpl = currentlySelectedEntryBlock->getOwningEntry()->getImpl();
+        const boost::shared_ptr<SequencerEntryImpl> entryImpl = getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
@@ -916,8 +925,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 
     int zeroithTickCount = 0;
-    if ((displayMode == DisplayMode::Curve) && (currentlySelectedEntryBlock != NULL)) {
-        zeroithTickCount = currentlySelectedEntryBlock->getStartTick();
+    if ((displayMode == DisplayMode::Curve) && (getCurrentlySelectedEntryBlock() != NULL)) {
+        zeroithTickCount = getCurrentlySelectedEntryBlock()->getStartTick();
     }//if
 
     int realZeroithTickPixel = std::numeric_limits<int>::max();

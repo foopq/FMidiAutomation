@@ -338,6 +338,36 @@ void DeleteSequencerEntryBlockCommand::undoAction()
     entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
 }//undoAction
 
+DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_) : Command("Delete Sequencer Entry Blocks")
+{
+    entryBlocks = entryBlocks_;
+}//constructor
+
+DeleteSequencerEntryBlocksCommand::~DeleteSequencerEntryBlocksCommand()
+{
+    //Nothing
+}//destructor
+
+void DeleteSequencerEntryBlocksCommand::doAction()
+{
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        boost::shared_ptr<SequencerEntry> entry = entryBlock->getOwningEntry();
+
+        entry->removeEntryBlock(entryBlock);
+    }//for
+}//doAction
+
+void DeleteSequencerEntryBlocksCommand::undoAction()
+{
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        boost::shared_ptr<SequencerEntry> entry = entryBlock->getOwningEntry();
+
+        entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
+    }//for
+}//undoAction
+
 ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_) : Command("Change Sequencer Entry Block Properties")
 {
     entryBlock = entryBlock_;
@@ -361,11 +391,15 @@ void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
     doAction();
 }//undoAction
 
-MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, int origTick_, int newTick_) : Command("Move Sequencer Entry Block")
+MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(
+                                                                std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_,
+                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryOriginalStartTicks_,
+                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryNewStartTicks_) : Command("Move Sequencer Entry Block")
 {
-    entryBlock = entryBlock_;
-    origTick = origTick_;
-    newTick = newTick_;
+    entryBlocks = entryBlocks_;
+
+    entryOriginalStartTicks = entryOriginalStartTicks_;
+    entryNewStartTicks = entryNewStartTicks_;
 }//constructor
 
 MoveSequencerEntryBlockCommand::~MoveSequencerEntryBlockCommand()
@@ -375,12 +409,22 @@ MoveSequencerEntryBlockCommand::~MoveSequencerEntryBlockCommand()
 
 void MoveSequencerEntryBlockCommand::doAction()
 {
-    entryBlock->moveBlock(newTick);
+    std::cout << "MoveSequencerEntryBlockCommand::doAction()" << std::endl;
+
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        entryBlock->moveBlock(entryNewStartTicks[entryBlock]);
+    }//for
 }//doAction
 
 void MoveSequencerEntryBlockCommand::undoAction()
 {
-    entryBlock->moveBlock(origTick);
+    std::cout << "MoveSequencerEntryBlockCommand::undoAction()" << std::endl;
+
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        entryBlock->moveBlock(entryOriginalStartTicks[entryBlock]);
+    }//for
 }//undoAction
 
 ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryImpl> origImpl_, boost::shared_ptr<SequencerEntryImpl> newImpl_) : Command("Change Sequencer Entry Properties")

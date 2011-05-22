@@ -8,7 +8,15 @@
 #include <jack/transport.h>
 #include <jack/midiport.h>
 #include <vector>
+#include <deque>
 #include <boost/foreach.hpp>
+
+namespace
+{
+
+
+
+}//anonymous namespace
 
 
 PortStreamTokenizer::PortStreamTokenizer()
@@ -287,10 +295,16 @@ void SequencerEntry::commitRecordedTokens()
 
     std::cout << "commitRecodedTokens" << std::endl;
 
+    static const int separationTickTime = 2000;
+
     int startTick = recordTokenBuffer[0].curFrame;
+    int lastTickTime = startTick;
+
+    std::deque<boost::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
 
     boost::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(shared_from_this(), startTick, boost::shared_ptr<SequencerEntryBlock>()));
     addEntryBlock(startTick, entryBlock);
+    newEntryBlocks.push_back(entryBlock);
 
     boost::shared_ptr<Animation> animCurve = entryBlock->getCurve();
 
@@ -301,9 +315,164 @@ void SequencerEntry::commitRecordedTokens()
         keyframe->value = token.value;
         keyframe->curveType = CurveType::Step;
 
+        if ((keyframe->tick - lastTickTime) > separationTickTime) {
+            entryBlock.reset(new SequencerEntryBlock(shared_from_this(), keyframe->tick, boost::shared_ptr<SequencerEntryBlock>()));
+            addEntryBlock(keyframe->tick, entryBlock);
+            animCurve = entryBlock->getCurve();
+            newEntryBlocks.push_back(entryBlock);
+        }//if
+
         animCurve->addKey(keyframe);
     }//foreach
+
+    EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy = EntryBlockMergePolicy::Merge;
+    mergeEntryBlockLists(shared_from_this(), newEntryBlocks, mergePolicy);
 }//commitRecordedTokens
 
+void SequencerEntry::mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entry, std::deque<boost::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
+                                            EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy)
+{
+    if (newEntryBlocks.empty() == true) {
+        //Probably can't happen..
+        return;
+    }//if
 
+    std::set<boost::shared_ptr<SequencerEntryBlock> > newEntryBlocksSet;
+    BOOST_FOREACH (boost::shared_ptr<SequencerEntryBlock> entryBlock, newEntryBlocks) {
+        newEntryBlocksSet.insert(entryBlock);
+    }//foreach
+
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter;
+    std::deque<boost::shared_ptr<SequencerEntryBlock> > oldEntryBlocks;
+    for (entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
+        if (newEntryBlocksSet.find(entryBlockIter->second) == newEntryBlocksSet.end()) {
+            oldEntryBlocks.push_back(entryBlockIter->second);
+        }//if
+    }//for
+
+    while (oldEntryBlocks.empty() == false) {
+        boost::shared_ptr<SequencerEntryBlock> oldEntryBlock = oldEntryBlocks.front();
+        boost::shared_ptr<SequencerEntryBlock> newEntryBlock = newEntryBlocks.front();
+
+        int oldEndTick = oldEntryBlock->getStartTick() + oldEntryBlock->getDuration();
+        int newEndTick = newEntryBlock->getStartTick() + newEntryBlock->getDuration();
+
+        //they don't overlap, old before new
+        if ((oldEntryBlock->getStartTick() < newEntryBlock->getStartTick()) && (oldEndTick < newEntryBlock->getStartTick())) {
+            oldEntryBlocks.pop_front();
+            continue;
+        }//if
+
+        //they don't overlap, new before old
+        if ((newEntryBlock->getStartTick() < oldEntryBlock->getStartTick()) && (newEndTick < oldEntryBlock->getStartTick())) {
+            newEntryBlocks.pop_front();
+            continue;
+        }//if
+
+        //otherwise new is appened to old or within old or vice-versa
+        boost::shared_ptr<SequencerEntryBlock> mergedBlock;
+        mergedBlock = mergeEntryBlocks(oldEntryBlock, newEntryBlock, mergePolicy);
+
+        oldEntryBlocks.pop_front();
+        newEntryBlocks.pop_front();
+
+        oldEntryBlocks.push_front(mergedBlock);
+    }//while
+}//void
+
+boost::shared_ptr<SequencerEntryBlock> SequencerEntry::mergeEntryBlocks(boost::shared_ptr<SequencerEntryBlock> oldEntryBlock, boost::shared_ptr<SequencerEntryBlock> newEntryBlock,
+                                                                           EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy)
+{
+    boost::shared_ptr<Animation> oldCurve = oldEntryBlock->getCurve();
+    boost::shared_ptr<Animation> oldSecondaryCurve = oldEntryBlock->getSecondaryCurve();
+    boost::shared_ptr<Animation> newCurve = newEntryBlock->getCurve();
+    boost::shared_ptr<Animation> newSecondaryCurve = newEntryBlock->getSecondaryCurve();
+
+    int newCurveStartTick = newEntryBlock->getStartTick();
+    int newCurveEndTick = newCurveStartTick + newEntryBlock->getDuration();
+
+    int startTick = std::min(oldEntryBlock->getStartTick(), newEntryBlock->getStartTick());
+
+    boost::shared_ptr<SequencerEntryBlock> merged(new SequencerEntryBlock(shared_from_this(), startTick, boost::shared_ptr<SequencerEntryBlock>()));
+
+    boost::shared_ptr<Animation> mergedCurve = merged->getCurve();
+    boost::shared_ptr<Animation> mergedSecondaryCurve = merged->getSecondaryCurve();    
+
+    int oldCurveNumKeys = oldCurve->getNumKeyframes();
+    for (int index = 0; index < oldCurveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = oldCurve->getKeyframe(index);
+
+        switch (mergePolicy) {
+            case EntryBlockMergePolicy::Merge:
+                mergedCurve->addKey(curKey->deepClone());
+                break;
+
+            case EntryBlockMergePolicy::Replace:
+                {
+                int absTick = curKey->tick + oldEntryBlock->getStartTick();
+                if ((absTick < newCurveStartTick) || (absTick > newCurveEndTick)) {
+                    mergedCurve->addKey(curKey->deepClone());
+                }//if
+                }
+                break;
+
+            case EntryBlockMergePolicy::Join:    //include first keyframes up to start of second keyframes
+                {
+                int absTick = curKey->tick + oldEntryBlock->getStartTick();
+                if (absTick < newCurveStartTick) {
+                    mergedCurve->addKey(curKey->deepClone());
+                }//if
+                }
+                break;
+        }//switch
+    }//for
+
+    int newCurveNumKeys = newCurve->getNumKeyframes();
+    for (int index = 0; index < newCurveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = newCurve->getKeyframe(index);
+        mergedCurve->addKey(curKey->deepClone());
+    }//for
+
+    int oldSecondaryCurveNumKeys = oldSecondaryCurve->getNumKeyframes();
+    for (int index = 0; index < oldSecondaryCurveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = oldSecondaryCurve->getKeyframe(index);
+
+        switch (mergePolicy) {
+            case EntryBlockMergePolicy::Merge:
+                mergedSecondaryCurve->addKey(curKey->deepClone());
+                break;
+
+            case EntryBlockMergePolicy::Replace:
+                {
+                int absTick = curKey->tick + oldEntryBlock->getStartTick();
+                if ((absTick < newCurveStartTick) || (absTick > newCurveEndTick)) {
+                    mergedSecondaryCurve->addKey(curKey->deepClone());
+                }//if
+                }
+                break;
+
+             case EntryBlockMergePolicy::Join:    //include first keyframes up to start of second keyframes
+                {
+                int absTick = curKey->tick + oldEntryBlock->getStartTick();
+                if (absTick < newCurveStartTick) {
+                    mergedSecondaryCurve->addKey(curKey->deepClone());
+                }//if
+                }
+                break;
+        }//switch
+    }//for
+
+    int newSecondaryCurveNumKeys = newSecondaryCurve->getNumKeyframes();
+    for (int index = 0; index < newSecondaryCurveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = newSecondaryCurve->getKeyframe(index);
+        mergedSecondaryCurve->addKey(curKey->deepClone());
+    }//for
+
+    removeEntryBlock(oldEntryBlock);
+    removeEntryBlock(newEntryBlock);
+
+    addEntryBlock(startTick, merged);
+
+    return merged;
+}//mergeEntryBlocks
 

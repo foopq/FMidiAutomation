@@ -58,9 +58,9 @@ void PasteManager::setNewCommand(boost::shared_ptr<PasteCommand> command_)
     }//if
 }//setNewCommand
 
-PasteSequencerEntryBlockCommand::PasteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_)
+PasteSequencerEntryBlockCommand::PasteSequencerEntryBlockCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_)
 {
-    entryBlock = entryBlock_;
+    entryBlocks = entryBlocks_;
 }//constructor
 
 PasteSequencerEntryBlockCommand::~PasteSequencerEntryBlockCommand()
@@ -76,42 +76,65 @@ void PasteSequencerEntryBlockCommand::doPaste()
         return;
     }//if
 
-    boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
-    if (selectedEntry != NULL) {
-        if (selectedEntry->getEntryBlock(globals.graphState->curPointerTick) != NULL) {
-            return;
+    if (entryBlocks.empty() == true) {
+        return;
+    }//if
+
+    int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
+    int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
+
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
+        //boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
+        boost::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
+
+        if (selectedEntry == NULL) {
+            continue;
         }//if
 
-        boost::shared_ptr<SequencerEntryBlock> newentryBlock(new SequencerEntryBlock(selectedEntry, globals.graphState->curPointerTick, boost::shared_ptr<SequencerEntryBlock>()));
-        newentryBlock->setTitle(entryBlock->getTitle());        
+        int startTick = entryIter->second->getStartTick() + tickOffset;
 
-        newentryBlock->cloneCurves(entryBlock);
-        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newentryBlock));
+        boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, boost::shared_ptr<SequencerEntryBlock>()));
+        newEntryBlock->setTitle(entryIter->second->getTitle());
+
+        newEntryBlock->cloneCurves(entryIter->second);
+        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newEntryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
-    }//if
+    }//for
 }//doPaste
 
 void PasteSequencerEntryBlockCommand::doPasteInstance()
 {
     Globals &globals = Globals::Instance();
-
+    
     if (globals.graphState->displayMode != DisplayMode::Sequencer) {
         return;
     }//if
-    
-    boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
-    if (selectedEntry != NULL) {
-        if (selectedEntry->getEntryBlock(globals.graphState->curPointerTick) != NULL) {
-            return;
+
+    if (entryBlocks.empty() == true) {
+        return;
+    }//if
+
+    int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
+    int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
+
+    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
+        //boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
+        boost::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
+
+        if (selectedEntry == NULL) {
+            continue;
         }//if
 
-        boost::shared_ptr<SequencerEntryBlock> newentryBlock(new SequencerEntryBlock(selectedEntry, globals.graphState->curPointerTick, entryBlock));
-        newentryBlock->setTitle(entryBlock->getTitle() + " (Instance)");
+        int startTick = entryIter->second->getStartTick() + tickOffset;
 
-        //FIXME: and clone the curves, etc...
-        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newentryBlock));
+        boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter->second));
+        newEntryBlock->setTitle(entryIter->second->getTitle() + " (Instance)");
+
+        //newEntryBlock->cloneCurves(entryIter->second); ?? do this here?
+        //FIXME: and clone the curves, etc... -- does this still make sense?
+        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newEntryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
-    }//if
+    }//for
 }//doPasteInstance
 
 PasteSequencerKeyframeCommand::PasteSequencerKeyframeCommand(boost::shared_ptr<Keyframe> keyframe_)
@@ -132,7 +155,7 @@ void PasteSequencerKeyframeCommand::doPaste()
         return;
     }//if
 
-    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->currentlySelectedEntryBlock;
+    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->getCurrentlySelectedEntryBlock();
     if (currentlySelectedEntryBlock == NULL) {
         return;
     }//if

@@ -45,7 +45,8 @@ void GraphState::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(rightMarkerTick);
     ar & BOOST_SERIALIZATION_NVP(leftMarkerTickXPixel);
     ar & BOOST_SERIALIZATION_NVP(rightMarkerTickXPixel);
-    ar & BOOST_SERIALIZATION_NVP(currentlySelectedEntryOriginalStartTick);
+    //ar & BOOST_SERIALIZATION_NVP(currentlySelectedEntryOriginalStartTicks); -- not serialized
+    //ar & BOOST_SERIALIZATION_NVP(currentlySelectedEntryBlocks); -- not serialized
     ar & BOOST_SERIALIZATION_NVP(lastSequencerPointerTick);
 }//serialize
 

@@ -44,9 +44,9 @@ public:
 
 struct PasteSequencerEntryBlockCommand : public PasteCommand
 {
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
-    PasteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    PasteSequencerEntryBlockCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks);
     ~PasteSequencerEntryBlockCommand();
 
     void doPaste();

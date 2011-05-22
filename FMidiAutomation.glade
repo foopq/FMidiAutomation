@@ -138,6 +138,25 @@
                                 <property name="use_stock">False</property>
                               </object>
                             </child>
+                            <child>
+                              <object class="GtkSeparatorMenuItem" id="menuitem6">
+                                <property name="visible">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menu_splitEntryBlock">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Split Entry Block</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menu_joinEntryBlocks">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Join Entry Blocks</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>

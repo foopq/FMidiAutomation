@@ -209,7 +209,7 @@ void SequencerEntryBlock::moveBlock(int startTick_)
     owningEntry_->removeEntryBlock(shared_from_this());
 
     startTick_ = std::max(startTick_, 0);
-//    std::cout << "move block from: " << startTick << " to " << startTick_ << std::endl;
+    std::cout << "move block from: " << startTick << " to " << startTick_ << std::endl;
 
     startTick = startTick_;
     owningEntry_->addEntryBlock(startTick, shared_from_this());
@@ -1086,6 +1086,69 @@ void SequencerEntry::addRecordToken(MidiToken &token)
     recordTokenBuffer.push_back(token);
 }//addRecordToken
 
+std::pair<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> > SequencerEntry::splitEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock, int tick)
+{
+    if ((tick <= entryBlock->getStartTick()) || (tick >= (entryBlock->getStartTick() + entryBlock->getDuration()))) {
+        return std::make_pair(entryBlock, entryBlock);
+    }//if
+
+    boost::shared_ptr<Animation> curve = entryBlock->getCurve();
+    boost::shared_ptr<Animation> secondaryCurve = entryBlock->getSecondaryCurve();
+
+    boost::shared_ptr<SequencerEntryBlock> firstBlock(new SequencerEntryBlock(shared_from_this(), entryBlock->getStartTick(), boost::shared_ptr<SequencerEntryBlock>()));
+    boost::shared_ptr<Animation> newCurve = firstBlock->getCurve();
+    boost::shared_ptr<Animation> newSecondaryCurve = firstBlock->getSecondaryCurve();    
+
+    int curveNumKeys = curve->getNumKeyframes();
+    int index = 0;
+    for (index = 0; index < curveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
+        if (curKey->tick + entryBlock->getStartTick() < tick) {
+            newCurve->addKey(curKey->deepClone());
+        } else {
+            break;
+        }//if
+    }//for
+
+    int secondaryCurveNumKeys = secondaryCurve->getNumKeyframes();
+    int secondaryIndex = 0;
+    for (secondaryIndex = 0; secondaryIndex < secondaryCurveNumKeys; ++secondaryIndex) {
+        boost::shared_ptr<Keyframe> curKey = secondaryCurve->getKeyframe(index);
+        if (curKey->tick + entryBlock->getStartTick() < tick) {
+            newSecondaryCurve->addKey(curKey->deepClone());
+        } else {
+            break;
+        }//if
+    }//for
+
+    int secondStartTick = secondaryCurve->getKeyframe(index)->tick + entryBlock->getStartTick();
+    boost::shared_ptr<SequencerEntryBlock> secondBlock(new SequencerEntryBlock(shared_from_this(), secondStartTick, boost::shared_ptr<SequencerEntryBlock>()));
+    newCurve = secondBlock->getCurve();
+    newSecondaryCurve = secondBlock->getSecondaryCurve();    
+
+    for (/*nothing*/; index < curveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
+        boost::shared_ptr<Keyframe> keyClone = curKey->deepClone();
+
+        keyClone->tick -= secondStartTick;
+        newCurve->addKey(keyClone);
+    }//for
+
+    for (/*nothing*/; secondaryIndex < secondaryCurveNumKeys; ++index) {
+        boost::shared_ptr<Keyframe> curKey = secondaryCurve->getKeyframe(index);
+        boost::shared_ptr<Keyframe> keyClone = curKey->deepClone();
+
+        keyClone->tick -= secondStartTick;
+        newSecondaryCurve->addKey(keyClone);
+    }//for
+
+    removeEntryBlock(entryBlock);
+    addEntryBlock(firstBlock->getStartTick(), firstBlock);
+    addEntryBlock(secondBlock->getStartTick(), secondBlock);
+
+    return std::make_pair(firstBlock, secondBlock);
+}//splitEntryBlock
+
 Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
     std::cout << "Sequencer constructor" << std::endl;
@@ -1316,6 +1379,8 @@ if (selectedEntryBlock == NULL) {
 
 void Sequencer::clearSelectedEntryBlock()
 {
+    std::cout << "clearSelectedEntryBlock" << std::endl;
+
     selectedEntryBlock.reset();
 }//clearSelectedEntryBlock
 
@@ -1485,6 +1550,8 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
     int drawingAreaStartY;
     graphDrawingArea->get_window()->get_origin(x1, drawingAreaStartY);
 
+    Globals &globals = Globals::Instance();
+
     for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
 
@@ -1515,7 +1582,8 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
 //std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
 
-            mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, selectedEntryBlock);
+            mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, 
+                                            globals.graphState->currentlySelectedEntryOriginalStartTicks);
             
             context->reset_clip();
             context->rectangle(0, relativeStartY, 100, relativeEndY);
@@ -1537,8 +1605,9 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 //    std::cout << std::endl;
 }//drawEntryBoxes
 
-void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, std::vector<SequencerEntryBlockSelectionInfo> &selectionInfos,
-                                        boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock)
+void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
+                                        std::vector<SequencerEntryBlockSelectionInfo> &selectionInfos,
+                                        std::map<boost::shared_ptr<SequencerEntryBlock>, int> selectedEntryBlocks)
 
 {
     Globals &globals = Globals::Instance();
@@ -1602,7 +1671,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 
         context->paint();
 
-        if (entryBlockIter->second == selectedEntryBlock) {
+        if (selectedEntryBlocks.find(entryBlockIter->second) != selectedEntryBlocks.end()) {
             context->set_source_rgba(1.0, 1.0, 0.0, 0.8);
             context->set_line_cap(Cairo::LINE_CAP_ROUND);
             context->move_to(relativeStartX, relativeStartY + 10);
