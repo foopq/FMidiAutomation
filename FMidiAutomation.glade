@@ -1557,7 +1557,6 @@
                                     <child>
                                       <object class="GtkEntry" id="msbEntry">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
                                         <property name="editable">False</property>
                                         <property name="invisible_char">&#x25CF;</property>
                                         <property name="width_chars">6</property>
@@ -1588,7 +1587,6 @@
                                     <child>
                                       <object class="GtkEntry" id="lsbEntry">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
                                         <property name="editable">False</property>
                                         <property name="invisible_char">&#x25CF;</property>
                                         <property name="width_chars">6</property>

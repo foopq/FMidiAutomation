@@ -300,6 +300,9 @@ AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<S
 {
     entry = entry_;
     entryBlock = entryBlock_;
+
+
+    std::cout << "add entry block: " << entryBlock->getStartTick() << " - " << *entryBlock->getRawStartTick() << std::endl;
 }//constructor
 
 AddSequencerEntryBlockCommand::~AddSequencerEntryBlockCommand()
@@ -400,6 +403,17 @@ MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(
 
     entryOriginalStartTicks = entryOriginalStartTicks_;
     entryNewStartTicks = entryNewStartTicks_;
+
+std::cout << "move entry block: " << std::endl;
+
+for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator mapIter = entryOriginalStartTicks.begin(); mapIter != entryOriginalStartTicks.end(); ++mapIter) {
+    std::cout << "entryOriginalStartTicks: " << mapIter->second << std::endl;
+}//for
+
+for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator mapIter = entryNewStartTicks.begin(); mapIter != entryNewStartTicks.end(); ++mapIter) {
+    std::cout << "entryNewStartTicks: " << mapIter->second << std::endl;
+}//for
+
 }//constructor
 
 MoveSequencerEntryBlockCommand::~MoveSequencerEntryBlockCommand()

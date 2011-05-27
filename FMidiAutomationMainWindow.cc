@@ -1756,6 +1756,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
 
                     boost::shared_ptr<Command> moveSequencerEntryBlockCommand(new MoveSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks, graphState.currentlySelectedEntryOriginalStartTicks, entryNewStartTicks));
                     CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand, true);
+                    graphState.currentlySelectedEntryOriginalStartTicks = entryNewStartTicks;
 
                     graphDrawingArea->queue_draw();                    
                 }
@@ -2075,9 +2076,14 @@ void FMidiAutomationMainWindow::handleSequencerEntryCurve()
 
 void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
 {
+
+std::cout << "editSequencerEntryProperties 1" << std::endl;
     EntryProperties entryProperties(uiXml, entry, !createUpdatePoint);
 
+
+
     if (true == entryProperties.wasChanged) {
+ std::cout << "editSequencerEntryProperties 2" << std::endl;       
         if (true == createUpdatePoint) {
             boost::shared_ptr<Command> changeSequencerEntryPropertiesCommand(new ChangeSequencerEntryPropertiesCommand(entry, entryProperties.origImpl, entryProperties.newImpl));
             CommandManager::Instance().setNewCommand(changeSequencerEntryPropertiesCommand, true);
@@ -2088,6 +2094,8 @@ void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<S
             entry->setNewDataImpl(entryProperties.newImpl);
         }//if
     }//if
+
+std::cout << "editSequencerEntryProperties 3" << std::endl;   
 }//editSequencerEntryProperties
 
 void FMidiAutomationMainWindow::doTestInit()

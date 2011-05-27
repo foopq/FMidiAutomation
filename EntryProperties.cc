@@ -7,6 +7,7 @@ EntryProperties::EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml_, boost::share
 {
     uiXml = uiXml_;
     origImpl = entry->getImplClone();
+    wasChanged = false;
 
     Gtk::Dialog *mainDialog;
     uiXml->get_widget("entryWindowProperties", mainDialog);
