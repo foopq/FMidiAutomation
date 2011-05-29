@@ -1,0 +1,64 @@
+- paste all blocks into selected entry block (ie: to copy to another entry) -- no instance for this
+
+- split / merge entry blocks
+    -> entry block multi-select?
+
+- finish record token processing (ie: merging/overwriting entry blocks)
+
+-allow edit of curve in new window --> multiple curves edited at once
+    - each has own current / left / right tick pointers as well as the ability to play / loop their own times
+
+- render tangents while also considering the next key, not just the current or previous
+
+- multiselect keys in curve window --> multi move, delete, etc
+    - remove currentlyselectedkey with keyselectiongroup vector
+
+- middle mouse click + key command to zoom extents on curve / sequencer
+
+- when resizing window, entry blocks are also resized instead of staying static (need to resize padding block?)
+
+- when moving key, tick value should be set to use nearest tick value, not floor of cur pixel pos
+- key/tangent selections/moves
+- maintain curve edit parameters when switching between curves
+- bezier
+- selected entry block should display sampled value when cursor is over an entry block curve
+- in curve mode, UI should display sampled value over cursor
+
+
+- context menu for entry parameters
+    - same parameters as larger box plus:
+        rpn/nrpn:
+        * dropdown with 7/14 bit values or custom to specify min/max values (message on ok if range isn't within 7-bit / 14-bit -- roland likes 14-114)
+        * toggle to use rpn/nrpn second byte value (which'll be sent as 0 if disabled -- always a four message sequence)
+        * 7 bit values plus use second byte values implies two separate curves (drawn/edited at same time)
+        * toggle to start counting at 0 or -half the max value
+        * perhaps a dropdown of presets for rpns?
+
+- On sequencer entry delete, box toggle, or reposition we need to request a redraw
+- Titles on entry blocks, plus title markup to indicate instance / cutoff
+- Add entry curves (and draw such)
+    * curves are stored between [0, 1] and scaled by entry min/max values
+    * No looping at first
+    * Start at cursor
+    * Tmp specify length
+    * Selection state
+    * Move left/right (by click dragging or by context menu -> properties)
+    * Handle overlap
+
+- keyboard accelerators
+- buttons to set left/right marks off of cursor
+- status bar at bottom to indicate errors + fader
+
+- add/delete sequencer entry block in menu and toolbar
+??- Entry box label colour theme + set in properties dialog
+
+- recent file menu
+
+Note:
+
+
+Title
+Mute / Solo / Rec
+Channel / Control Type / Param Num [Hi + Low]
+
+
