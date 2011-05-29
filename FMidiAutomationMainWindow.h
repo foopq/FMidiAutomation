@@ -202,6 +202,7 @@ class FMidiAutomationMainWindow
     bool leftMouseCurrentlyPressed;
     gdouble mousePressDownX;
     gdouble mousePressDownY;
+    static const int MainCanvasOffsetY = 60;
     
     boost::shared_ptr<Gtk::Image> backingImage;
     boost::shared_ptr<Gtk::Image> backingTexture;
@@ -303,6 +304,63 @@ class FMidiAutomationMainWindow
     void finishProcessRecordedMidi();
 
     void doUIQueuedThreadStuff();
+
+    //ui mouse handlers
+    void handleSequencerFrameRegionLMBPress();
+    void handleSequencerFrameRegionLMBRelease();
+    void handleSequencerFrameRegionMMBPress();
+    void handleSequencerFrameRegionMMBRelease();
+    void handleSequencerFrameRegionRMBPress();
+    void handleSequencerFrameRegionRMBRelease();
+    void handleSequencerFrameRegionMouseMove();
+
+    void handleSequencerMainCanvasLMBPress();
+    void handleSequencerMainCanvasLMBRelease();
+    void handleSequencerMainCanvasMMBPress();
+    void handleSequencerMainCanvasMMBRelease();
+    void handleSequencerMainCanvasRMBPress(guint button, guint32 time);
+    void handleSequencerMainCanvasRMBRelease();
+    void handleSequencerMainCanvasMouseMove(gdouble xPos);
+
+    void handleSequencerTickMarkerRegionLMBPress(gdouble xPos);
+    void handleSequencerTickMarkerRegionLMBRelease(gdouble xPos, gdouble yPos);
+    void handleSequencerTickMarkerRegionMMBPress();
+    void handleSequencerTickMarkerRegionMMBRelease();
+    void handleSequencerTickMarkerRegionRMBPress();
+    void handleSequencerTickMarkerRegionRMBRelease(gdouble xPos, gdouble yPos);
+    void handleSequencerTickMarkerRegionMouseMove();
+
+    void handleCurveEditorFrameRegionLMBPress();
+    void handleCurveEditorFrameRegionLMBRelease();
+    void handleCurveEditorFrameRegionMMBPress();
+    void handleCurveEditorFrameRegionMMBRelease();
+    void handleCurveEditorFrameRegionRMBPress();
+    void handleCurveEditorFrameRegionRMBRelease();
+    void handleCurveEditorFrameRegionMouseMove();
+
+    void handleCurveEditorMainCanvasLMBPress();
+    void handleCurveEditorMainCanvasLMBRelease();
+    void handleCurveEditorMainCanvasMMBPress();
+    void handleCurveEditorMainCanvasMMBRelease();
+    bool handleCurveEditorMainCanvasRMBPress(gdouble xPos, guint button, guint32 time);
+    void handleCurveEditorMainCanvasRMBRelease();
+    void handleCurveEditorMainCanvasMouseMove(gdouble xPos, gdouble yPos);
+
+    void handleCurveEditorTickMarkerRegionLMBPress();
+    void handleCurveEditorTickMarkerRegionLMBRelease();
+    void handleCurveEditorTickMarkerRegionMMBPress();
+    void handleCurveEditorTickMarkerRegionMMBRelease();
+    void handleCurveEditorTickMarkerRegionRMBPress();
+    void handleCurveEditorTickMarkerRegionRMBRelease();
+    void handleCurveEditorTickMarkerRegionMouseMove();
+
+    void handleCurveEditorLeftValueRegionLMBPress();
+    void handleCurveEditorLeftValueRegionLMBRelease();
+    void handleCurveEditorLeftValueRegionMMBPress();
+    void handleCurveEditorLeftValueRegionMMBRelease();
+    void handleCurveEditorLeftValueRegionRMBPress();
+    void handleCurveEditorLeftValueRegionRMBRelease();
+    void handleCurveEditorLeftValueRegionMouseMove();
 
     friend struct FMidiAutomationCurveEditor;
        
