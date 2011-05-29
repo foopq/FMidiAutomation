@@ -1190,8 +1190,6 @@ void Sequencer::adjustFillerHeight()
     int labelHeight = height - totalHeight;
     labelHeight = std::max(labelHeight, -1);
     tmpLabel.set_size_request(-1, labelHeight);
-
-    std::cout << "adjustFillerHeight: " << labelHeight << std::endl;
 }//adjustFillerHeight
 
 void Sequencer::adjustEntryIndices()

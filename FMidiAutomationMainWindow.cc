@@ -276,6 +276,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     JackSingleton &jackSingleton = JackSingleton::Instance();
     jackSingleton.setTime(0);
+
+    mainWindow->set_icon_from_file("pics/tmpicon.jpg");
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -917,8 +919,6 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
     drawingAreaWidth = allocation.get_width();
     drawingAreaHeight = allocation.get_height();
  
-    std::cout << "graph resize: " << drawingAreaHeight << std::endl;
-
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
@@ -927,8 +927,9 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
     if (true == firstTime) {
         firstTime = false;
         doTestInit();
-        std::cout << "TEST INIT" << std::endl;
     }//if
+
+    sequencer->adjustFillerHeight();
 }//handleGraphResize
 
 void FMidiAutomationMainWindow::on_menuCopy()

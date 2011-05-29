@@ -1,3 +1,10 @@
+- multiselect ops on keyframes
+- rubberband selection (sequencer and curve editor)
+- faint row coloured background per entry block in sequencer
+- entry block colour selection
+- icon for app (and all dialogs?)
+
+
 - paste all blocks into selected entry block (ie: to copy to another entry) -- no instance for this
 
 - split / merge entry blocks
@@ -14,8 +21,6 @@
     - remove currentlyselectedkey with keyselectiongroup vector
 
 - middle mouse click + key command to zoom extents on curve / sequencer
-
-- when resizing window, entry blocks are also resized instead of staying static (need to resize padding block?)
 
 - when moving key, tick value should be set to use nearest tick value, not floor of cur pixel pos
 - key/tangent selections/moves
@@ -61,4 +66,8 @@ Title
 Mute / Solo / Rec
 Channel / Control Type / Param Num [Hi + Low]
 
+
+////////////////////////
+
+~ when resizing window, entry blocks are also resized instead of staying static (need to resize padding block?)
 

@@ -242,7 +242,6 @@ class Sequencer
     boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock;
     std::vector<SequencerEntryBlockSelectionInfo> selectionInfos;
 
-    void adjustFillerHeight();
     void adjustEntryIndices();
 
 ////    Sequencer() {} //For serialization
@@ -278,6 +277,9 @@ public:
 
     void doLoad(boost::archive::xml_iarchive &inputArchive);
     void doSave(boost::archive::xml_oarchive &outputArchive);
+
+    //Public because we need to do this when we resize the window
+    void adjustFillerHeight();
 
     //For midi processing
     void cloneEntryMap();
