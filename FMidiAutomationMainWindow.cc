@@ -779,8 +779,13 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     positionValueEntry->show_all();
     positionValueLabel->show_all();
 
-    graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
-    curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+    curveEditor->getKeySelection(graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), false);
+
+    if (graphState.currentlySelectedKeyframes.empty() == false) {
+        curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframes.begin()->second);
+    } else {
+        curveEditor->setKeyUIValues(uiXml, boost::shared_ptr<Keyframe>());
+    }//if
 
     PasteManager::Instance().clearCommand();
 
@@ -942,8 +947,8 @@ void FMidiAutomationMainWindow::on_menuCopy()
         }//if
     } else {
         PasteManager::Instance().setPasteOnly(true);
-        if (graphState.currentlySelectedKeyframe != NULL) {
-            boost::shared_ptr<PasteSequencerKeyframeCommand> pasteSequencerKeyframeCommand(new PasteSequencerKeyframeCommand(graphState.currentlySelectedKeyframe));
+        if (graphState.currentlySelectedKeyframes.empty() == false) {
+            boost::shared_ptr<PasteSequencerKeyframeCommand> pasteSequencerKeyframeCommand(new PasteSequencerKeyframeCommand(graphState.currentlySelectedKeyframes));
             PasteManager::Instance().setNewCommand(pasteSequencerKeyframeCommand);
         }//if
     }//if
@@ -957,7 +962,7 @@ void FMidiAutomationMainWindow::on_menuCut()
             on_menuCopy();
         }//if
     } else {
-        if (graphState.currentlySelectedKeyframe != NULL) {
+        if (graphState.currentlySelectedKeyframes.empty() == false) {
             on_menuCopy();
             curveEditor->handleDeleteKeyframe();
         }//if

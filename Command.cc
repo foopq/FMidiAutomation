@@ -6,26 +6,27 @@
 #include "FMidiAutomationData.h"
 #include "Sequencer.h"
 #include "Animation.h"
+#include <boost/foreach.hpp>
 
 extern FMidiAutomationMainWindow *mainWindow;
 
-Command::Command(Glib::ustring commandStr_)
+Command::Command(Glib::ustring commandStr_)/*{{{*/
 {
     commandStr = commandStr_;
-}//constructor
+}//constructor/*}}}*/
 
-CommandManager &CommandManager::Instance()
+CommandManager &CommandManager::Instance()/*{{{*/
 {
     static CommandManager manager;
     return manager;
-}//Instance
+}//Instance/*}}}*/
 
-void CommandManager::setTitleStar(boost::function<void (void)> titleStarFunc_)
+void CommandManager::setTitleStar(boost::function<void (void)> titleStarFunc_)/*{{{*/
 {
     titleStarFunc = titleStarFunc_;
-}//setTitleStar
+}//setTitleStar/*}}}*/
 
-void CommandManager::setMenuItems(Gtk::ImageMenuItem *menuUndo_, Gtk::ImageMenuItem *menuRedo_)
+void CommandManager::setMenuItems(Gtk::ImageMenuItem *menuUndo_, Gtk::ImageMenuItem *menuRedo_)/*{{{*/
 {
     menuUndo = menuUndo_;
     menuRedo = menuRedo_;
@@ -35,9 +36,9 @@ void CommandManager::setMenuItems(Gtk::ImageMenuItem *menuUndo_, Gtk::ImageMenuI
 
     menuUndo->set_sensitive(false);
     menuRedo->set_sensitive(false);
-}//setMenuItems
+}//setMenuItems/*}}}*/
 
-void CommandManager::doRedo()
+void CommandManager::doRedo()/*{{{*/
 {
     if (redoStack.empty() == true) {
         return;
@@ -60,9 +61,9 @@ void CommandManager::doRedo()
     command->doAction();
 
     mainWindow->queue_draw();
-}//doRedo
+}//doRedo/*}}}*/
 
-void CommandManager::doUndo()
+void CommandManager::doUndo()/*{{{*/
 {
     if (undoStack.empty() == true) {
         return;
@@ -85,9 +86,9 @@ void CommandManager::doUndo()
     command->undoAction();
 
     mainWindow->queue_draw();
-}//doUndo
+}//doUndo/*}}}*/
 
-void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool applyCommand)
+void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool applyCommand)/*{{{*/
 {
     while (redoStack.empty() == false) {
         redoStack.pop();
@@ -106,10 +107,10 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool appl
     titleStarFunc();
 
     mainWindow->queue_draw();
-}//setNewcommand
+}//setNewcommand/*}}}*/
 
 //UpdateTempoChangeCommand
-UpdateTempoChangeCommand::UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,
+UpdateTempoChangeCommand::UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,/*{{{*/
                                                     unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData_) : Command("Update Tempo Change")
 {
     old_bpm = new_bpm;
@@ -136,10 +137,10 @@ void UpdateTempoChangeCommand::doAction()
 void UpdateTempoChangeCommand::undoAction()
 {
     doAction();
-}//undoAction
+}//undoAction/*}}}*/
 
 //AddTempoChangeCommand
-AddTempoChangeCommand::AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_,
+AddTempoChangeCommand::AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_,/*{{{*/
                                                 boost::shared_ptr<FMidiAutomationData> datas_,
                                                 boost::function<void (void)> updateTempoChangesUIData_) : Command("Add Tempo Change")
 {
@@ -166,10 +167,10 @@ void AddTempoChangeCommand::undoAction()
     assert(datas->tempoChanges.find(tick) != datas->tempoChanges.end());
     datas->removeTempoChange(tick);
     updateTempoChangesUIData();
-}//undoAction
+}//undoAction/*}}}*/
 
 //DeleteTempoChangeCommand
-DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,
+DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,/*{{{*/
                                                     boost::shared_ptr<FMidiAutomationData> datas_,
                                                     boost::function<void (void)> updateTempoChangesUIData_) : Command("Delete Tempo Change")
 {
@@ -199,9 +200,10 @@ void DeleteTempoChangeCommand::undoAction()
     assert(datas->tempoChanges.find(tick) == datas->tempoChanges.end());
     datas->addTempoChange(tick, tempo);
     updateTempoChangesUIData();
-}//undoAction
+}//undoAction/*}}}*/
 
-AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, bool useDefaults_) : Command("Add Sequencer Entry")
+//AddSequencerEntryCommand
+AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, bool useDefaults_) : Command("Add Sequencer Entry")/*{{{*/
 {
     sequencer = sequencer_;
     useDefaults = useDefaults_;
@@ -224,9 +226,10 @@ void AddSequencerEntryCommand::doAction()
 void AddSequencerEntryCommand::undoAction()
 {
     sequencer->deleteEntry(entry);
-}//undoAction
+}//undoAction/*}}}*/
 
-DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Delete Sequencer Entry")
+//DeleteSequencerEntryCommand
+DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Delete Sequencer Entry")/*{{{*/
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -246,9 +249,10 @@ void DeleteSequencerEntryCommand::doAction()
 void DeleteSequencerEntryCommand::undoAction()
 {
     sequencer->addEntry(entry, entryIndex);
-}//undoAction
+}//undoAction/*}}}*/
 
-SequencerEntryUpCommand::SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Up")
+//SequencerEntryUpCommand
+SequencerEntryUpCommand::SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Up")/*{{{*/
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -270,9 +274,10 @@ void SequencerEntryUpCommand::undoAction()
 {
     sequencer->deleteEntry(entry);
     sequencer->addEntry(entry, origIndex);
-}//undoAction
+}//undoAction/*}}}*/
 
-SequencerEntryDownCommand::SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Down")
+//SequencerEntryDownCommand
+SequencerEntryDownCommand::SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Down")/*{{{*/
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -294,9 +299,10 @@ void SequencerEntryDownCommand::undoAction()
 {
     sequencer->deleteEntry(entry);
     sequencer->addEntry(entry, origIndex);
-}//undoAction
+}//undoAction/*}}}*/
 
-AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Add Sequencer Entry Block")
+//AddSequencerEntryBlockCommand
+AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Add Sequencer Entry Block")/*{{{*/
 {
     entry = entry_;
     entryBlock = entryBlock_;
@@ -318,9 +324,10 @@ void AddSequencerEntryBlockCommand::doAction()
 void AddSequencerEntryBlockCommand::undoAction()
 {
     entry->removeEntryBlock(entryBlock);
-}//undoAction
+}//undoAction/*}}}*/
 
-DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Delete Sequencer Entry Block")
+//DeleteSequencerEntryBlockCommand
+DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Delete Sequencer Entry Block")/*{{{*/
 {
     entryBlock = entryBlock_;
     entry = entryBlock->getOwningEntry();
@@ -339,9 +346,10 @@ void DeleteSequencerEntryBlockCommand::doAction()
 void DeleteSequencerEntryBlockCommand::undoAction()
 {
     entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
-}//undoAction
+}//undoAction/*}}}*/
 
-DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_) : Command("Delete Sequencer Entry Blocks")
+//DeleteSequencerEntryBlocksCommand
+DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -369,9 +377,10 @@ void DeleteSequencerEntryBlocksCommand::undoAction()
 
         entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
     }//for
-}//undoAction
+}//undoAction/*}}}*/
 
-ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_) : Command("Change Sequencer Entry Block Properties")
+//ChangeSequencerEntryBlockPropertiesCommand
+ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_) : Command("Change Sequencer Entry Block Properties")/*{{{*/
 {
     entryBlock = entryBlock_;
     prevTitle = newTitle_;
@@ -392,9 +401,10 @@ void ChangeSequencerEntryBlockPropertiesCommand::doAction()
 void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
 {
     doAction();
-}//undoAction
+}//undoAction/*}}}*/
 
-MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(
+//MoveSequencerEntryBlockCommand
+MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(/*{{{*/
                                                                 std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_,
                                                                 std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryOriginalStartTicks_,
                                                                 std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryNewStartTicks_) : Command("Move Sequencer Entry Block")
@@ -439,9 +449,10 @@ void MoveSequencerEntryBlockCommand::undoAction()
         boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
         entryBlock->moveBlock(entryOriginalStartTicks[entryBlock]);
     }//for
-}//undoAction
+}//undoAction/*}}}*/
 
-ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryImpl> origImpl_, boost::shared_ptr<SequencerEntryImpl> newImpl_) : Command("Change Sequencer Entry Properties")
+//ChangeSequencerEntryPropertiesCommand
+ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryImpl> origImpl_, boost::shared_ptr<SequencerEntryImpl> newImpl_) : Command("Change Sequencer Entry Properties")/*{{{*/
 {
     entry = entry_;
     origImpl = origImpl_;
@@ -461,23 +472,31 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand::undoAction()
 {
     entry->setNewDataImpl(origImpl);
-}//undoAction
+}//undoAction/*}}}*/
 
-AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, boost::shared_ptr<Keyframe> origKeyframe, int newTick) : Command("Add Keyframe")
+//AddKeyframesCommand
+AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, /*{{{*/
+                                            std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick) : Command("Add Keyframe")
 {
+    //XXX: I suspect we need to sort out an offset from newTick to the first key and then offset the rest based on that..
+
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     assert(currentlySelectedEntryBlock != NULL);
 
-    boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
+    keyframes.clear();
+    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = origKeyframes.begin(); keyIter != origKeyframes.end(); ++keyIter) {
+        boost::shared_ptr<Keyframe> origKeyframe = keyIter->second;
+        boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
 
-    *newKeyframe = *origKeyframe;
-    newKeyframe->tick = newTick;
-    newKeyframe->selectedState = KeySelectedType::NotSelected;
+        *newKeyframe = *origKeyframe;
+        newKeyframe->tick = newTick;
+        newKeyframe->selectedState = KeySelectedType::NotSelected;
 
-    keyframe = newKeyframe;
+        keyframes[newKeyframe->tick] = newKeyframe;
+    }//for
 }//constructor
 
-AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_) : Command("Add Keyframe")
+AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_) : Command("Add Keyframe")
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     //curMouseUnderTick = curMouseUnderTick_;
@@ -493,75 +512,92 @@ AddKeyframeCommand::AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> cu
     newKeyframe->tick = curMouseUnderTick_;
     newKeyframe->value = curMouseUnderValue_;
 
-    keyframe = newKeyframe;
+    keyframes.clear();
+    keyframes[newKeyframe->tick] = newKeyframe;
 }//constructor
 
-AddKeyframeCommand::~AddKeyframeCommand()
+AddKeyframesCommand::~AddKeyframesCommand()
 {
     //Nothing
 }//destructor
 
-void AddKeyframeCommand::doAction()
+void AddKeyframesCommand::doAction()
 {
-    currentlySelectedEntryBlock->getCurve()->addKey(keyframe);
+    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+        currentlySelectedEntryBlock->getCurve()->addKey(keyframe);
+    }//for
 }//doAction
 
-void AddKeyframeCommand::undoAction()
+void AddKeyframesCommand::undoAction()
 {
-    currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
-}//undoAction
+    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+        currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
+    }//for
+}//undoAction/*}}}*/
 
-DeleteKeyframeCommand::DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_) : Command("Delete Keyframe")
+//DeleteKeyframesCommand
+DeleteKeyframesCommand::DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
+                                                std::map<int, boost::shared_ptr<Keyframe> > &keyframes_) : Command("Delete Keyframe")
 {
     entryBlock = entryBlock_;
-    keyframe = keyframe_;
+    keyframes = keyframes_;
 }//constructor
 
-DeleteKeyframeCommand::~DeleteKeyframeCommand()
+DeleteKeyframesCommand::~DeleteKeyframesCommand()
 {
     //Nothing
 }//destructor
 
-void DeleteKeyframeCommand::doAction()
+void DeleteKeyframesCommand::doAction()
 {
-    entryBlock->getCurve()->deleteKey(keyframe);
+    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+        entryBlock->getCurve()->deleteKey(keyframe);
+    }//for
 }//doAction
 
-void DeleteKeyframeCommand::undoAction()
+void DeleteKeyframesCommand::undoAction()
 {
-    entryBlock->getCurve()->addKey(keyframe);
-}//undoAction
+    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+        entryBlock->getCurve()->addKey(keyframe);
+    }//for
+}//undoAction/*}}}*/
 
-MoveKeyframeCommand::MoveKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, boost::shared_ptr<Keyframe> keyframe_, int movingKeyOrigTick_, double movingKeyOrigValue_) : Command("Move Keyframe")
+//MoveKeyframesCommand
+MoveKeyframesCommand::MoveKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
+                                            std::vector<boost::shared_ptr<KeyInfo> > &keyframes_) : Command("Move Keyframe")
 {
     entryBlock = entryBlock_;
-    keyframe = keyframe_;
-    movingKeyOrigTick = movingKeyOrigTick_;
-    movingKeyOrigValue = movingKeyOrigValue_;
+    keyframes = keyframes_;
 }//constructor
 
-MoveKeyframeCommand::~MoveKeyframeCommand()
+MoveKeyframesCommand::~MoveKeyframesCommand()
 {
     //Nothing
 }//destructor
 
-void MoveKeyframeCommand::doAction()
+void MoveKeyframesCommand::doAction()
 {
-    entryBlock->getCurve()->deleteKey(keyframe);
+    BOOST_FOREACH (boost::shared_ptr<KeyInfo> keyframe, keyframes) {
+        entryBlock->getCurve()->deleteKey(keyframe->keyframe);
 
-    std::swap(keyframe->tick, movingKeyOrigTick);
-    std::swap(keyframe->value, movingKeyOrigValue);
+        std::swap(keyframe->keyframe->tick, keyframe->movingKeyOrigTick);
+        std::swap(keyframe->keyframe->value, keyframe->movingKeyOrigValue);
 
-    entryBlock->getCurve()->addKey(keyframe);
+        entryBlock->getCurve()->addKey(keyframe->keyframe);
+    }//foreach
 }//doAction
 
-void MoveKeyframeCommand::undoAction()
+void MoveKeyframesCommand::undoAction()
 {
     doAction();
-}//undoAction
+}//undoAction/*}}}*/
 
-
-ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap_) : Command("Process Recorded Midi")
+//ProcessRecordedMidiCommand
+ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap_) : Command("Process Recorded Midi")/*{{{*/
 {
     origEntryMap = origEntryMap_;
     newEntryMap = newEntryMap_;
@@ -582,6 +618,6 @@ void ProcessRecordedMidiCommand::undoAction()
 {
     Globals &globals = Globals::Instance();
     globals.sequencer->setEntryMap(origEntryMap);
-}//undoAction
+}//undoAction/*}}}*/
 
 

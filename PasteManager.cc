@@ -137,9 +137,9 @@ void PasteSequencerEntryBlockCommand::doPasteInstance()
     }//for
 }//doPasteInstance
 
-PasteSequencerKeyframeCommand::PasteSequencerKeyframeCommand(boost::shared_ptr<Keyframe> keyframe_)
+PasteSequencerKeyframeCommand::PasteSequencerKeyframeCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes_)
 {
-    keyframe = keyframe_;
+    keyframes = keyframes_;
 }//constructor
 
 PasteSequencerKeyframeCommand::~PasteSequencerKeyframeCommand()
@@ -166,8 +166,8 @@ void PasteSequencerKeyframeCommand::doPaste()
         return;
     }//if
 
-    boost::shared_ptr<Command> addKeyframeCommand(new AddKeyframeCommand(currentlySelectedEntryBlock, keyframe, tick - currentlySelectedEntryBlock->getStartTick()));
-    CommandManager::Instance().setNewCommand(addKeyframeCommand, true);
+    boost::shared_ptr<Command> addKeyframesCommand(new AddKeyframesCommand(currentlySelectedEntryBlock, keyframes, tick - currentlySelectedEntryBlock->getStartTick()));
+    CommandManager::Instance().setNewCommand(addKeyframesCommand, true);
 }//doPaste
 
 void PasteSequencerKeyframeCommand::doPasteInstance()

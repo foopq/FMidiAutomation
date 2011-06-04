@@ -124,13 +124,13 @@ struct GraphState
     bool didMoveKey;
     bool didMoveKeyOutTangent;
     bool didMoveKeyInTangent;
-    int movingKeyOrigTick;
-    double movingKeyOrigValue;
 
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
     std::map<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
 
-    boost::shared_ptr<Keyframe> currentlySelectedKeyframe;
+    std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes;
+    std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
+    std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;
 
     DisplayMode::DisplayMode displayMode;
     int lastSequencerPointerTick; //for swaping back to the seqeucner

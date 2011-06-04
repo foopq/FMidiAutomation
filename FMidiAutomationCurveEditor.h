@@ -38,7 +38,7 @@ public:
     void handleAddKeyframe();
     void handleDeleteKeyframe();
     void setUnderMouseTickValue(int tick, int value);
-    boost::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY);
+    void getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
     void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<Keyframe> currentlySelectedKeyframe);
 };//CurveEditor
 

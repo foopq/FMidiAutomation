@@ -53,6 +53,11 @@ bool handleGraphValueScroll(gdouble yPos, GraphState &graphState, gdouble mouseP
 
 void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
 {
+    if (graphState.currentlySelectedKeyframes.empty() == true) {
+        //Should be impossible
+        return;
+    }//if
+
     int eventX = std::max(0, (int)xPos);
     eventX = std::min(eventX, drawingAreaWidth-1);
     int eventY = std::max(60, (int)yPos);
@@ -68,7 +73,7 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
     newValue = std::max((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue);
     newValue = std::min((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue);
 
-    if ( ((newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) != graphState.currentlySelectedKeyframe->tick) && 
+    if ( ((newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) != graphState.currentlySelectedKeyframes.begin()->second->tick) && 
          (graphState.getCurrentlySelectedEntryBlock()->getCurve()->getKeyframeAtTick(newTick) != NULL) ) {
         return;
     }//if
@@ -77,16 +82,28 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
     graphState.didMoveKeyOutTangent = true;
     graphState.didMoveKeyInTangent = true;
 
-    graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
+    int tickOffset = (newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) - graphState.currentlySelectedKeyframes.begin()->second->tick;
+    double valueOffset = newValue - graphState.currentlySelectedKeyframes.begin()->second->value;
 
-    graphState.currentlySelectedKeyframe->tick = newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
-    graphState.currentlySelectedKeyframe->value = newValue;
+    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
+         keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
+        
+        boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
+        graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(curKeyframe);
 
-    graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(graphState.currentlySelectedKeyframe);
+        curKeyframe->tick += tickOffset;
+        curKeyframe->value += valueOffset;
+
+        graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(curKeyframe);
+    }//for
 }//handleKeyScroll
 
 void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
 {
+    if (graphState.currentlySelectedKeyframes.size() != 1) {
+        return;
+    }//if
+
     int eventX = std::max(0, (int)xPos);
     eventX = std::min(eventX, drawingAreaWidth-1);
     int eventY = std::max(60, (int)yPos);
@@ -96,16 +113,18 @@ void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, 
     int newTick = graphState.verticalPixelTickValues[eventX];
     double newValue = graphState.horizontalPixelValues[eventY];
 
+    boost::shared_ptr<Keyframe> curKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
+
     if (InTangent == graphState.selectedEntity) {
         graphState.didMoveKeyInTangent = true;
 
-        graphState.currentlySelectedKeyframe->inTangent[0] = graphState.currentlySelectedKeyframe->tick - newTick;
-        graphState.currentlySelectedKeyframe->inTangent[1] = newValue - graphState.currentlySelectedKeyframe->value;
+        curKeyframe->inTangent[0] = curKeyframe->tick - newTick;
+        curKeyframe->inTangent[1] = newValue - curKeyframe->value;
     } else {
         graphState.didMoveKeyOutTangent = true;
 
-        graphState.currentlySelectedKeyframe->outTangent[0] = newTick - graphState.currentlySelectedKeyframe->tick;
-        graphState.currentlySelectedKeyframe->outTangent[1] = newValue - graphState.currentlySelectedKeyframe->value;
+        curKeyframe->outTangent[0] = newTick - curKeyframe->tick;
+        curKeyframe->outTangent[1] = newValue - curKeyframe->value;
     }//if
 }//handleKeyTangentScroll
 
@@ -115,27 +134,37 @@ void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, 
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBPress()
 {
-    if (false == ctrlCurrentlyPressed) {
-        unsetAllCurveFrames();
+    unsetAllCurveFrames();
 
-        graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY);
-        curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+    curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
-        if (graphState.currentlySelectedKeyframe != NULL) {
-            graphState.didMoveKey = false;
-            graphState.movingKeyOrigTick = graphState.currentlySelectedKeyframe->tick - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
-            graphState.movingKeyOrigValue = graphState.currentlySelectedKeyframe->value;
-
-            menuCopy->set_sensitive(true);
-            menuCut->set_sensitive(true);
-        } else {
-            menuCopy->set_sensitive(false);
-            menuCut->set_sensitive(false);
-        }//if
-
-        //Essentially clear the selection state of the tempo changes
-        (void)checkForTempoSelection(-100, datas->tempoChanges);
+    boost::shared_ptr<Keyframe> firstKey;
+    if (graphState.currentlySelectedKeyframes.empty() == false) {
+        firstKey = graphState.currentlySelectedKeyframes.begin()->second;
     }//if
+
+    curveEditor->setKeyUIValues(uiXml, firstKey);
+
+    if (firstKey != NULL) {
+        graphState.didMoveKey = false;
+
+        for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
+            keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
+        
+            boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
+            graphState.movingKeyOrigTicks[curKeyframe] = curKeyframe->tick - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
+            graphState.movingKeyOrigValues[curKeyframe] = curKeyframe->value;
+        }//for
+
+        menuCopy->set_sensitive(true);
+        menuCut->set_sensitive(true);
+    } else {
+        menuCopy->set_sensitive(false);
+        menuCut->set_sensitive(false);
+    }//if
+
+    //Essentially clear the selection state of the tempo changes
+    (void)checkForTempoSelection(-100, datas->tempoChanges);
 }//handleCurveEditorMainCanvasLMBPress
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMMBPress()
@@ -150,10 +179,16 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
 
     Glib::ustring ui_info = "<ui><popup name='PopupMenu'></popup></ui>";
 
-    graphState.currentlySelectedKeyframe = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY);
-    curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+    curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
-    if (graphState.currentlySelectedKeyframe == NULL) {
+    boost::shared_ptr<Keyframe> firstKeyframe;
+    if (graphState.currentlySelectedKeyframes.empty() == false) {
+        firstKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
+    }//if
+
+    curveEditor->setKeyUIValues(uiXml, firstKeyframe);
+
+    if (firstKeyframe == NULL) {
         graphState.selectedEntity = Nobody;
 
         std::string menuStr = "Add Keyframe";
@@ -179,7 +214,7 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
     } else {
         graphState.selectedEntity = KeyValue;
 
-        m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframe"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframe));
+        m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframes"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframe));
         ui_info =
             "<ui>"
             "  <popup name='PopupMenu'>"
@@ -223,12 +258,25 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
     if (graphState.selectedEntity == KeyValue) {
         if (true == graphState.didMoveKey) {                        
             //Move key back to where it was
-            graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(graphState.currentlySelectedKeyframe);
-            std::swap(graphState.currentlySelectedKeyframe->tick, graphState.movingKeyOrigTick);
-            std::swap(graphState.currentlySelectedKeyframe->value, graphState.movingKeyOrigValue);
-            graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(graphState.currentlySelectedKeyframe);
+            std::vector<boost::shared_ptr<MoveKeyframesCommand::KeyInfo> > keyInfos;
+            keyInfos.reserve(graphState.currentlySelectedKeyframes.size());
+            for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin();
+                keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
+        
+                boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
+                graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(curKeyframe);
+                std::swap(curKeyframe->tick, graphState.movingKeyOrigTicks[curKeyframe]);
+                std::swap(curKeyframe->value, graphState.movingKeyOrigValues[curKeyframe]);
+                graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(curKeyframe);
 
-            boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframeCommand(graphState.getCurrentlySelectedEntryBlock(), graphState.currentlySelectedKeyframe, graphState.movingKeyOrigTick, graphState.movingKeyOrigValue));
+                boost::shared_ptr<MoveKeyframesCommand::KeyInfo> keyInfo(new MoveKeyframesCommand::KeyInfo);
+                keyInfo->keyframe = curKeyframe;
+                keyInfo->movingKeyOrigTick = graphState.movingKeyOrigTicks[curKeyframe];
+                keyInfo->movingKeyOrigValue = graphState.movingKeyOrigValues[curKeyframe];
+                keyInfos.push_back(keyInfo);
+            }//for
+
+            boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframesCommand(graphState.getCurrentlySelectedEntryBlock(), keyInfos));
             CommandManager::Instance().setNewCommand(moveKeyframeCommand, true);
         }//if
     }//if
@@ -258,14 +306,19 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPo
             graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
         }//if
     } else {
+        boost::shared_ptr<Keyframe> firstKeyframe;
+        if (graphState.currentlySelectedKeyframes.empty() == false) {
+            firstKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
+        }//if
+
         if (graphState.selectedEntity == KeyValue) {
             handleKeyScroll(xPos, yPos, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
-            curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+            curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if
 
         else if ((graphState.selectedEntity == InTangent) || (graphState.selectedEntity == OutTangent)) {
             handleKeyTangentScroll(xPos, yPos, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
-            curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframe);
+            curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if
     }//if
 }//handleSequencerCurveEditorMouseMove

@@ -219,44 +219,49 @@ struct UpdateTempoChangeCommand : public Command
     void undoAction();
 };//AddTempoChangeCommand
 
-struct AddKeyframeCommand : public Command
+struct AddKeyframesCommand : public Command
 {
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
-    boost::shared_ptr<Keyframe> keyframe;
+    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
-    AddKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, boost::shared_ptr<Keyframe> origKeyframe, int newTick);
-    ~AddKeyframeCommand();
+    AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
+    AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick);
+    ~AddKeyframesCommand();
 
     void doAction();
     void undoAction();
-};//AddKeyframeCommand
+};//AddKeyframesCommand
 
-struct DeleteKeyframeCommand : public Command
+struct DeleteKeyframesCommand : public Command
 {
     boost::shared_ptr<SequencerEntryBlock> entryBlock;
-    boost::shared_ptr<Keyframe> keyframe;
+    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    DeleteKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, boost::shared_ptr<Keyframe> keyframe);
-    ~DeleteKeyframeCommand();
+    DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
+    ~DeleteKeyframesCommand();
 
     void doAction();
     void undoAction();
-};//DeleteKeyframeCommand
+};//DeleteKeyframesCommand
 
-struct MoveKeyframeCommand : public Command
+struct MoveKeyframesCommand : public Command
 {
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
-    boost::shared_ptr<Keyframe> keyframe;
-    int movingKeyOrigTick;
-    double movingKeyOrigValue;
+    struct KeyInfo
+    {
+        boost::shared_ptr<Keyframe> keyframe;
+        int movingKeyOrigTick;
+        double movingKeyOrigValue;
+    };//KeyInfo
 
-    MoveKeyframeCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, boost::shared_ptr<Keyframe> keyframe, int movingKeyOrigTick, double movingKeyOrigValue);
-    ~MoveKeyframeCommand();
+    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::vector<boost::shared_ptr<KeyInfo> > keyframes;
+
+    MoveKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::vector<boost::shared_ptr<KeyInfo> > &keyframes);
+    ~MoveKeyframesCommand();
 
     void doAction();
     void undoAction();
-};//MoveKeyframeCommand
+};//MoveKeyframesCommand
 
 struct ProcessRecordedMidiCommand : public Command
 {
