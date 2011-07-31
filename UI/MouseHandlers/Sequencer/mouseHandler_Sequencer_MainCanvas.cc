@@ -56,7 +56,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
                 graphState.currentlySelectedEntryOriginalStartTicks.clear();
                 graphState.currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getStartTick();
                 graphState.currentlySelectedEntryBlocks.clear();
-                graphState.currentlySelectedEntryBlocks[entryBlock->getStartTick()] = entryBlock;
+                graphState.currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
 
                 positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
 
@@ -74,10 +74,10 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
         if (entryBlock != NULL) {
             if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
                 graphState.currentlySelectedEntryOriginalStartTicks[entryBlock] = entryBlock->getStartTick();
-                graphState.currentlySelectedEntryBlocks[entryBlock->getStartTick()] = entryBlock;
+                graphState.currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
             } else {
                 std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator tickIter = graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock);
-                std::map<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryIter = graphState.currentlySelectedEntryBlocks.find(entryBlock->getStartTick());
+                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryIter = graphState.currentlySelectedEntryBlocks.find(entryBlock->getStartTick());
 
                 assert(tickIter != graphState.currentlySelectedEntryOriginalStartTicks.end());
                 assert(entryIter != graphState.currentlySelectedEntryBlocks.end());
@@ -107,7 +107,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
             std::cout << "adding new entry block 2" << std::endl;
 
             graphState.currentlySelectedEntryOriginalStartTicks[entryBlock] = entryBlock->getStartTick();
-            graphState.currentlySelectedEntryBlocks[entryBlock->getStartTick()] = entryBlock;
+            graphState.currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
         }//if
 
         //Context menu to delete entry
@@ -173,7 +173,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease()
 {
     if (graphState.selectedEntity == SequencerEntrySelection) {
         std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
-        for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); 
+        for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); 
                     blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
             boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
 
@@ -221,7 +221,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos)
             int diffTick = graphState.verticalPixelTickValues[curX] - graphState.verticalPixelTickValues[mousePressDownX];
 
             int firstCurTick = std::numeric_limits<int>::min();
-            for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
+            for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
                 int curTick = graphState.currentlySelectedEntryOriginalStartTicks[blockIter->second] + diffTick;
 
 //            std::cout << "x: " << curX << std::endl;
@@ -233,6 +233,16 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos)
                     firstCurTick = curTick;
                 }//if
             }//for
+
+            graphState.currentlySelectedEntryBlocks.clear();
+            std::map<boost::shared_ptr<SequencerEntryBlock>, int> tmpCurrentlySelectedEntryOriginalStartTicks;
+            for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator tickIter = graphState.currentlySelectedEntryOriginalStartTicks.begin();
+                    tickIter != graphState.currentlySelectedEntryOriginalStartTicks.end(); ++tickIter) {
+                graphState.currentlySelectedEntryBlocks.insert(std::make_pair(tickIter->first->getStartTick(), tickIter->first));
+                tmpCurrentlySelectedEntryOriginalStartTicks[tickIter->first] = tickIter->first->getStartTick();                
+            }//for
+
+            graphState.currentlySelectedEntryOriginalStartTicks.swap(tmpCurrentlySelectedEntryOriginalStartTicks);
 
             firstCurTick = std::max(0, firstCurTick);
             positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(firstCurTick));

@@ -53,9 +53,13 @@ struct Keyframe
     int drawnInY;
 
     //bool isSelected;
-    KeySelectedType::KeySelectedType selectedState;
+    KeySelectedType::KeySelectedType getSelectedState();
+    void setSelectedState(KeySelectedType::KeySelectedType state);
 
     boost::shared_ptr<Keyframe> deepClone();
+
+private:
+    KeySelectedType::KeySelectedType selectedState;
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;

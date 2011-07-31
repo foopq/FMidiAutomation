@@ -4,6 +4,7 @@ TARGET=FMidiAutomation
 
 # Compiler name
 CXX=/bin/g++
+CXX2=/usr/bin/g++
 MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 
 # Libraries to be included
@@ -25,17 +26,17 @@ SRCS = main.cc FMidiAutomationGraph.cc FMidiAutomationMainWindow.cc FMidiAutomat
 	   UI/MouseHandlers/CurveEditor/mouseHandler_CurveEditor_TickMarkerRegion.cc
 
 OBJS = $(SRCS:.cc=.o)
-DEPS   = $(SRCS:.cc=.depends)
+DEPS = $(SRCS:.cc=.depends)
 
 #Application name
 FMidiAutomation: $(OBJS)
-	$(CC) $(CXXFLAGS) $(LDLIBS) $(OBJS) -o $(TARGET)
+	$(CXX) $(CXXFLAGS) $(LDLIBS) $(OBJS) -o $(TARGET)
 
 .cc.o:
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 %.depends: %.cc
-	$(CXX) -M $(CXXFLAGS) $< > $@
+	$(CXX2) -M $(CXXFLAGS) $< > $@
 
 clean:
 	rm -f $(OBJS) $(DEPS) $(TARGET)

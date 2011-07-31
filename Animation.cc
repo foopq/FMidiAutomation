@@ -343,6 +343,15 @@ double Animation::sample(int tick)
     return 0;
 }//sample
 
+KeySelectedType::KeySelectedType Keyframe::getSelectedState()
+{
+    return selectedState;
+}//getSelectedState
+
+void Keyframe::setSelectedState(KeySelectedType::KeySelectedType state)
+{
+    selectedState = state;
+}//setSelectedState
 
 template void Animation::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
 //template void Keyframe::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);

@@ -349,7 +349,7 @@ void DeleteSequencerEntryBlockCommand::undoAction()
 }//undoAction/*}}}*/
 
 //DeleteSequencerEntryBlocksCommand
-DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
+DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -405,7 +405,7 @@ void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
 
 //MoveSequencerEntryBlockCommand
 MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(/*{{{*/
-                                                                std::map<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_,
+                                                                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_,
                                                                 std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryOriginalStartTicks_,
                                                                 std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryNewStartTicks_) : Command("Move Sequencer Entry Block")
 {
@@ -476,7 +476,7 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 
 //AddKeyframesCommand
 AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, /*{{{*/
-                                            std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick) : Command("Add Keyframe")
+                                            std::multimap<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick) : Command("Add Keyframe")
 {
     //XXX: I suspect we need to sort out an offset from newTick to the first key and then offset the rest based on that..
 
@@ -484,15 +484,15 @@ AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> 
     assert(currentlySelectedEntryBlock != NULL);
 
     keyframes.clear();
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = origKeyframes.begin(); keyIter != origKeyframes.end(); ++keyIter) {
+    for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = origKeyframes.begin(); keyIter != origKeyframes.end(); ++keyIter) {
         boost::shared_ptr<Keyframe> origKeyframe = keyIter->second;
         boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
 
         *newKeyframe = *origKeyframe;
         newKeyframe->tick = newTick;
-        newKeyframe->selectedState = KeySelectedType::NotSelected;
+        newKeyframe->setSelectedState(KeySelectedType::NotSelected);
 
-        keyframes[newKeyframe->tick] = newKeyframe;
+        keyframes.insert(std::make_pair(newKeyframe->tick, newKeyframe));
     }//for
 }//constructor
 
@@ -513,7 +513,7 @@ AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> 
     newKeyframe->value = curMouseUnderValue_;
 
     keyframes.clear();
-    keyframes[newKeyframe->tick] = newKeyframe;
+    keyframes.insert(std::make_pair(newKeyframe->tick, newKeyframe));
 }//constructor
 
 AddKeyframesCommand::~AddKeyframesCommand()
@@ -523,7 +523,7 @@ AddKeyframesCommand::~AddKeyframesCommand()
 
 void AddKeyframesCommand::doAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+    for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
         boost::shared_ptr<Keyframe> keyframe = keyIter->second;
         currentlySelectedEntryBlock->getCurve()->addKey(keyframe);
     }//for
@@ -531,7 +531,7 @@ void AddKeyframesCommand::doAction()
 
 void AddKeyframesCommand::undoAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+    for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
         boost::shared_ptr<Keyframe> keyframe = keyIter->second;
         currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
     }//for
@@ -539,7 +539,7 @@ void AddKeyframesCommand::undoAction()
 
 //DeleteKeyframesCommand
 DeleteKeyframesCommand::DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
-                                                std::map<int, boost::shared_ptr<Keyframe> > &keyframes_) : Command("Delete Keyframe")
+                                                std::multimap<int, boost::shared_ptr<Keyframe> > &keyframes_) : Command("Delete Keyframe")
 {
     entryBlock = entryBlock_;
     keyframes = keyframes_;
@@ -552,7 +552,7 @@ DeleteKeyframesCommand::~DeleteKeyframesCommand()
 
 void DeleteKeyframesCommand::doAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+    for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
         boost::shared_ptr<Keyframe> keyframe = keyIter->second;
         entryBlock->getCurve()->deleteKey(keyframe);
     }//for
@@ -560,7 +560,7 @@ void DeleteKeyframesCommand::doAction()
 
 void DeleteKeyframesCommand::undoAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+    for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
         boost::shared_ptr<Keyframe> keyframe = keyIter->second;
         entryBlock->getCurve()->addKey(keyframe);
     }//for

@@ -428,8 +428,8 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     }//foreach
 
     //Render keys
-    int selectedRectX = std::numeric_limits<int>::min();
-    int selectedRectY = std::numeric_limits<int>::min();
+    std::vector<int> selectedRectX; // = std::numeric_limits<int>::min();
+    std::vector<int> selectedRectY; // = std::numeric_limits<int>::min();
 
     CurveType::CurveType lastCurveType = CurveType::Init;
     boost::shared_ptr<Keyframe> lastDrawnKey;
@@ -497,9 +497,9 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         }//if
         */
 
-        if (KeySelectedType::Key == keyPair.second->selectedState) {
-            selectedRectX = timePointerPixel - 4;
-            selectedRectY = areaHeight - valuePointerPixel - 4;
+        if (KeySelectedType::Key == keyPair.second->getSelectedState()) {
+            selectedRectX.push_back(timePointerPixel - 4);
+            selectedRectY.push_back(areaHeight - valuePointerPixel - 4);
         }//if
 
         keyPair.second->drawnStartX = timePointerPixel - 4;
@@ -633,13 +633,17 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         }//if
     }//foreach
 
-    if (selectedRectX != std::numeric_limits<int>::min()) {
-        context->set_source_rgba(0.0, 0.8, 0.0, 0.7);
+std::cout << "selectedRectX size: " << selectedRectX.size() << std::endl;
 
-        context->reset_clip();
-        context->rectangle(selectedRectX, selectedRectY, 9, 9);
-        context->clip();
-        context->paint();
+    if (selectedRectX.empty() == false) { // != std::numeric_limits<int>::min()) {
+        for (int index = 0; index < selectedRectX.size(); ++index) {
+            context->set_source_rgba(0.0, 0.8, 0.0, 0.7);
+
+            context->reset_clip();
+            context->rectangle(selectedRectX[index], selectedRectY[index], 9, 9);
+            context->clip();
+            context->paint();
+        }//for
     }//if
 }//render
 

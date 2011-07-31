@@ -126,9 +126,9 @@ struct GraphState
     bool didMoveKeyInTangent;
 
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
-    std::map<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
+    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
 
-    std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes;
+    std::multimap<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes;
     std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
     std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;
 

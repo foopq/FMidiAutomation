@@ -138,6 +138,8 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBPress()
 
     curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
+std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size() << " - " << ctrlCurrentlyPressed << std::endl;
+
     boost::shared_ptr<Keyframe> firstKey;
     if (graphState.currentlySelectedKeyframes.empty() == false) {
         firstKey = graphState.currentlySelectedKeyframes.begin()->second;

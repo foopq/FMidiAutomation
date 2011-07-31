@@ -327,8 +327,6 @@ void CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, i
     SelectedEntity selectedEntity = Nobody;
     for (int index = 0; index < numKeys; ++index) {
         boost::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
-        curKey->selectedState = KeySelectedType::NotSelected;
-
         if ( (curKey->drawnStartX <= mousePressDownX) && (curKey->drawnStartX + 9 >= mousePressDownX) &&
              (curKey->drawnStartY <= mousePressDownY) && (curKey->drawnStartY + 9 >= mousePressDownY) ) {
             selectedKey = curKey;
@@ -349,7 +347,7 @@ void CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, i
     }//for
 
     if (selectedKey != NULL) {
-        selectedKey->selectedState = KeySelectedType::Key;
+        selectedKey->setSelectedState(KeySelectedType::Key);
         graphState.selectedEntity = selectedEntity;
 
 //        std::cout << "found key: " << mousePressDownX << " - " << mousePressDownY << std::endl;
@@ -359,16 +357,31 @@ void CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, i
                 mainWindow->getGraphState().currentlySelectedKeyframes.erase(mainWindow->getGraphState().currentlySelectedKeyframes.find(selectedKey->tick));
                 mainWindow->getGraphState().movingKeyOrigTicks.erase(mainWindow->getGraphState().movingKeyOrigTicks.find(selectedKey));
                 mainWindow->getGraphState().movingKeyOrigValues.erase(mainWindow->getGraphState().movingKeyOrigValues.find(selectedKey));
+
+                selectedKey->setSelectedState(KeySelectedType::NotSelected);
             } else {
-                mainWindow->getGraphState().currentlySelectedKeyframes[selectedKey->tick] = selectedKey;
+                mainWindow->getGraphState().currentlySelectedKeyframes.insert(std::make_pair(selectedKey->tick, selectedKey));
             }//if
         } else {
-            mainWindow->getGraphState().currentlySelectedKeyframes[selectedKey->tick] = selectedKey;
+            for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = mainWindow->getGraphState().currentlySelectedKeyframes.begin();
+                    keyIter != mainWindow->getGraphState().currentlySelectedKeyframes.end(); ++ keyIter) {
+                keyIter->second->setSelectedState(KeySelectedType::NotSelected);
+            }//for
+
+            mainWindow->getGraphState().currentlySelectedKeyframes.clear();
+            mainWindow->getGraphState().movingKeyOrigTicks.clear();
+            mainWindow->getGraphState().movingKeyOrigValues.clear();
+            mainWindow->getGraphState().currentlySelectedKeyframes.insert(std::make_pair(selectedKey->tick, selectedKey));
         }//if
     } else {
         if (true == ctrlPressed) {
             //Nothing
         } else {
+            for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = mainWindow->getGraphState().currentlySelectedKeyframes.begin();
+                    keyIter != mainWindow->getGraphState().currentlySelectedKeyframes.end(); ++ keyIter) {
+                keyIter->second->setSelectedState(KeySelectedType::NotSelected);
+            }//for
+
             mainWindow->getGraphState().currentlySelectedKeyframes.clear();
             mainWindow->getGraphState().movingKeyOrigTicks.clear();
             mainWindow->getGraphState().movingKeyOrigValues.clear();
