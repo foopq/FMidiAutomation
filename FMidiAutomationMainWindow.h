@@ -137,7 +137,7 @@ struct GraphState
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
 
-    std::multimap<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes;
+    std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
     std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
     std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;
 

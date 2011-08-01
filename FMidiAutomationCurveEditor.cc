@@ -12,6 +12,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Sequencer.h"
 #include "Command.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
 
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *event)
@@ -331,7 +333,7 @@ void CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, i
     boost::shared_ptr<Animation> curve = currentlySelectedEntryBlock->getCurve();
     int numKeys = curve->getNumKeyframes();
 
-//    std::cout << "getKeySelection: " << numKeys << std::endl;
+std::cout << "getKeySelection: " << numKeys << std::endl;
 
     SelectedEntity selectedEntity = Nobody;
     for (int index = 0; index < numKeys; ++index) {
@@ -362,25 +364,36 @@ void CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, i
 //        std::cout << "found key: " << mousePressDownX << " - " << mousePressDownY << std::endl;
 
         if (true == ctrlPressed) {
-            if (mainWindow->getGraphState().currentlySelectedKeyframes.find(selectedKey->tick) != mainWindow->getGraphState().currentlySelectedKeyframes.end()) {
-                mainWindow->getGraphState().currentlySelectedKeyframes.erase(mainWindow->getGraphState().currentlySelectedKeyframes.find(selectedKey->tick));
+            //If we find the selected key... [can't look up by tick since the tick value is invalid after a move (but relative ordering is fine)]
+            std::map<int, boost::shared_ptr<Keyframe> >::iterator selectedKeyIter = 
+                std::find_if(mainWindow->getGraphState().currentlySelectedKeyframes.begin(), mainWindow->getGraphState().currentlySelectedKeyframes.end(),
+                                boost::lambda::bind(&std::map<int, boost::shared_ptr<Keyframe> >::value_type::second, boost::lambda::_1) == selectedKey);
+
+            if (selectedKeyIter != mainWindow->getGraphState().currentlySelectedKeyframes.end()) {
+                mainWindow->getGraphState().currentlySelectedKeyframes.erase(selectedKeyIter);
                 mainWindow->getGraphState().movingKeyOrigTicks.erase(mainWindow->getGraphState().movingKeyOrigTicks.find(selectedKey));
                 mainWindow->getGraphState().movingKeyOrigValues.erase(mainWindow->getGraphState().movingKeyOrigValues.find(selectedKey));
 
                 selectedKey->setSelectedState(KeySelectedType::NotSelected);
+                std::cout << "NotSelected1" << std::endl;
             } else {
                 mainWindow->getGraphState().currentlySelectedKeyframes.insert(std::make_pair(selectedKey->tick, selectedKey));
             }//if
         } else {
-            for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = mainWindow->getGraphState().currentlySelectedKeyframes.begin();
-                    keyIter != mainWindow->getGraphState().currentlySelectedKeyframes.end(); ++ keyIter) {
-                keyIter->second->setSelectedState(KeySelectedType::NotSelected);
-            }//for
+            //If we can't find the selected key... [can't look up by tick since the tick value is invalid after a move (but relative ordering is fine)]
+            if (std::find_if(mainWindow->getGraphState().currentlySelectedKeyframes.begin(), mainWindow->getGraphState().currentlySelectedKeyframes.end(),
+                                boost::lambda::bind(&std::map<int, boost::shared_ptr<Keyframe> >::value_type::second, boost::lambda::_1) == selectedKey) == mainWindow->getGraphState().currentlySelectedKeyframes.end()) {
+                for (std::multimap<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = mainWindow->getGraphState().currentlySelectedKeyframes.begin();
+                        keyIter != mainWindow->getGraphState().currentlySelectedKeyframes.end(); ++ keyIter) {
+                    keyIter->second->setSelectedState(KeySelectedType::NotSelected);
+                }//for
+                std::cout << "NotSelected2" << std::endl;
 
-            mainWindow->getGraphState().currentlySelectedKeyframes.clear();
-            mainWindow->getGraphState().movingKeyOrigTicks.clear();
-            mainWindow->getGraphState().movingKeyOrigValues.clear();
-            mainWindow->getGraphState().currentlySelectedKeyframes.insert(std::make_pair(selectedKey->tick, selectedKey));
+                mainWindow->getGraphState().currentlySelectedKeyframes.clear();
+                mainWindow->getGraphState().movingKeyOrigTicks.clear();
+                mainWindow->getGraphState().movingKeyOrigValues.clear();
+                mainWindow->getGraphState().currentlySelectedKeyframes.insert(std::make_pair(selectedKey->tick, selectedKey));
+            }//if
         }//if
     } else {
         if (true == ctrlPressed) {
@@ -390,6 +403,7 @@ void CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, i
                     keyIter != mainWindow->getGraphState().currentlySelectedKeyframes.end(); ++ keyIter) {
                 keyIter->second->setSelectedState(KeySelectedType::NotSelected);
             }//for
+            std::cout << "NotSelected3" << std::endl;
 
             mainWindow->getGraphState().currentlySelectedKeyframes.clear();
             mainWindow->getGraphState().movingKeyOrigTicks.clear();

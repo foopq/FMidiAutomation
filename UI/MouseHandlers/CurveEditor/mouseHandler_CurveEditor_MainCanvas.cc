@@ -73,38 +73,89 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
     eventY = std::min(eventY, drawingAreaHeight);
     eventY -= 60;
 
-    int newTick = graphState.verticalPixelTickValues[eventX];
-    if (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) {
-        newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel+1]);
-    }//if
-    double newValue = graphState.horizontalPixelValues[eventY];
+    //int newTick = graphState.verticalPixelTickValues[eventX];
+    //if (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) {
+    //    newTick = std::max(newTick, graphState.verticalPixelTickValues[graphState.zeroithTickPixel+1]);
+    //}//if
+    //double newValue = graphState.horizontalPixelValues[eventY];
 
-    newValue = std::max((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue);
-    newValue = std::min((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue);
+    //newValue = std::max((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue);
+    //newValue = std::min((int)newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue);
 
+/*    
+    //This checks to ensure we don't blow away another key when moving the current one??
     if ( ((newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) != graphState.currentlySelectedKeyframes.begin()->second->tick) && 
          (graphState.getCurrentlySelectedEntryBlock()->getCurve()->getKeyframeAtTick(newTick) != NULL) ) {
         return;
     }//if
+*/    
 
-    graphState.didMoveKey = true;
-    graphState.didMoveKeyOutTangent = true;
-    graphState.didMoveKeyInTangent = true;
+    int curX = xPos;
+    curX = std::max(0, curX);
+    curX = std::min(curX, drawingAreaWidth-1);
+    int diffTick = graphState.verticalPixelTickValues[curX] - graphState.verticalPixelTickValues[mousePressDownX];
 
-    int tickOffset = (newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) - graphState.currentlySelectedKeyframes.begin()->second->tick;
-    double valueOffset = newValue - graphState.currentlySelectedKeyframes.begin()->second->value;
+    int curY = yPos;
+    curY = std::max(60, curY);
+    curY = std::min(curY, drawingAreaHeight-1);
+    double diffValue = graphState.horizontalPixelValues[curY] - graphState.horizontalPixelValues[mousePressDownY];
 
+//int tickOffset = (newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) - graphState.currentlySelectedKeyframes.begin()->second->tick;
+//double valueOffset = newValue - graphState.currentlySelectedKeyframes.begin()->second->value;
+
+//std::cout << "diffTick: " << diffTick << " - tickOffset: " << tickOffset << std::endl;
+//std::cout << "diffValue: " << diffValue << " - valueOffset: " << valueOffset << std::endl;
+
+    //Prevent dragging first key before start of entry block
+    if (graphState.movingKeyOrigTicks[graphState.currentlySelectedKeyframes.begin()->second] + diffTick + graphState.getCurrentlySelectedEntryBlock()->getStartTick() < graphState.getCurrentlySelectedEntryBlock()->getStartTick()) {
+        std::cout << "exit 1: " << graphState.movingKeyOrigTicks[graphState.currentlySelectedKeyframes.begin()->second] << " - " << graphState.movingKeyOrigTicks[graphState.currentlySelectedKeyframes.begin()->second] + diffTick << std::endl;
+        return;
+    }//if
+
+    std::map<int, boost::shared_ptr<Keyframe> > updatedCurrentlySelectedKeyframes;
     for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
          keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
         
         boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
-        graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(curKeyframe);
 
-        curKeyframe->tick += tickOffset;
-        curKeyframe->value += valueOffset;
+        int newTick = graphState.movingKeyOrigTicks[curKeyframe] + diffTick;
 
-        graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(curKeyframe);
+        double newValue = graphState.movingKeyOrigValues[curKeyframe] + diffValue;
+        newValue = std::max<double>(newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue);
+        newValue = std::min<double>(newValue, graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue);
+
+        //if ( ((newTick - graphState.getCurrentlySelectedEntryBlock()->getStartTick()) != graphState.currentlySelectedKeyframes.begin()->second->tick) && 
+        //    (graphState.getCurrentlySelectedEntryBlock()->getCurve()->getKeyframeAtTick(newTick) != NULL) ) {
+        //    std::cout << "exit 2" << std::endl;
+        //    continue;
+        //}//if
+
+        //curKeyframe->tick += tickOffset;
+        //curKeyframe->value += valueOffset;
+
+        std::cout << "curTick: " << curKeyframe->tick << std::endl;
+
+        //This checks to ensure we don't blow away another key when moving the current one
+        if (graphState.getCurrentlySelectedEntryBlock()->getCurve()->getKeyframeAtTick(newTick + graphState.getCurrentlySelectedEntryBlock()->getStartTick()) == NULL) {
+            graphState.getCurrentlySelectedEntryBlock()->getCurve()->deleteKey(curKeyframe);
+            curKeyframe->tick = newTick;
+            graphState.getCurrentlySelectedEntryBlock()->getCurve()->addKey(curKeyframe);
+
+            std::cout << " - newTick: " << curKeyframe->tick << std::endl;
+        }//if
+
+        curKeyframe->value = newValue;
+
+        updatedCurrentlySelectedKeyframes[curKeyframe->tick] = curKeyframe;
+
+        graphState.didMoveKey = true;
+        graphState.didMoveKeyOutTangent = true;
+        graphState.didMoveKeyInTangent = true;
     }//for
+
+    graphState.currentlySelectedKeyframes.swap(updatedCurrentlySelectedKeyframes);
+
+std::cout << std::endl << std::endl;    
 }//handleKeyScroll
 
 void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
@@ -122,6 +173,7 @@ void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, 
     int newTick = graphState.verticalPixelTickValues[eventX];
     double newValue = graphState.horizontalPixelValues[eventY];
 
+//!!!!!!!!!!!111!!!!    
     boost::shared_ptr<Keyframe> curKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
 
     if (InTangent == graphState.selectedEntity) {
@@ -163,7 +215,7 @@ std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size
             keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
         
             boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
-            graphState.movingKeyOrigTicks[curKeyframe] = curKeyframe->tick - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
+            graphState.movingKeyOrigTicks[curKeyframe] = curKeyframe->tick; // - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
             graphState.movingKeyOrigValues[curKeyframe] = curKeyframe->value;
         }//for
 

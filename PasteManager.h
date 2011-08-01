@@ -64,9 +64,9 @@ struct PasteSequencerEntryBlockCommand : public PasteCommand
 
 struct PasteSequencerKeyframeCommand : public PasteCommand
 {
-    std::multimap<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    PasteSequencerKeyframeCommand(std::multimap<int, boost::shared_ptr<Keyframe> > &keyframes);
+    PasteSequencerKeyframeCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
     ~PasteSequencerKeyframeCommand();
 
     void doPaste();

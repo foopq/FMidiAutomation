@@ -230,10 +230,10 @@ struct UpdateTempoChangeCommand : public Command
 struct AddKeyframesCommand : public Command
 {
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
-    std::multimap<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
     AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
-    AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, std::multimap<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick);
+    AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick);
     ~AddKeyframesCommand();
 
     void doAction();
@@ -243,9 +243,9 @@ struct AddKeyframesCommand : public Command
 struct DeleteKeyframesCommand : public Command
 {
     boost::shared_ptr<SequencerEntryBlock> entryBlock;
-    std::multimap<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::multimap<int, boost::shared_ptr<Keyframe> > &keyframes);
+    DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
     ~DeleteKeyframesCommand();
 
     void doAction();
