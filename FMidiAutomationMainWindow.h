@@ -137,6 +137,7 @@ struct GraphState
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
 
+    boost::shared_ptr<Keyframe> selectedKey; //mostly useful for who owns the selected tangent grab handle
     std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
     std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
     std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;

@@ -170,11 +170,10 @@ void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, 
     eventY = std::min(eventY, drawingAreaHeight);
     eventY -= 60;
 
-    int newTick = graphState.verticalPixelTickValues[eventX];
+    int newTick = graphState.verticalPixelTickValues[eventX] - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
     double newValue = graphState.horizontalPixelValues[eventY];
 
-//!!!!!!!!!!!111!!!!    
-    boost::shared_ptr<Keyframe> curKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
+    boost::shared_ptr<Keyframe> curKeyframe = graphState.selectedKey;
 
     if (InTangent == graphState.selectedEntity) {
         graphState.didMoveKeyInTangent = true;

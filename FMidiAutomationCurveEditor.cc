@@ -357,6 +357,10 @@ std::cout << "getKeySelection: " << numKeys << std::endl;
         }//if
     }//for
 
+    graphState.selectedKey = selectedKey;
+
+    std::cout << "graphState.selectedKey: " << graphState.selectedKey << std::endl;
+
     if (selectedKey != NULL) {
         selectedKey->setSelectedState(KeySelectedType::Key);
         graphState.selectedEntity = selectedEntity;
