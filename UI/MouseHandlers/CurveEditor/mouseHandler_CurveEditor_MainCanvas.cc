@@ -276,7 +276,7 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
     } else {
         graphState.selectedEntity = KeyValue;
 
-        m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframes"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframe));
+        m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframes"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframes));
         ui_info =
             "<ui>"
             "  <popup name='PopupMenu'>"

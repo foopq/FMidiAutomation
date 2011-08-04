@@ -67,17 +67,17 @@ void PasteManager::setNewCommand(boost::shared_ptr<PasteCommand> command_)
     }//if
 }//setNewCommand
 
-PasteSequencerEntryBlockCommand::PasteSequencerEntryBlockCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_)
+PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_)
 {
     entryBlocks = entryBlocks_;
 }//constructor
 
-PasteSequencerEntryBlockCommand::~PasteSequencerEntryBlockCommand()
+PasteSequencerEntryBlocksCommand::~PasteSequencerEntryBlocksCommand()
 {
     //Nothing
 }//destructor
 
-void PasteSequencerEntryBlockCommand::doPaste()
+void PasteSequencerEntryBlocksCommand::doPaste()
 {
     Globals &globals = Globals::Instance();
     
@@ -111,7 +111,7 @@ void PasteSequencerEntryBlockCommand::doPaste()
     }//for
 }//doPaste
 
-void PasteSequencerEntryBlockCommand::doPasteInstance()
+void PasteSequencerEntryBlocksCommand::doPasteInstance()
 {
     Globals &globals = Globals::Instance();
     
@@ -146,17 +146,17 @@ void PasteSequencerEntryBlockCommand::doPasteInstance()
     }//for
 }//doPasteInstance
 
-PasteSequencerKeyframeCommand::PasteSequencerKeyframeCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes_)
+PasteSequencerKeyframesCommand::PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes_)
 {
     keyframes = keyframes_;
 }//constructor
 
-PasteSequencerKeyframeCommand::~PasteSequencerKeyframeCommand()
+PasteSequencerKeyframesCommand::~PasteSequencerKeyframesCommand()
 {
     //Nothing
 }//destructor
 
-void PasteSequencerKeyframeCommand::doPaste()
+void PasteSequencerKeyframesCommand::doPaste()
 {
     Globals &globals = Globals::Instance();
     
@@ -171,15 +171,15 @@ void PasteSequencerKeyframeCommand::doPaste()
 
     int tick = globals.graphState->curPointerTick;
 
-    if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(tick) != NULL) {
-        return;
-    }//if
+    //if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(tick) != NULL) {
+    //    return;
+    //}//if
 
     boost::shared_ptr<Command> addKeyframesCommand(new AddKeyframesCommand(currentlySelectedEntryBlock, keyframes, tick - currentlySelectedEntryBlock->getStartTick()));
     CommandManager::Instance().setNewCommand(addKeyframesCommand, true);
 }//doPaste
 
-void PasteSequencerKeyframeCommand::doPasteInstance()
+void PasteSequencerKeyframesCommand::doPasteInstance()
 {
     doPaste();
 }//doPasteInstance

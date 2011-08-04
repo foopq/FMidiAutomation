@@ -258,6 +258,7 @@ class FMidiAutomationMainWindow
     void on_menuSplitEntryBlock();
     void on_menuJoinEntryBlocks();
 
+    void on_handleDelete();
 
     bool key_pressed(GdkEventKey *event);
     bool key_released(GdkEventKey *event);
@@ -325,7 +326,7 @@ class FMidiAutomationMainWindow
     void handleSequencerFrameRegionMouseMove();
 
     void handleSequencerMainCanvasLMBPress();
-    void handleSequencerMainCanvasLMBRelease();
+    void handleSequencerMainCanvasLMBRelease(gdouble xPos);
     void handleSequencerMainCanvasMMBPress();
     void handleSequencerMainCanvasMMBRelease();
     void handleSequencerMainCanvasRMBPress(guint button, guint32 time);

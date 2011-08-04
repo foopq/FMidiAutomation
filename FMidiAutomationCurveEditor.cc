@@ -308,7 +308,7 @@ void CurveEditor::handleAddKeyframe()
     CommandManager::Instance().setNewCommand(addKeyframeCommand, true);
 }//handleAddKeyframe
 
-void CurveEditor::handleDeleteKeyframe()
+void CurveEditor::handleDeleteKeyframes()
 {
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().getCurrentlySelectedEntryBlock();
 

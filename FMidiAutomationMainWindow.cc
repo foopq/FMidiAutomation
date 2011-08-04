@@ -951,14 +951,14 @@ void FMidiAutomationMainWindow::on_menuCopy()
     if (graphState.displayMode == DisplayMode::Sequencer) {
         PasteManager::Instance().setPasteOnly(false);
         if (graphState.currentlySelectedEntryBlocks.empty() == false) {
-            boost::shared_ptr<PasteSequencerEntryBlockCommand> pasteSequencerEntryBlockCommand(new PasteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks));
-            PasteManager::Instance().setNewCommand(pasteSequencerEntryBlockCommand);
+            boost::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(graphState.currentlySelectedEntryBlocks));
+            PasteManager::Instance().setNewCommand(pasteSequencerEntryBlocksCommand);
         }//if
     } else {
         PasteManager::Instance().setPasteOnly(true);
         if (graphState.currentlySelectedKeyframes.empty() == false) {
-            boost::shared_ptr<PasteSequencerKeyframeCommand> pasteSequencerKeyframeCommand(new PasteSequencerKeyframeCommand(graphState.currentlySelectedKeyframes));
-            PasteManager::Instance().setNewCommand(pasteSequencerKeyframeCommand);
+            boost::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(graphState.currentlySelectedKeyframes));
+            PasteManager::Instance().setNewCommand(pasteSequencerKeyframesCommand);
         }//if
     }//if
 }//on_menuCopy
@@ -967,16 +967,29 @@ void FMidiAutomationMainWindow::on_menuCut()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
         if (graphState.currentlySelectedEntryBlocks.empty() == false) {
-            handleDeleteSequencerEntryBlocks();
             on_menuCopy();
+            handleDeleteSequencerEntryBlocks();
         }//if
     } else {
         if (graphState.currentlySelectedKeyframes.empty() == false) {
             on_menuCopy();
-            curveEditor->handleDeleteKeyframe();
+            curveEditor->handleDeleteKeyframes();
         }//if
     }//if
 }//on_menuCut
+
+void FMidiAutomationMainWindow::on_handleDelete()
+{
+    if (graphState.displayMode == DisplayMode::Sequencer) {
+        if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+            handleDeleteSequencerEntryBlocks();
+        }//if
+    } else {
+        if (graphState.currentlySelectedKeyframes.empty() == false) {
+            curveEditor->handleDeleteKeyframes();
+        }//if
+    }//if
+}//on_handleDelete
 
 void FMidiAutomationMainWindow::on_menuPaste()
 {
@@ -1243,6 +1256,12 @@ bool FMidiAutomationMainWindow::key_pressed(GdkEventKey *event)
         case GDK_Alt_R:
             altCurrentlyPressed = true;
             break;
+
+        case GDK_Delete:
+        case GDK_KP_Delete:
+        case GDK_BackSpace:            
+            on_handleDelete();
+            break;
     }//switch
 
     return false;
@@ -1319,7 +1338,7 @@ void FMidiAutomationMainWindow::handleDeleteKeyframe()
     menuCopy->set_sensitive(false);
     menuCut->set_sensitive(false);
 
-    curveEditor->handleDeleteKeyframe();
+    curveEditor->handleDeleteKeyframes();
 }//handleDeleteKeyframe
 
 void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()

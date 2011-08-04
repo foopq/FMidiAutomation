@@ -396,7 +396,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
 
                 case MainCanvas:
                     switch (event->button) {
-                        case LeftButton: handleSequencerMainCanvasLMBRelease(); break;
+                        case LeftButton: handleSequencerMainCanvasLMBRelease(event->x); break;
                         case MiddleButton: handleSequencerMainCanvasMMBRelease(); break;
                         case RightButton: handleSequencerMainCanvasRMBRelease(); break;
                     }//switch

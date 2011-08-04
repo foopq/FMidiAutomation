@@ -1,4 +1,8 @@
-- multiselect ops on keyframes
+- undo/redo needs to consider sequencer/curve editor mode
+
+- multiselect keys in curve window + entry blocks --> multi move, delete, etc
+
+
 - rubberband selection (sequencer and curve editor)
 - faint row coloured background per entry block in sequencer
 - entry block colour selection
@@ -17,9 +21,6 @@
 
 - render tangents while also considering the next key, not just the current or previous
 
-- multiselect keys in curve window --> multi move, delete, etc
-    - remove currentlyselectedkey with keyselectiongroup vector
-
 - middle mouse click + key command to zoom extents on curve / sequencer
 
 - when moving key, tick value should be set to use nearest tick value, not floor of cur pixel pos
@@ -28,7 +29,6 @@
 - bezier
 - selected entry block should display sampled value when cursor is over an entry block curve
 - in curve mode, UI should display sampled value over cursor
-
 
 - context menu for entry parameters
     - same parameters as larger box plus:

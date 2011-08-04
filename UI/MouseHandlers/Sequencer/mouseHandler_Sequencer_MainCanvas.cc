@@ -178,9 +178,9 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
     }//if
 }//handleSequencerMainCanvasRMBPress
 
-void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease()
+void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos)
 {
-    if (graphState.selectedEntity == SequencerEntrySelection) {
+    if ((graphState.selectedEntity == SequencerEntrySelection) && (mousePressDownX != xPos)) {
         /*  -- It almost makes sense to fix up the times on the start ticks within the maps.. but it seems the house of cards need it to be this way.
                The correct start tick value is on the entry block. One day I should refactor this to make more sense.
         graphState.currentlySelectedEntryBlocks.clear();
@@ -232,6 +232,8 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBRelease()
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos)
 {
+    std::cout << "handleSequencerMainCanvasMouseMove" << std::endl;
+
     if (true == ctrlCurrentlyPressed) {
         //We are scrolling the canvas
         gdouble curOffsetX = graphState.offsetX;

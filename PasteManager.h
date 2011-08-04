@@ -51,27 +51,27 @@ public:
     void setNewCommand(boost::shared_ptr<PasteCommand> command);
 };//PasteManager
 
-struct PasteSequencerEntryBlockCommand : public PasteCommand
+struct PasteSequencerEntryBlocksCommand : public PasteCommand
 {
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
-    PasteSequencerEntryBlockCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks);
-    ~PasteSequencerEntryBlockCommand();
+    PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks);
+    ~PasteSequencerEntryBlocksCommand();
 
     void doPaste();
     void doPasteInstance();
-};//PasteSequencerEntryBlockCommand
+};//PasteSequencerEntryBlocksCommand
 
-struct PasteSequencerKeyframeCommand : public PasteCommand
+struct PasteSequencerKeyframesCommand : public PasteCommand
 {
     std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    PasteSequencerKeyframeCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
-    ~PasteSequencerKeyframeCommand();
+    PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
+    ~PasteSequencerKeyframesCommand();
 
     void doPaste();
     void doPasteInstance();
-};//PasteSequencerKeyframeCommand
+};//PasteSequencerKeyframesCommand
 
 
 #endif

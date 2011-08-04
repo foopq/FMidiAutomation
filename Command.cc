@@ -103,6 +103,7 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool appl
         redoStack.pop();
     }//while
 
+    menuRedo->set_label("Redo");
     menuRedo->set_sensitive(false);
 
     undoStack.push(command);
@@ -487,7 +488,12 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, /*{{{*/
                                             std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick) : Command("Add Keyframe")
 {
-    //XXX: I suspect we need to sort out an offset from newTick to the first key and then offset the rest based on that..
+    if (origKeyframes.empty() == true) {
+        return;
+    }//if
+
+    boost::shared_ptr<Keyframe> firstKeyframe = origKeyframes.begin()->second;
+    int firstKeyTick = firstKeyframe->tick;
 
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     assert(currentlySelectedEntryBlock != NULL);
@@ -498,11 +504,13 @@ AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> 
         boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
 
         *newKeyframe = *origKeyframe;
-        newKeyframe->tick = newTick;
+        newKeyframe->tick = origKeyframe->tick - firstKeyTick + newTick;
         newKeyframe->setSelectedState(KeySelectedType::NotSelected);
 
         keyframes.insert(std::make_pair(newKeyframe->tick, newKeyframe));
     }//for
+
+    std::cout << "AddKeyframesCommand constructor: " << origKeyframes.size() << " - " << keyframes.size() << std::endl;
 }//constructor
 
 AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_) : Command("Add Keyframe")
@@ -532,9 +540,15 @@ AddKeyframesCommand::~AddKeyframesCommand()
 
 void AddKeyframesCommand::doAction()
 {
+    //FIXME: Depending on insert mode.. either overwrite keys or clear insertion range, etc
+
+    std::cout << "AddKeyframesCommand::doAction: " << keyframes.size() << std::endl;
+
     for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
         boost::shared_ptr<Keyframe> keyframe = keyIter->second;
         currentlySelectedEntryBlock->getCurve()->addKey(keyframe);
+
+        std::cout << "addKey: " << keyframe->tick << std::endl;
     }//for
 }//doAction
 
