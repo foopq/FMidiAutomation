@@ -546,6 +546,10 @@ std::cout << "drawnStartX: " << keyPair.second->drawnStartX << "  --  " << keyPa
                     shouldDrawOutTangent = true;
                 }//if                
 
+                if (keyPair.second->curveType != CurveType::Bezier) {
+                    shouldDrawInTangent = false;
+                    shouldDrawOutTangent = false;
+                }//if
 
 std::cout << "key is selected and bezier: " << shouldDrawInTangent << " - " << shouldDrawOutTangent << std::endl;
 std::cout << (firstKeyframe == keyPair.second) << " - " << ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == firstKeyframe))
