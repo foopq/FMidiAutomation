@@ -237,6 +237,11 @@ void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
                 selectedKey->outTangent[1] = 0;
             }//if
 
+            if (selectedKey->inTangent[0] == std::numeric_limits<int>::min()) {
+                selectedKey->inTangent[0] = tickDiff;
+                selectedKey->inTangent[1] = 0;
+            }//if
+
             if (afterSelectedKey->inTangent[0] == std::numeric_limits<int>::min()) {
                 afterSelectedKey->inTangent[0] = tickDiff;
                 afterSelectedKey->inTangent[1] = 0;
@@ -244,6 +249,7 @@ void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
         }//if
     }//if
 
+    setKeyUIValues(uiXml, mainWindow->getGraphState().currentlySelectedKeyframes.begin()->second);
     mainWindow->queue_draw();
 }//handleSelectionChangeOnSelectedKeyTypeComboBox
 

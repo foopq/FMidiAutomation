@@ -375,6 +375,8 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         return;
     }//if
 
+std::cout << std::endl << std::endl;
+
     int minTick = graphState.verticalPixelTickValues[0];
     int maxTick = graphState.verticalPixelTickValues[graphState.verticalPixelTickValues.size()-1];
     double maxValue = graphState.horizontalPixelValues[0];
@@ -464,6 +466,8 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
             keyValue = keyPair.second->value - 0.5;
         }//if
 
+        lastCurveType = keyPair.second->curveType;
+
         if ((keyTick < minTick) || (keyTick > maxTick) || (keyValue < minValue) || (keyValue > maxValue)) {
             keyPair.second->drawnStartX = std::numeric_limits<int>::min();
             keyPair.second->drawnStartY = std::numeric_limits<int>::min();
@@ -474,7 +478,6 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
             keyPair.second->drawnInX = std::numeric_limits<int>::min();
             keyPair.second->drawnInY = std::numeric_limits<int>::min();
 
-            lastCurveType = keyPair.second->curveType;
             lastDrawnKey = keyPair.second;
 
             if (nextKeyIter != curKeyframes->end()) {
@@ -514,7 +517,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         keyPair.second->drawnStartX = timePointerPixel - 4;
         keyPair.second->drawnStartY = areaHeight - valuePointerPixel - 4;
 
-//        std::cout << "drawnStartX: " << keyPair.second->drawnStartX << "  --  " << keyPair.second->drawnStartY << std::endl;
+std::cout << "drawnStartX: " << keyPair.second->drawnStartX << "  --  " << keyPair.second->drawnStartY << std::endl;
 
         context->reset_clip();
         context->rectangle(timePointerPixel - 4, areaHeight - valuePointerPixel - 4, 9, 9);
@@ -529,19 +532,24 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
             if ( ( (firstKeyframe == keyPair.second) || ((firstKeyframe == lastDrawnKey)) || 
                    ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == firstKeyframe)) ) && 
                  ((keyPair.second->curveType == CurveType::Bezier) || (lastCurveType == CurveType::Bezier) || (nextKeyIter->second->curveType == CurveType::Bezier)) ) {
-
                 bool shouldDrawOutTangent = false;
                 bool shouldDrawInTangent = false;
 
-                if ( ( (graphState.currentlySelectedKeyframes.begin()->second == keyPair.second) || 
-                       ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == firstKeyframe)) ) && 
-                      (keyPair.second->curveType == CurveType::Bezier) ) {
+                if ( ( (firstKeyframe == keyPair.second) || ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == firstKeyframe)) ) && 
+                       (keyPair.second->curveType == CurveType::Bezier) ) {
                     shouldDrawOutTangent = true;
-                }//if
-
-                if (lastCurveType == CurveType::Bezier) {
                     shouldDrawInTangent = true;
                 }//if
+
+                if ((lastCurveType == CurveType::Bezier) || (firstKeyframe == keyPair.second)) {
+                    shouldDrawInTangent = true;
+                    shouldDrawOutTangent = true;
+                }//if                
+
+
+std::cout << "key is selected and bezier: " << shouldDrawInTangent << " - " << shouldDrawOutTangent << std::endl;
+std::cout << (firstKeyframe == keyPair.second) << " - " << ((nextKeyIter != curKeyframes->end()) && (nextKeyIter->second == firstKeyframe))
+            << " - " << (keyPair.second->curveType == CurveType::Bezier) << "(" << keyPair.second->curveType << ")" << std::endl;
 
                 //Out
                 if (true == shouldDrawOutTangent) {
