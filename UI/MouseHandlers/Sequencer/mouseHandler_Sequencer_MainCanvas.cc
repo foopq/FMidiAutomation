@@ -248,7 +248,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
 {
     std::cout << "handleSequencerMainCanvasMouseMove" << std::endl;
 
-    if (true == ctrlCurrentlyPressed) {
+    if (true == shiftCurrentlyPressed) {
         //We are scrolling the canvas
         gdouble curOffsetX = graphState.offsetX;
 

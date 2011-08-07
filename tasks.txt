@@ -1,4 +1,6 @@
 - undo/redo needs to consider sequencer/curve editor mode
+    - have two undo/redo stacks, delegate based on current mode, update menus when switching modes
+
 - scroll canvas should work with shift instead of control (interaction with rubberbanding)
     - plus zoom in curve editor
 

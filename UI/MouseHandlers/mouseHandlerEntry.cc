@@ -152,7 +152,7 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
         lastHandledTime = event->time;
     }//if
 
-    if (true == ctrlCurrentlyPressed) {
+    if (true == shiftCurrentlyPressed) {
         int curTicksPerPixel = graphState.ticksPerPixel;
 
         handleGraphTimeZoom(event->direction, graphState, drawingAreaWidth);
@@ -428,6 +428,10 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
 {
     graphState.curMousePosX = event->x;
     graphState.curMousePosY = event->y;
+
+    if (true == shiftCurrentlyPressed) {
+        graphState.doingRubberBanding = false;
+    }//if
 
     MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState.displayMode);
 

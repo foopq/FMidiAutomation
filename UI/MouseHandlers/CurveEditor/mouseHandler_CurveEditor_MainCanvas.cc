@@ -359,7 +359,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBRelease()
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPos, gdouble yPos)
 {
-    if (true == ctrlCurrentlyPressed) {
+    if (true == shiftCurrentlyPressed) {
         //We are scrolling the canvas
         gdouble curOffsetX = graphState.offsetX;
 
