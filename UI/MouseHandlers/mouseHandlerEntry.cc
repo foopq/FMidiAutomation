@@ -321,6 +321,9 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
 
 bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*/
 {
+    mousePressReleaseX = event->x;
+    mousePressReleaseY = event->y;
+
     //Good idea to sync up the bucky bits
     if (event->state & GDK_CONTROL_MASK) {
         ctrlCurrentlyPressed = true;
@@ -467,7 +470,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
         case DisplayMode::Sequencer:
             switch (mouseRegion) {
                 case FrameRegion: handleSequencerFrameRegionMouseMove(); break;
-                case MainCanvas: handleSequencerMainCanvasMouseMove(event->x); break;
+                case MainCanvas: handleSequencerMainCanvasMouseMove(event->x, event->y); break;
                 case TickMarkerRegion: handleSequencerTickMarkerRegionMouseMove(); break;
                 case LeftValueRegion: assert(mouseRegion != LeftValueRegion); break;
             }//switch

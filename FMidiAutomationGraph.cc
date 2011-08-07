@@ -168,6 +168,74 @@ void drawLeftBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, 
     context->stroke();
 }//drawLeftBar
 
+void drawRubberBand(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, 
+                        gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY)
+{
+    mousePressDownX = std::max<gdouble>(mousePressDownX, 0);
+    mousePressDownX = std::min<gdouble>(mousePressDownX, areaWidth);
+
+    mousePressDownY = std::max<gdouble>(mousePressDownY, 61);
+    mousePressDownY = std::min<gdouble>(mousePressDownY, areaHeight);
+
+    mousePosX = std::max<gdouble>(mousePosX, 0);
+    mousePosX = std::min<gdouble>(mousePosX, areaWidth);
+
+    mousePosY = std::max<gdouble>(mousePosY, 61);
+    mousePosY = std::min<gdouble>(mousePosY, areaHeight);
+
+static int dashOffset = 0;
+dashOffset++;
+std::vector<double> dashes;
+dashes.push_back(10);
+
+    context->set_dash(dashes, dashOffset);
+
+    if ((fabs(mousePosX - mousePressDownX) > 2) && (fabs(mousePosY - mousePressDownY) > 2)) {
+        context->reset_clip();
+        context->set_source_rgba(1.0, 0.0, 0.0, 0.75);
+        context->set_line_width(2.0);
+
+/*        
+        context->move_to(mousePressDownX, mousePressDownY);
+        context->line_to(mousePosX, mousePressDownY);
+        context->line_to(mousePosX, mousePosY);
+        context->line_to(mousePressDownX, mousePosY);
+        context->line_to(mousePressDownX, mousePressDownY);
+*/
+
+        if (mousePosX < mousePressDownX) {
+            std::swap(mousePosX, mousePressDownX);
+        }//if
+
+        if (mousePosY < mousePressDownY) {
+            std::swap(mousePosY, mousePressDownY);
+        }//if
+
+/*
+        context->move_to(mousePressDownX, mousePressDownY);
+        context->line_to(mousePosX, mousePressDownY);
+
+        context->move_to(mousePressDownX, mousePosY);
+        context->line_to(mousePosX, mousePosY);
+
+        context->move_to(mousePressDownX, mousePosY);
+        context->line_to(mousePressDownX, mousePressDownY);
+
+        context->move_to(mousePosX, mousePosY);
+        context->line_to(mousePosX, mousePressDownY);
+*/
+
+        context->rectangle(mousePressDownX, mousePressDownY, mousePosX - mousePressDownX, mousePosY - mousePressDownY);
+
+        context->stroke();
+
+        context->reset_clip();
+    }//if
+
+    dashes.clear();
+    context->set_dash(dashes, 0);
+}//drawRubberBand
+
 void drawTopBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
     Globals &globals = Globals::Instance();
@@ -797,6 +865,9 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         drawLeftBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
     }//if
 
+    if (graphState.doingRubberBanding == true) {
+        drawRubberBand(context, graphState, drawingAreaWidth, drawingAreaHeight, mousePressDownX, mousePressDownY, graphState.curMousePosX, graphState.curMousePosY);
+    }//if
 
     /*
     int tmpw;
@@ -857,6 +928,7 @@ void GraphState::doInit()
     selectedEntity = Nobody;
     curMousePosX = -100;
     curMousePosY = -100;
+    doingRubberBanding = false;
 }//doInit
 
 GraphState::~GraphState()

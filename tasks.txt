@@ -1,4 +1,9 @@
 - undo/redo needs to consider sequencer/curve editor mode
+- scroll canvas should work with shift instead of control (interaction with rubberbanding)
+    - plus zoom in curve editor
+
+- try -- select two, move, select third, move
+    - refactor entry block selection maps??
 
 - multiselect keys in curve window + entry blocks --> multi move, delete, etc
 

@@ -58,6 +58,8 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
 
             graphState.currentlySelectedEntryBlocks.clear();
             graphState.currentlySelectedEntryOriginalStartTicks.clear();
+
+            graphState.doingRubberBanding = true;
         } else {
             graphState.selectedEntity = SequencerEntrySelection;
 
@@ -94,7 +96,17 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
                 graphState.currentlySelectedEntryOriginalStartTicks.erase(tickIter);
                 graphState.currentlySelectedEntryBlocks.erase(entryIter);
             }//if
+        } else {
+            graphState.doingRubberBanding = true;
         }//if
+    }//if
+
+    if (true == graphState.doingRubberBanding) {
+        graphState.origSelectedEntryBlocks.clear();
+        for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator entryBlockIter = graphState.currentlySelectedEntryOriginalStartTicks.begin(); 
+            entryBlockIter != graphState.currentlySelectedEntryOriginalStartTicks.end(); ++entryBlockIter) {
+            graphState.origSelectedEntryBlocks.insert(entryBlockIter->first);
+        }//for
     }//if
 }//handleSequencerMainCanvasLMBPress
 
@@ -180,6 +192,8 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos)
 {
+    graphState.doingRubberBanding = false;
+
     if ((graphState.selectedEntity == SequencerEntrySelection) && (mousePressDownX != xPos)) {
         /*  -- It almost makes sense to fix up the times on the start ticks within the maps.. but it seems the house of cards need it to be this way.
                The correct start tick value is on the entry block. One day I should refactor this to make more sense.
@@ -230,7 +244,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBRelease()
     //Nothing
 }//handleSequencerMainCanvasRMBRelease
 
-void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos)
+void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos, gdouble yPos)
 {
     std::cout << "handleSequencerMainCanvasMouseMove" << std::endl;
 
@@ -268,6 +282,12 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos)
             firstCurTick = std::max(0, firstCurTick);
             positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(firstCurTick));
         }//if
+    }//if
+
+    if (true == graphState.doingRubberBanding) {
+        sequencer->updateSelectedEntryBlocksInRange(graphState.currentlySelectedEntryOriginalStartTicks, graphState.currentlySelectedEntryBlocks, 
+                                                    graphState.origSelectedEntryBlocks, mousePressDownX, mousePressDownY, xPos, yPos,
+                                                    drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerMainCanvasMouseMove
 

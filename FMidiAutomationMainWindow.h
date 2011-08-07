@@ -14,6 +14,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/shared_ptr.hpp>
 #include <vector>
 #include <string>
+#include <set>
 #include "FMidiAutomationData.h"
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
@@ -145,6 +146,11 @@ struct GraphState
     DisplayMode::DisplayMode displayMode;
     int lastSequencerPointerTick; //for swaping back to the seqeucner
 
+    //Rubberband selection stuff
+    bool doingRubberBanding;
+    std::set<boost::shared_ptr<Keyframe> > origSelectedKeyframes;
+    std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks;
+
     GraphState();
     ~GraphState();
     void doInit();
@@ -212,6 +218,8 @@ class FMidiAutomationMainWindow
     bool leftMouseCurrentlyPressed;
     gdouble mousePressDownX;
     gdouble mousePressDownY;
+    gdouble mousePressReleaseX;
+    gdouble mousePressReleaseY;
     static const int MainCanvasOffsetY = 60;
     
     boost::shared_ptr<Gtk::Image> backingImage;
@@ -331,7 +339,7 @@ class FMidiAutomationMainWindow
     void handleSequencerMainCanvasMMBRelease();
     void handleSequencerMainCanvasRMBPress(guint button, guint32 time);
     void handleSequencerMainCanvasRMBRelease();
-    void handleSequencerMainCanvasMouseMove(gdouble xPos);
+    void handleSequencerMainCanvasMouseMove(gdouble xPos, gdouble yPos);
 
     void handleSequencerTickMarkerRegionLMBPress(gdouble xPos);
     void handleSequencerTickMarkerRegionLMBRelease(gdouble xPos, gdouble yPos);

@@ -223,6 +223,7 @@ std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size
     } else {
         menuCopy->set_sensitive(false);
         menuCut->set_sensitive(false);
+        graphState.doingRubberBanding = true;
     }//if
 
     //Essentially clear the selection state of the tempo changes
@@ -317,6 +318,8 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
 {
+    graphState.doingRubberBanding = false;
+
     if (graphState.selectedEntity == KeyValue) {
         if (true == graphState.didMoveKey) {                        
             //Move key back to where it was
