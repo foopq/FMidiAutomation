@@ -196,7 +196,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBPress()
 {
     unsetAllCurveFrames();
 
-    curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
+    boost::shared_ptr<Keyframe> selectedKey = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
 std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size() << " - " << ctrlCurrentlyPressed << std::endl;
 
@@ -207,7 +207,7 @@ std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size
 
     curveEditor->setKeyUIValues(uiXml, firstKey);
 
-    if (firstKey != NULL) {
+    if (selectedKey != NULL) {
         graphState.didMoveKey = false;
 
         for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
@@ -228,6 +228,14 @@ std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size
 
     //Essentially clear the selection state of the tempo changes
     (void)checkForTempoSelection(-100, datas->tempoChanges);
+
+    if (true == graphState.doingRubberBanding) {
+        graphState.origSelectedKeyframes.clear();
+        for (std::map<int, boost::shared_ptr<Keyframe> >::iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
+            keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
+            graphState.origSelectedKeyframes.insert(keyIter->second);
+        }//for
+    }//if
 }//handleCurveEditorMainCanvasLMBPress
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMMBPress()
@@ -385,6 +393,12 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPo
             handleKeyTangentScroll(xPos, yPos, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
             curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if
+    }//if
+
+    if (true == graphState.doingRubberBanding) {
+        curveEditor->updateSelectedKeyframesInRange(graphState.currentlySelectedKeyframes,
+                                                    graphState.origSelectedKeyframes, mousePressDownX, mousePressDownY, xPos, yPos,
+                                                    drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerCurveEditorMouseMove
 

@@ -14,6 +14,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/shared_ptr.hpp>
 #include <vector>
 #include <string>
+#include <set>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/shared_ptr.hpp>
@@ -47,8 +48,13 @@ public:
     void handleAddKeyframe();
     void handleDeleteKeyframes();
     void setUnderMouseTickValue(int tick, int value);
-    void getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
+    boost::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
     void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<Keyframe> currentlySelectedKeyframe);
+
+    void updateSelectedKeyframesInRange(std::map<int, boost::shared_ptr<Keyframe> > &currentlySelectedKeyframes,
+                                            std::set<boost::shared_ptr<Keyframe> > &origSelectedKeyframes,
+                                            gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,
+                                            int areaWidth, int areaHeight);
 };//CurveEditor
 
 #endif
