@@ -1,8 +1,8 @@
 - undo/redo needs to consider sequencer/curve editor mode
     - have two undo/redo stacks, delegate based on current mode, update menus when switching modes
 
-- try -- select two, move, select third, move
-    - refactor entry block selection maps??
+- add unit testing
+    -> some sort of macro ui recording?
 
 - multiselect keys in curve window + entry blocks --> multi move, delete, etc
 

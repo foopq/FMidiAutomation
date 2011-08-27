@@ -1384,9 +1384,9 @@ if (selectedEntryBlock == NULL) {
     return boost::shared_ptr<SequencerEntryBlock>();
 }//getSelectedEntryBlock
 
-void Sequencer::updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks,
-                                        std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks,
-                                        std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks,
+void Sequencer::updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &currentlySelectedEntryOriginalStartTicks,
+                                        std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &currentlySelectedEntryBlocks,
+                                        std::set<boost::shared_ptr<SequencerEntryBlock> > &origSelectedEntryBlocks,
                                         gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY,
                                         int areaWidth, int areaHeight)
 {

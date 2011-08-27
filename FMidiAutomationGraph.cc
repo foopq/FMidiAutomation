@@ -448,7 +448,6 @@ boost::shared_ptr<SequencerEntryBlock> EntryBlockSelectionState::GetFirstEntryBl
 
 void EntryBlockSelectionState::ClearSelected()
 {
-std::cout << "ClearSelected" << std::endl;
     currentlySelectedEntryBlocks.clear();
     currentlySelectedEntryOriginalStartTicks.clear();
 }//ClearSelected
@@ -457,6 +456,11 @@ std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionS
 {
     return currentlySelectedEntryBlocks;
 }//GetEntryBlocksMapCopy
+
+std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &EntryBlockSelectionState::GetEntryBlocksMapRaw()
+{
+    return currentlySelectedEntryBlocks;
+}//GetEntryBlocksMapRaw
 
 bool EntryBlockSelectionState::IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock)
 {
@@ -482,6 +486,11 @@ std::set<boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetO
     return origSelectedEntryBlocks;
 }//GetOrigSelectedEntryBlocksCopy
 
+std::set<boost::shared_ptr<SequencerEntryBlock> > &EntryBlockSelectionState::GetOrigSelectedEntryBlocksRaw()
+{
+    return origSelectedEntryBlocks;
+}//GetOrigSelectedEntryBlocksRaw
+
 int EntryBlockSelectionState::GetNumSelected()
 {
     return currentlySelectedEntryBlocks.size();
@@ -501,6 +510,11 @@ std::map<boost::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::
     return currentlySelectedEntryOriginalStartTicks;
 }//GetEntryOriginalStartTicksCopy
 
+std::map<boost::shared_ptr<SequencerEntryBlock>, int> &EntryBlockSelectionState::GetEntryOriginalStartTicksRaw()
+{
+    return currentlySelectedEntryOriginalStartTicks;
+}//GetEntryOriginalStartTicksRaw
+
 std::pair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()
 {
     return std::make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
@@ -508,8 +522,6 @@ std::pair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin(
 
 void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &origStartTicks)
 {
-std::cout << "SetCurrentlySelectedEntryOriginalStartTicks" << std::endl;
-
     currentlySelectedEntryOriginalStartTicks = origStartTicks;
 }//SetCurrentlySelectedEntryOriginalStartTicks
 

@@ -47,6 +47,11 @@ void handleGraphTimeScroll(gdouble xPos, GraphState &graphState, gdouble mousePr
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
 {
+    //If scrolling, then don't interact with the canvas objects
+    if (true == shiftCurrentlyPressed) {
+        return;
+    }//if
+
     if (false == ctrlCurrentlyPressed) {
         unsetAllCurveFrames();
 
@@ -284,9 +289,9 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
     }//if
 
     if (true == graphState.doingRubberBanding) {
-        sequencer->updateSelectedEntryBlocksInRange(graphState.entryBlockSelectionState.GetEntryOriginalStartTicksCopy(), 
-                                                    graphState.entryBlockSelectionState.GetEntryBlocksMapCopy(), 
-                                                    graphState.entryBlockSelectionState.GetOrigSelectedEntryBlocksCopy(), mousePressDownX, mousePressDownY, xPos, yPos,
+        sequencer->updateSelectedEntryBlocksInRange(graphState.entryBlockSelectionState.GetEntryOriginalStartTicksRaw(), 
+                                                    graphState.entryBlockSelectionState.GetEntryBlocksMapRaw(), 
+                                                    graphState.entryBlockSelectionState.GetOrigSelectedEntryBlocksRaw(), mousePressDownX, mousePressDownY, xPos, yPos,
                                                     drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerMainCanvasMouseMove

@@ -113,10 +113,16 @@ public:
 
     int GetNumSelected();
     boost::shared_ptr<SequencerEntryBlock> GetFirstEntryBlock();
+    int GetOriginalStartTick(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > GetEntryBlocksMapCopy();
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
     std::set<boost::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
-    int GetOriginalStartTick(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+
+    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &GetEntryBlocksMapRaw();
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> &GetEntryOriginalStartTicksRaw();
+    std::set<boost::shared_ptr<SequencerEntryBlock> > &GetOrigSelectedEntryBlocksRaw();
+
 
     std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
 
