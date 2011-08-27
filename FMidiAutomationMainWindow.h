@@ -108,6 +108,7 @@ public:
 
     bool HasSelected();
     bool IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    bool IsOrigSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock); //checks origSelectedEntryBlocks
     void ClearSelected();
     void ResetRubberbandingSelection();
 
@@ -118,11 +119,6 @@ public:
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > GetEntryBlocksMapCopy();
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
     std::set<boost::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
-
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &GetEntryBlocksMapRaw();
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int> &GetEntryOriginalStartTicksRaw();
-    std::set<boost::shared_ptr<SequencerEntryBlock> > &GetOrigSelectedEntryBlocksRaw();
-
 
     std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
 

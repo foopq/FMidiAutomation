@@ -457,11 +457,6 @@ std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionS
     return currentlySelectedEntryBlocks;
 }//GetEntryBlocksMapCopy
 
-std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &EntryBlockSelectionState::GetEntryBlocksMapRaw()
-{
-    return currentlySelectedEntryBlocks;
-}//GetEntryBlocksMapRaw
-
 bool EntryBlockSelectionState::IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
@@ -470,6 +465,15 @@ bool EntryBlockSelectionState::IsSelected(boost::shared_ptr<SequencerEntryBlock>
         return false;
     }//if
 }//IsSelected
+
+bool EntryBlockSelectionState::IsOrigSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    if (origSelectedEntryBlocks.find(entryBlock) != origSelectedEntryBlocks.end()) {
+        return true;
+    } else {
+        return false;
+    }//if
+}//IsOrigSelected
 
 void EntryBlockSelectionState::ResetRubberbandingSelection()
 {
@@ -485,11 +489,6 @@ std::set<boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetO
 {
     return origSelectedEntryBlocks;
 }//GetOrigSelectedEntryBlocksCopy
-
-std::set<boost::shared_ptr<SequencerEntryBlock> > &EntryBlockSelectionState::GetOrigSelectedEntryBlocksRaw()
-{
-    return origSelectedEntryBlocks;
-}//GetOrigSelectedEntryBlocksRaw
 
 int EntryBlockSelectionState::GetNumSelected()
 {
@@ -510,11 +509,6 @@ std::map<boost::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::
     return currentlySelectedEntryOriginalStartTicks;
 }//GetEntryOriginalStartTicksCopy
 
-std::map<boost::shared_ptr<SequencerEntryBlock>, int> &EntryBlockSelectionState::GetEntryOriginalStartTicksRaw()
-{
-    return currentlySelectedEntryOriginalStartTicks;
-}//GetEntryOriginalStartTicksRaw
-
 std::pair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()
 {
     return std::make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
@@ -533,14 +527,17 @@ void EntryBlockSelectionState::AddSelectedEntryBlock(boost::shared_ptr<Sequencer
 
 void EntryBlockSelectionState::RemoveSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
 {
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator tickIter = currentlySelectedEntryOriginalStartTicks.find(entryBlock);
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryIter = currentlySelectedEntryBlocks.find(entryBlock->getStartTick());
+    auto tickRangePair = currentlySelectedEntryBlocks.equal_range(entryBlock->getStartTick());
+    for (auto tickRangeIter = tickRangePair.first; tickRangeIter != tickRangePair.second; ++tickRangeIter) {
+        if (tickRangeIter->second == entryBlock) {
+            currentlySelectedEntryBlocks.erase(tickRangeIter);
+            break;
+        }//if
+    }//for
 
+    auto tickIter = currentlySelectedEntryOriginalStartTicks.find(entryBlock);
     assert(tickIter != currentlySelectedEntryOriginalStartTicks.end());
-    assert(entryIter != currentlySelectedEntryBlocks.end());
-
     currentlySelectedEntryOriginalStartTicks.erase(tickIter);
-    currentlySelectedEntryBlocks.erase(entryIter);
 }//RemoveSelectedEntryBlock
 
 void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)

@@ -1384,11 +1384,9 @@ if (selectedEntryBlock == NULL) {
     return boost::shared_ptr<SequencerEntryBlock>();
 }//getSelectedEntryBlock
 
-void Sequencer::updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &currentlySelectedEntryOriginalStartTicks,
-                                        std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &currentlySelectedEntryBlocks,
-                                        std::set<boost::shared_ptr<SequencerEntryBlock> > &origSelectedEntryBlocks,
-                                        gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY,
-                                        int areaWidth, int areaHeight)
+void Sequencer::updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entryBlockSelectionState,
+                                                    gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY,
+                                                    int areaWidth, int areaHeight)
 {
     mousePressDownX = std::max<gdouble>(mousePressDownX, 0);
     mousePressDownX = std::min<gdouble>(mousePressDownX, areaWidth);
@@ -1416,26 +1414,14 @@ void Sequencer::updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<Sequ
             selectionInfo.drawnArea.get_y() < mousePosY &&
             selectionInfo.drawnArea.get_y() + selectionInfo.drawnArea.get_height() > mousePressDownY) {
 
-            if (currentlySelectedEntryOriginalStartTicks.find(selectionInfo.entryBlock) == currentlySelectedEntryOriginalStartTicks.end()) {
-                currentlySelectedEntryOriginalStartTicks[selectionInfo.entryBlock] = selectionInfo.entryBlock->getStartTick();
-                currentlySelectedEntryBlocks.insert(std::make_pair(selectionInfo.entryBlock->getStartTick(), selectionInfo.entryBlock));
+            if (entryBlockSelectionState.IsSelected(selectionInfo.entryBlock) == false) {
+                entryBlockSelectionState.AddSelectedEntryBlock(selectionInfo.entryBlock);
                 selectionInfo.entry->select();
             }//if
         } else {
-            if (origSelectedEntryBlocks.find(selectionInfo.entryBlock) == origSelectedEntryBlocks.end()) {
-                if (currentlySelectedEntryOriginalStartTicks.find(selectionInfo.entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
-                    std::pair<std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator, 
-                                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator> tickRangePair = 
-                                    currentlySelectedEntryBlocks.equal_range(selectionInfo.entryBlock->getStartTick());
-
-                    for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator tickRangeIter = tickRangePair.first; 
-                            tickRangeIter != tickRangePair.second; ++tickRangeIter) {
-                        if (tickRangeIter->second == selectionInfo.entryBlock) {
-                            currentlySelectedEntryBlocks.erase(tickRangeIter);
-                        }//if
-                    }//if
-
-                    currentlySelectedEntryOriginalStartTicks.erase(currentlySelectedEntryOriginalStartTicks.find(selectionInfo.entryBlock));
+            if (entryBlockSelectionState.IsOrigSelected(selectionInfo.entryBlock) == false) {
+                if (entryBlockSelectionState.IsSelected(selectionInfo.entryBlock) == true) {
+                    entryBlockSelectionState.RemoveSelectedEntryBlock(selectionInfo.entryBlock);
                 }//if
             }//if
         }//if

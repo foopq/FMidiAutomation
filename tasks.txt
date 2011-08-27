@@ -6,6 +6,10 @@
 
 - multiselect keys in curve window + entry blocks --> multi move, delete, etc
 
+- ensure next / prev tangents are adjusted correctly when adding keyframe (regardless of curve type on any of three)
+
+- ability to reset key tangents (context menu, regular menu? main ui+?)
+- ability to lock tangents (context menu, regular menu? main ui+?)
 
 - rubberband selection (sequencer and curve editor)
 - faint row coloured background per entry block in sequencer

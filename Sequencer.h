@@ -269,9 +269,7 @@ public:
 
     boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock() const;
     boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection); //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
-    void updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &currentlySelectedEntryOriginalStartTicks,
-                                            std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &currentlySelectedEntryBlocks,            
-                                            std::set<boost::shared_ptr<SequencerEntryBlock> > &origSelectedEntryBlocks, //FIXME: Do we really need this? Can we use IsSelected() instead?
+    void updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entryBlockSelectionState,
                                             gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,
                                             int areaWidth, int areaHeight);
     void clearSelectedEntryBlock();

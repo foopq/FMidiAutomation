@@ -289,9 +289,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
     }//if
 
     if (true == graphState.doingRubberBanding) {
-        sequencer->updateSelectedEntryBlocksInRange(graphState.entryBlockSelectionState.GetEntryOriginalStartTicksRaw(), 
-                                                    graphState.entryBlockSelectionState.GetEntryBlocksMapRaw(), 
-                                                    graphState.entryBlockSelectionState.GetOrigSelectedEntryBlocksRaw(), mousePressDownX, mousePressDownY, xPos, yPos,
+        sequencer->updateSelectedEntryBlocksInRange(graphState.entryBlockSelectionState, mousePressDownX, mousePressDownY, xPos, yPos, 
                                                     drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerMainCanvasMouseMove
