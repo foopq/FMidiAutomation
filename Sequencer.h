@@ -26,6 +26,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/access.hpp>
 #include "ProcessRecordedMidi.h"
 #include "VectorStreambuf.h"
+#include "FMidiAutomationMainWindow.h" //FIXME: I don't like including this here.. it was pulled in because we needed declaration for EntryBlockSelectionState
 
 class Sequencer;
 struct GraphState;
@@ -233,7 +234,7 @@ public:
 
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
                             std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo, 
-                            std::map<boost::shared_ptr<SequencerEntryBlock>, int> selectedEntryBlocks);
+                            EntryBlockSelectionState &entryBlockSelectionState);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
@@ -268,9 +269,9 @@ public:
 
     boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock() const;
     boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection); //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
-    void updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &currentlySelectedEntryOriginalStartTicks,
-                                            std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &currentlySelectedEntryBlocks,            
-                                            std::set<boost::shared_ptr<SequencerEntryBlock> > &origSelectedEntryBlocks,
+    void updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks, //FIXME: Should be using references
+                                            std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks,            
+                                            std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks,
                                             gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,
                                             int areaWidth, int areaHeight);
     void clearSelectedEntryBlock();

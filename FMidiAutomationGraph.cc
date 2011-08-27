@@ -432,6 +432,105 @@ int determineTickCountGroupSize(int ticksPerPixel)
 
 }//anonymous namespace
 
+bool EntryBlockSelectionState::HasSelected()
+{
+    return (currentlySelectedEntryBlocks.empty() == false);
+}//HasSelected
+
+boost::shared_ptr<SequencerEntryBlock> EntryBlockSelectionState::GetFirstEntryBlock()
+{
+    if (HasSelected() == true) {
+        return ((*currentlySelectedEntryBlocks.begin()).second);
+    } else {
+        return boost::shared_ptr<SequencerEntryBlock>();
+    }//if
+}//GetFirstEntryBlock
+
+void EntryBlockSelectionState::ClearSelected()
+{
+std::cout << "ClearSelected" << std::endl;
+    currentlySelectedEntryBlocks.clear();
+    currentlySelectedEntryOriginalStartTicks.clear();
+}//ClearSelected
+
+std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetEntryBlocksMapCopy()
+{
+    return currentlySelectedEntryBlocks;
+}//GetEntryBlocksMapCopy
+
+bool EntryBlockSelectionState::IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
+        return true;
+    } else {
+        return false;
+    }//if
+}//IsSelected
+
+void EntryBlockSelectionState::ResetRubberbandingSelection()
+{
+    origSelectedEntryBlocks.clear();
+
+    for (auto entryBlockIter = currentlySelectedEntryOriginalStartTicks.begin(); 
+            entryBlockIter != currentlySelectedEntryOriginalStartTicks.end(); ++entryBlockIter) {
+        origSelectedEntryBlocks.insert(entryBlockIter->first);
+    }//for
+}//ResetRubberbandingSelection
+
+std::set<boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()
+{
+    return origSelectedEntryBlocks;
+}//GetOrigSelectedEntryBlocksCopy
+
+int EntryBlockSelectionState::GetNumSelected()
+{
+    return currentlySelectedEntryBlocks.size();
+}//GetNumSelected
+
+int EntryBlockSelectionState::GetOriginalStartTick(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
+        return currentlySelectedEntryOriginalStartTicks[entryBlock];
+    } else {
+        return 0;
+    }//if
+}//GetOriginalStartTick
+
+std::map<boost::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()
+{
+    return currentlySelectedEntryOriginalStartTicks;
+}//GetEntryOriginalStartTicksCopy
+
+std::pair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()
+{
+    return std::make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
+}//GetCurrentlySelectedEntryBlocks
+
+void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &origStartTicks)
+{
+std::cout << "SetCurrentlySelectedEntryOriginalStartTicks" << std::endl;
+
+    currentlySelectedEntryOriginalStartTicks = origStartTicks;
+}//SetCurrentlySelectedEntryOriginalStartTicks
+
+void EntryBlockSelectionState::AddSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getStartTick();
+    currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
+}//AddSelectedEntryBlock
+
+void EntryBlockSelectionState::RemoveSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+{
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator tickIter = currentlySelectedEntryOriginalStartTicks.find(entryBlock);
+    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryIter = currentlySelectedEntryBlocks.find(entryBlock->getStartTick());
+
+    assert(tickIter != currentlySelectedEntryOriginalStartTicks.end());
+    assert(entryIter != currentlySelectedEntryBlocks.end());
+
+    currentlySelectedEntryOriginalStartTicks.erase(tickIter);
+    currentlySelectedEntryBlocks.erase(entryIter);
+}//RemoveSelectedEntryBlock
+
 void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
     std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
@@ -460,8 +559,10 @@ std::cout << std::endl << std::endl;
     int lastTimePixel = std::numeric_limits<int>::min();
     int lastValuePixel = std::numeric_limits<int>::min();
 
-    int maxEntryBlockValue = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->maxValue;
-    int minEntryBlockValue = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl()->minValue;
+    boost::shared_ptr<SequencerEntryBlock> firstSelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
+
+    int maxEntryBlockValue = firstSelectedEntryBlock->getOwningEntry()->getImpl()->maxValue;
+    int minEntryBlockValue = firstSelectedEntryBlock->getOwningEntry()->getImpl()->minValue;
     
     int tickValuesSize = graphState.verticalPixelTickValues.size();
     for (int index = 0; index < tickValuesSize; ++index) {
@@ -725,7 +826,7 @@ std::cout << (firstKeyframe == keyPair.second) << " - " << ((nextKeyIter != curK
 std::cout << "selectedRectX size: " << selectedRectX.size() << std::endl;
 
     if (selectedRectX.empty() == false) { // != std::numeric_limits<int>::min()) {
-        for (int index = 0; index < selectedRectX.size(); ++index) {
+        for (unsigned int index = 0; index < selectedRectX.size(); ++index) {
             context->set_source_rgba(0.0, 0.8, 0.0, 0.7);
 
             context->reset_clip();
@@ -811,7 +912,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//foreach
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl();
+        const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
@@ -861,7 +962,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//if
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        graphState.getCurrentlySelectedEntryBlock()->renderCurves(context, graphState, drawingAreaWidth, drawingAreaHeight);
+        graphState.entryBlockSelectionState.GetFirstEntryBlock()->renderCurves(context, graphState, drawingAreaWidth, drawingAreaHeight);
         drawLeftBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
     }//if
 
@@ -936,14 +1037,16 @@ GraphState::~GraphState()
     //Nothing
 }//destructor
 
-boost::shared_ptr<SequencerEntryBlock> GraphState::getCurrentlySelectedEntryBlock()
+/*
+boost::shared_ptr<SequencerEntryBlock> GraphState::getFirstCurrentlySelectedEntryBlock()
 {
-    if (currentlySelectedEntryBlocks.empty() == true) {
+    if (entryBlockSelectionState.HasSelected() == false) {
         return boost::shared_ptr<SequencerEntryBlock>();
     } else {
-        return ((*currentlySelectedEntryBlocks.begin()).second);
+        return entryBlockSelectionState.GetFirstEntryBlock();
     }//if
 }//getCurrentlySelectedEntryBlock
+*/
 
 void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
@@ -952,7 +1055,7 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
     }//if
 
     if (std::numeric_limits<double>::max() == valuesPerPixel) {
-        const boost::shared_ptr<SequencerEntryImpl> entryImpl = getCurrentlySelectedEntryBlock()->getOwningEntry()->getImpl();
+        const boost::shared_ptr<SequencerEntryImpl> entryImpl = entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
@@ -1029,8 +1132,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 
     int zeroithTickCount = 0;
-    if ((displayMode == DisplayMode::Curve) && (getCurrentlySelectedEntryBlock() != NULL)) {
-        zeroithTickCount = getCurrentlySelectedEntryBlock()->getStartTick();
+    if ((displayMode == DisplayMode::Curve) && (entryBlockSelectionState.GetFirstEntryBlock() != NULL)) {
+        zeroithTickCount = entryBlockSelectionState.GetFirstEntryBlock()->getStartTick();
     }//if
 
     int realZeroithTickPixel = std::numeric_limits<int>::max();

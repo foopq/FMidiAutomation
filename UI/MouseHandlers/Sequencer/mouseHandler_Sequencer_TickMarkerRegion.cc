@@ -34,7 +34,7 @@ void FMidiAutomationMainWindow::handleSequencerTickMarkerRegionLMBPress(gdouble 
 
             if (graphState.displayMode == DisplayMode::Sequencer) {
                 sequencer->clearSelectedEntryBlock();
-                graphState.currentlySelectedEntryBlocks.clear();
+                graphState.entryBlockSelectionState.ClearSelected();
             }//if
         }//if
 

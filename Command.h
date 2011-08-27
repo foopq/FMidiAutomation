@@ -72,9 +72,9 @@ struct MoveSequencerEntryBlockCommand : public Command
     std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
-    MoveSequencerEntryBlockCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks,
-                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryOriginalStartTicks,
-                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryNewStartTicks);
+    MoveSequencerEntryBlockCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks,
+                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks, //FIXME: This should be a reference
+                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks);
 
     ~MoveSequencerEntryBlockCommand();
 
@@ -110,7 +110,8 @@ struct DeleteSequencerEntryBlocksCommand : public Command
 {
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
-    DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks);
+    //FIXME: This shouldn't be a copy, but a reference!
+    DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks);
     ~DeleteSequencerEntryBlocksCommand();
 
     void doAction();

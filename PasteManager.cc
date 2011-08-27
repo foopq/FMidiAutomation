@@ -67,7 +67,7 @@ void PasteManager::setNewCommand(boost::shared_ptr<PasteCommand> command_)
     }//if
 }//setNewCommand
 
-PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_)
+PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks_)
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -164,7 +164,7 @@ void PasteSequencerKeyframesCommand::doPaste()
         return;
     }//if
 
-    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->getCurrentlySelectedEntryBlock();
+    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
     if (currentlySelectedEntryBlock == NULL) {
         return;
     }//if

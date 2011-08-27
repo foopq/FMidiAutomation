@@ -359,7 +359,7 @@ void DeleteSequencerEntryBlockCommand::undoAction()
 }//undoAction/*}}}*/
 
 //DeleteSequencerEntryBlocksCommand
-DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
+DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -415,9 +415,9 @@ void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
 
 //MoveSequencerEntryBlockCommand
 MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(/*{{{*/
-                                                                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks_,
-                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryOriginalStartTicks_,
-                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> &entryNewStartTicks_) : Command("Move Sequencer Entry Block")
+                                                                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks_,
+                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks_,
+                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks_) : Command("Move Sequencer Entry Block")
 {
     entryBlocks = entryBlocks_;
 

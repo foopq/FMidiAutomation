@@ -1384,9 +1384,9 @@ if (selectedEntryBlock == NULL) {
     return boost::shared_ptr<SequencerEntryBlock>();
 }//getSelectedEntryBlock
 
-void Sequencer::updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &currentlySelectedEntryOriginalStartTicks,
-                                        std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &currentlySelectedEntryBlocks,
-                                        std::set<boost::shared_ptr<SequencerEntryBlock> > &origSelectedEntryBlocks,
+void Sequencer::updateSelectedEntryBlocksInRange(std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks,
+                                        std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks,
+                                        std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks,
                                         gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY,
                                         int areaWidth, int areaHeight)
 {
@@ -1648,7 +1648,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 //std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
 
             mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, 
-                                            globals.graphState->currentlySelectedEntryOriginalStartTicks);
+                                            globals.graphState->entryBlockSelectionState);
             
             context->reset_clip();
             context->rectangle(0, relativeStartY, 100, relativeEndY);
@@ -1672,7 +1672,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
 void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
                                         std::vector<SequencerEntryBlockSelectionInfo> &selectionInfos,
-                                        std::map<boost::shared_ptr<SequencerEntryBlock>, int> selectedEntryBlocks)
+                                        EntryBlockSelectionState &entryBlockSelectionState)
 
 {
     Globals &globals = Globals::Instance();
@@ -1736,7 +1736,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 
         context->paint();
 
-        if (selectedEntryBlocks.find(entryBlockIter->second) != selectedEntryBlocks.end()) {
+        if (entryBlockSelectionState.IsSelected(entryBlockIter->second) == true) {
             context->set_source_rgba(1.0, 1.0, 0.0, 0.8);
             context->set_line_cap(Cairo::LINE_CAP_ROUND);
             context->move_to(relativeStartX, relativeStartY + 10);

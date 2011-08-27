@@ -96,6 +96,36 @@ enum UIThreadOperation
 };//UIThreadOperation
 }//UIThreadOperation
 
+class EntryBlockSelectionState
+{
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
+    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
+    std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks; //for rubberbanding
+
+public:
+    EntryBlockSelectionState() {}
+    ~EntryBlockSelectionState() {}
+
+    bool HasSelected();
+    bool IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    void ClearSelected();
+    void ResetRubberbandingSelection();
+
+    int GetNumSelected();
+    boost::shared_ptr<SequencerEntryBlock> GetFirstEntryBlock();
+    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > GetEntryBlocksMapCopy();
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
+    std::set<boost::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
+    int GetOriginalStartTick(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+
+    std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
+
+    void SetCurrentlySelectedEntryOriginalStartTicks(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &origStartTicks); //FIXME: This feels very questionable
+
+    void AddSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    void RemoveSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+};//EntryBlockSelectionState
+
 struct GraphState
 {    
     double baseOffsetX; //when actively scrolling
@@ -131,12 +161,12 @@ struct GraphState
     int leftMarkerTickXPixel;
     int rightMarkerTickXPixel;
 
+    EntryBlockSelectionState entryBlockSelectionState;
+    ///boost::shared_ptr<SequencerEntryBlock> getCurrentlySelectedEntryBlock(); -- replaced by entryBlockSelectionState.GetFirstEntryBlock()
+
     bool didMoveKey;
     bool didMoveKeyOutTangent;
     bool didMoveKeyInTangent;
-
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
 
     boost::shared_ptr<Keyframe> selectedKey; //mostly useful for who owns the selected tangent grab handle
     std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
@@ -149,13 +179,10 @@ struct GraphState
     //Rubberband selection stuff
     bool doingRubberBanding;
     std::set<boost::shared_ptr<Keyframe> > origSelectedKeyframes;
-    std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks;
-
+    
     GraphState();
     ~GraphState();
     void doInit();
-
-    boost::shared_ptr<SequencerEntryBlock> getCurrentlySelectedEntryBlock();
 
     void refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight);
     void refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight);

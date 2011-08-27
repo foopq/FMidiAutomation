@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Animation.h"
 #include "Command.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 
 namespace
 {
@@ -56,18 +57,15 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
             menuCopy->set_sensitive(false);
             menuCut->set_sensitive(false);
 
-            graphState.currentlySelectedEntryBlocks.clear();
-            graphState.currentlySelectedEntryOriginalStartTicks.clear();
+            graphState.entryBlockSelectionState.ClearSelected();
 
             graphState.doingRubberBanding = true;
         } else {
             graphState.selectedEntity = SequencerEntrySelection;
 
-            if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
-                graphState.currentlySelectedEntryOriginalStartTicks.clear();
-                graphState.currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getStartTick();
-                graphState.currentlySelectedEntryBlocks.clear();
-                graphState.currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
+            if (graphState.entryBlockSelectionState.IsSelected(entryBlock) == false) {
+                graphState.entryBlockSelectionState.ClearSelected();
+                graphState.entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
 
                 positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
 
@@ -83,18 +81,10 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
         boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
 
         if (entryBlock != NULL) {
-            if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
-                graphState.currentlySelectedEntryOriginalStartTicks[entryBlock] = entryBlock->getStartTick();
-                graphState.currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
+            if (graphState.entryBlockSelectionState.IsSelected(entryBlock) == false) {
+                graphState.entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
             } else {
-                std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator tickIter = graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock);
-                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryIter = graphState.currentlySelectedEntryBlocks.find(entryBlock->getStartTick());
-
-                assert(tickIter != graphState.currentlySelectedEntryOriginalStartTicks.end());
-                assert(entryIter != graphState.currentlySelectedEntryBlocks.end());
-
-                graphState.currentlySelectedEntryOriginalStartTicks.erase(tickIter);
-                graphState.currentlySelectedEntryBlocks.erase(entryIter);
+                graphState.entryBlockSelectionState.RemoveSelectedEntryBlock(entryBlock);
             }//if
         } else {
             graphState.doingRubberBanding = true;
@@ -102,12 +92,17 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
     }//if
 
     if (true == graphState.doingRubberBanding) {
-        graphState.origSelectedEntryBlocks.clear();
-        for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator entryBlockIter = graphState.currentlySelectedEntryOriginalStartTicks.begin(); 
-            entryBlockIter != graphState.currentlySelectedEntryOriginalStartTicks.end(); ++entryBlockIter) {
-            graphState.origSelectedEntryBlocks.insert(entryBlockIter->first);
-        }//for
+        graphState.entryBlockSelectionState.ResetRubberbandingSelection();
     }//if
+
+    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
+    BOOST_FOREACH (auto blockIter, graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
+        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second;
+
+        entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
+    }//for
+
+    graphState.entryBlockSelectionState.SetCurrentlySelectedEntryOriginalStartTicks(entryNewStartTicks);
 }//handleSequencerMainCanvasLMBPress
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasMMBPress()
@@ -124,17 +119,16 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
     boost::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
 
     if (entryBlock != NULL) {
-        if (graphState.currentlySelectedEntryOriginalStartTicks.find(entryBlock) == graphState.currentlySelectedEntryOriginalStartTicks.end()) {
+        if (graphState.entryBlockSelectionState.IsSelected(entryBlock) == false) {
             std::cout << "adding new entry block 2" << std::endl;
 
-            graphState.currentlySelectedEntryOriginalStartTicks[entryBlock] = entryBlock->getStartTick();
-            graphState.currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
+            graphState.entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
         }//if
 
         //Context menu to delete entry
         
         m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock));
-        if (graphState.currentlySelectedEntryBlocks.size() > 1) {
+        if (graphState.entryBlockSelectionState.GetNumSelected() > 1) {
             m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete All Selected Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks));
         }//if
         m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
@@ -214,9 +208,11 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
         */
 
         std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
-        for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); 
-                    blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
-            boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        //for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); 
+        //            blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
+        
+        BOOST_FOREACH (auto blockIter, graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
+            boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second;
 
             entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
 
@@ -228,9 +224,11 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
 //          graphState.currentlySelectedEntryBlocks[blockIter->second] = blockIter->first;
 //      }//for
 
-        boost::shared_ptr<Command> moveSequencerEntryBlockCommand(new MoveSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks, graphState.currentlySelectedEntryOriginalStartTicks, entryNewStartTicks));
+        boost::shared_ptr<Command> moveSequencerEntryBlockCommand(
+                new MoveSequencerEntryBlockCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy(), 
+                                                    graphState.entryBlockSelectionState.GetEntryOriginalStartTicksCopy(), entryNewStartTicks));
         CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand, true);
-        graphState.currentlySelectedEntryOriginalStartTicks = entryNewStartTicks;
+        graphState.entryBlockSelectionState.SetCurrentlySelectedEntryOriginalStartTicks(entryNewStartTicks); //XXX: Is this necessary here?
     }//if
 }//handleSequencerMainCanvasLMBRelease
 
@@ -266,13 +264,14 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
             int diffTick = graphState.verticalPixelTickValues[curX] - graphState.verticalPixelTickValues[mousePressDownX];
 
             int firstCurTick = std::numeric_limits<int>::min();
-            for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
-                int curTick = graphState.currentlySelectedEntryOriginalStartTicks[blockIter->second] + diffTick;
+            //for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState.currentlySelectedEntryBlocks.begin(); blockIter != graphState.currentlySelectedEntryBlocks.end(); ++blockIter) {
+            BOOST_FOREACH (auto blockIter, graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
+                int curTick = graphState.entryBlockSelectionState.GetOriginalStartTick(blockIter.second) + diffTick;
 
 //            std::cout << "x: " << curX << std::endl;
 //            std::cout << "diffTick: " << diffTick << "   --  curTick: " << curTick << std::endl;
 
-                (blockIter->second)->moveBlock(curTick);
+                (blockIter.second)->moveBlock(curTick);
 
                 if (std::numeric_limits<int>::min() == firstCurTick) {
                     firstCurTick = curTick;
@@ -285,8 +284,9 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
     }//if
 
     if (true == graphState.doingRubberBanding) {
-        sequencer->updateSelectedEntryBlocksInRange(graphState.currentlySelectedEntryOriginalStartTicks, graphState.currentlySelectedEntryBlocks, 
-                                                    graphState.origSelectedEntryBlocks, mousePressDownX, mousePressDownY, xPos, yPos,
+        sequencer->updateSelectedEntryBlocksInRange(graphState.entryBlockSelectionState.GetEntryOriginalStartTicksCopy(), 
+                                                    graphState.entryBlockSelectionState.GetEntryBlocksMapCopy(), 
+                                                    graphState.entryBlockSelectionState.GetOrigSelectedEntryBlocksCopy(), mousePressDownX, mousePressDownY, xPos, yPos,
                                                     drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerMainCanvasMouseMove

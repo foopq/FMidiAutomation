@@ -917,7 +917,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey
         int curTick = boost::lexical_cast<int>(positionTickEntry->get_text());
         if (curTick >= 0) {
             curTick = std::max(0, curTick);
-            graphState.getCurrentlySelectedEntryBlock()->moveBlock(curTick);
+            graphState.entryBlockSelectionState.GetFirstEntryBlock()->moveBlock(curTick);
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -950,8 +950,8 @@ void FMidiAutomationMainWindow::on_menuCopy()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
         PasteManager::Instance().setPasteOnly(false);
-        if (graphState.currentlySelectedEntryBlocks.empty() == false) {
-            boost::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(graphState.currentlySelectedEntryBlocks));
+        if (graphState.entryBlockSelectionState.HasSelected() == true) {
+            boost::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
             PasteManager::Instance().setNewCommand(pasteSequencerEntryBlocksCommand);
         }//if
     } else {
@@ -966,7 +966,7 @@ void FMidiAutomationMainWindow::on_menuCopy()
 void FMidiAutomationMainWindow::on_menuCut()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
-        if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+        if (graphState.entryBlockSelectionState.HasSelected() == true) {
             on_menuCopy();
             handleDeleteSequencerEntryBlocks();
         }//if
@@ -981,7 +981,7 @@ void FMidiAutomationMainWindow::on_menuCut()
 void FMidiAutomationMainWindow::on_handleDelete()
 {
     if (graphState.displayMode == DisplayMode::Sequencer) {
-        if (graphState.currentlySelectedEntryBlocks.empty() == false) {
+        if (graphState.entryBlockSelectionState.HasSelected() == true) {
             handleDeleteSequencerEntryBlocks();
         }//if
     } else {
@@ -1015,7 +1015,7 @@ void FMidiAutomationMainWindow::on_menuQuit()
 
 void FMidiAutomationMainWindow::on_menuSplitEntryBlock()
 {
-    if (graphState.getCurrentlySelectedEntryBlock() == NULL) {
+    if (graphState.entryBlockSelectionState.HasSelected() == false) {
         return;
     }//if
 
@@ -1180,7 +1180,7 @@ void FMidiAutomationMainWindow::on_menuOpen()
             break;
     }//switch 
 
-    graphState.currentlySelectedEntryBlocks.clear();
+    graphState.entryBlockSelectionState.ClearSelected();
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
@@ -1225,8 +1225,8 @@ void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
     }//if
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        if (graphState.getCurrentlySelectedEntryBlock() != NULL) {
-            double sampledValueBase = graphState.getCurrentlySelectedEntryBlock()->getOwningEntry()->sample(graphState.curPointerTick);
+        if (graphState.entryBlockSelectionState.HasSelected() == true) {
+            double sampledValueBase = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->sample(graphState.curPointerTick);
             int sampledValue = sampledValueBase + 0.5;
             if (sampledValueBase < 0) {
                 sampledValue = sampledValueBase - 0.5;
@@ -1361,8 +1361,8 @@ void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
 void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
 {
     //boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    if (graphState.currentlySelectedEntryBlocks.empty() == false) {
-        boost::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(graphState.currentlySelectedEntryBlocks));
+    if (graphState.entryBlockSelectionState.HasSelected() == true) {
+        boost::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
         CommandManager::Instance().setNewCommand(deleteSequencerEntryBlocksCommand, true);
 
         graphDrawingArea->queue_draw();
@@ -1371,17 +1371,15 @@ void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
 
 void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock()
 {
-    if (graphState.currentlySelectedEntryBlocks.empty() == true) {
+    if (graphState.entryBlockSelectionState.HasSelected() == true) {
         return;
     }//if
 
     //boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    if (graphState.currentlySelectedEntryBlocks.empty() == false) {
-        boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.currentlySelectedEntryBlocks.begin()->second));
-        CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
+    boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.entryBlockSelectionState.GetFirstEntryBlock()));
+    CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
 
-        graphDrawingArea->queue_draw();
-    }//if
+    graphDrawingArea->queue_draw();
 }//handleDeleteSequencerEntryBlock
 
 void FMidiAutomationMainWindow::handleSequencerEntryProperties()

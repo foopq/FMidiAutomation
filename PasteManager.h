@@ -55,7 +55,7 @@ struct PasteSequencerEntryBlocksCommand : public PasteCommand
 {
     std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
-    PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > &entryBlocks);
+    PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerEntryBlocksCommand();
 
     void doPaste();
