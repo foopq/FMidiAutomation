@@ -349,6 +349,14 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
             CommandManager::Instance().setNewCommand(moveKeyframeCommand, true);
         }//if
     }//if
+
+    if (graphState.keyframeSelectionState.HasSelected() == true) {
+        menuCopy->set_sensitive(true);
+        menuCut->set_sensitive(true);
+    } else {
+        menuCopy->set_sensitive(false);
+        menuCut->set_sensitive(false);
+    }//if
 }//handleCurveEditorMainCanvasLMBRelease
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMMBRelease()

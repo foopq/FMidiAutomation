@@ -236,6 +236,14 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
 
         graphState.entryBlockSelectionState.SetCurrentlySelectedEntryOriginalStartTicks(entryNewStartTicks); //XXX: Is this necessary here?
     }//if
+
+    if (graphState.entryBlockSelectionState.HasSelected() == true) {
+        menuCopy->set_sensitive(true);
+        menuCut->set_sensitive(true);
+    } else {
+        menuCopy->set_sensitive(false);
+        menuCut->set_sensitive(false);
+    }//if
 }//handleSequencerMainCanvasLMBRelease
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasMMBRelease()

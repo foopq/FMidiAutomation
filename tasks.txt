@@ -1,5 +1,13 @@
+- rubberbanding doesn't enable copy/cut
+
+- paste of multiple entry blocks is done one at a time, not as group
+
+- cut/copy/paste have context in menu?
+    -> don't use set_sensitive directly, but have a function that takes a string for true
+
 - undo/redo needs to consider sequencer/curve editor mode
     - have two undo/redo stacks, delegate based on current mode, update menus when switching modes
+    - seperate stacks for sequencer and each entry block's curve editor? -- i think so
 
 - add unit testing
     -> some sort of macro ui recording?
@@ -13,7 +21,6 @@
 - ability to reset key tangents (context menu, regular menu? main ui+?)
 - ability to lock tangents (context menu, regular menu? main ui+?)
 
-- rubberband selection (sequencer and curve editor)
 - faint row coloured background per entry block in sequencer
 - entry block colour selection
 - icon for app (and all dialogs?)
