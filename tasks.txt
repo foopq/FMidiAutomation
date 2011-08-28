@@ -1,9 +1,10 @@
-- rubberbanding doesn't enable copy/cut
+- boost::shared_ptr to std::shared_ptr
 
-- paste of multiple entry blocks is done one at a time, not as group
+- sequencer should show entry block properties directly in ui.. hiding/replacing "Selected Keyframe" bits
 
 - cut/copy/paste have context in menu?
     -> don't use set_sensitive directly, but have a function that takes a string for true
+    -> perhaps let the paste manager handle it?
 
 - undo/redo needs to consider sequencer/curve editor mode
     - have two undo/redo stacks, delegate based on current mode, update menus when switching modes

@@ -336,6 +336,32 @@ void AddSequencerEntryBlockCommand::undoAction()
     entry->removeEntryBlock(entryBlock);
 }//undoAction/*}}}*/
 
+//AddSequencerEntryBlocksCommand
+AddSequencerEntryBlocksCommand::AddSequencerEntryBlocksCommand(std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> &entryBlocks_) : Command("Add Sequencer Entry Blocks")/*{{{*/
+{
+    entryBlocks.swap(entryBlocks_);
+}//constructor
+
+AddSequencerEntryBlocksCommand::~AddSequencerEntryBlocksCommand()
+{
+    //Nothing
+}//destructor
+
+void AddSequencerEntryBlocksCommand::doAction()
+{
+    BOOST_FOREACH (auto entryBlockIter, entryBlocks) {
+        entryBlockIter.first->addEntryBlock(entryBlockIter.second->getStartTick(), entryBlockIter.second);
+    }//foreach
+}//doAction
+
+void AddSequencerEntryBlocksCommand::undoAction()
+{
+    BOOST_FOREACH (auto entryBlockIter, entryBlocks) {
+        entryBlockIter.first->removeEntryBlock(entryBlockIter.second);
+    }//foreach
+}//undoAction/*}}}*/
+
+
 //DeleteSequencerEntryBlockCommand
 DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Delete Sequencer Entry Block")/*{{{*/
 {

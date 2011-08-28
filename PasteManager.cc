@@ -12,6 +12,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Sequencer.h"
 #include "Command.h"
 #include "Animation.h"
+#include <boost/foreach.hpp>
 
 PasteManager &PasteManager::Instance()
 {
@@ -92,23 +93,27 @@ void PasteSequencerEntryBlocksCommand::doPaste()
     int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
     int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
 
-    for (std::multimap<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
-        //boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
-        boost::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
+    std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
+    newEntryBlocks.reserve(entryBlocks.size());
+
+    BOOST_FOREACH (auto entryIter, entryBlocks) {
+        boost::shared_ptr<SequencerEntry> selectedEntry = entryIter.second->getOwningEntry();
 
         if (selectedEntry == NULL) {
             continue;
         }//if
 
-        int startTick = entryIter->second->getStartTick() + tickOffset;
+        int startTick = entryIter.second->getStartTick() + tickOffset;
 
-        boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, boost::shared_ptr<SequencerEntryBlock>()));
-        newEntryBlock->setTitle(entryIter->second->getTitle());
+        boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter.second));
+        newEntryBlock->setTitle(entryIter.second->getTitle());
+        newEntryBlock->cloneCurves(entryIter.second);
 
-        newEntryBlock->cloneCurves(entryIter->second);
-        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newEntryBlock));
-        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
+        newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlock));
     }//for
+
+    boost::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
+    CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPaste
 
 void PasteSequencerEntryBlocksCommand::doPasteInstance()
@@ -126,8 +131,10 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance()
     int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
     int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
 
+    std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
+    newEntryBlocks.reserve(entryBlocks.size());
+
     for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
-        //boost::shared_ptr<SequencerEntry> selectedEntry = globals.sequencer->getSelectedEntry();
         boost::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
 
         if (selectedEntry == NULL) {
@@ -139,11 +146,11 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance()
         boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter->second));
         newEntryBlock->setTitle(entryIter->second->getTitle() + " (Instance)");
 
-        //newEntryBlock->cloneCurves(entryIter->second); ?? do this here?
-        //FIXME: and clone the curves, etc... -- does this still make sense?
-        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, newEntryBlock));
-        CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
+        newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlock));
     }//for
+
+    boost::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
+    CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPasteInstance
 
 PasteSequencerKeyframesCommand::PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > keyframes_)

@@ -53,24 +53,26 @@ public:
 
 struct PasteSequencerEntryBlocksCommand : public PasteCommand
 {
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
-
     PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerEntryBlocksCommand();
 
     void doPaste();
     void doPasteInstance();
+
+private:    
+    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
 };//PasteSequencerEntryBlocksCommand
 
 struct PasteSequencerKeyframesCommand : public PasteCommand
 {
-    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
-
     PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerKeyframesCommand();
 
     void doPaste();
     void doPasteInstance();
+
+private:
+    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 };//PasteSequencerKeyframesCommand
 
 
