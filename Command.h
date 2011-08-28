@@ -246,7 +246,7 @@ struct DeleteKeyframesCommand : public Command
     boost::shared_ptr<SequencerEntryBlock> entryBlock;
     std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
+    DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, boost::shared_ptr<Keyframe> > keyframes);
     ~DeleteKeyframesCommand();
 
     void doAction();

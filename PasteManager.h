@@ -66,7 +66,7 @@ struct PasteSequencerKeyframesCommand : public PasteCommand
 {
     std::map<int, boost::shared_ptr<Keyframe> > keyframes;
 
-    PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes);
+    PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerKeyframesCommand();
 
     void doPaste();

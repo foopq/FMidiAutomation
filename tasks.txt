@@ -6,6 +6,8 @@
 
 - multiselect keys in curve window + entry blocks --> multi move, delete, etc
 
+- namespace everything
+
 - ensure next / prev tangents are adjusted correctly when adding keyframe (regardless of curve type on any of three)
 
 - ability to reset key tangents (context menu, regular menu? main ui+?)

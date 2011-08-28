@@ -790,8 +790,8 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
 
     curveEditor->getKeySelection(graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), false);
 
-    if (graphState.currentlySelectedKeyframes.empty() == false) {
-        curveEditor->setKeyUIValues(uiXml, graphState.currentlySelectedKeyframes.begin()->second);
+    if (graphState.keyframeSelectionState.HasSelected() == true) {
+        curveEditor->setKeyUIValues(uiXml, graphState.keyframeSelectionState.GetFirstKeyframe());
     } else {
         curveEditor->setKeyUIValues(uiXml, boost::shared_ptr<Keyframe>());
     }//if
@@ -956,8 +956,8 @@ void FMidiAutomationMainWindow::on_menuCopy()
         }//if
     } else {
         PasteManager::Instance().setPasteOnly(true);
-        if (graphState.currentlySelectedKeyframes.empty() == false) {
-            boost::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(graphState.currentlySelectedKeyframes));
+        if (graphState.keyframeSelectionState.HasSelected() == true) {
+            boost::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(graphState.keyframeSelectionState.GetSelectedKeyframesCopy()));
             PasteManager::Instance().setNewCommand(pasteSequencerKeyframesCommand);
         }//if
     }//if
@@ -971,7 +971,7 @@ void FMidiAutomationMainWindow::on_menuCut()
             handleDeleteSequencerEntryBlocks();
         }//if
     } else {
-        if (graphState.currentlySelectedKeyframes.empty() == false) {
+        if (graphState.keyframeSelectionState.HasSelected() == true) {
             on_menuCopy();
             curveEditor->handleDeleteKeyframes();
         }//if
@@ -985,7 +985,7 @@ void FMidiAutomationMainWindow::on_handleDelete()
             handleDeleteSequencerEntryBlocks();
         }//if
     } else {
-        if (graphState.currentlySelectedKeyframes.empty() == false) {
+        if (graphState.keyframeSelectionState.HasSelected() == true) {
             curveEditor->handleDeleteKeyframes();
         }//if
     }//if

@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Animation.h"
 #include "Command.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 
 namespace
 {
@@ -62,7 +63,7 @@ bool handleGraphValueScroll(gdouble yPos, GraphState &graphState, gdouble mouseP
 
 void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
 {
-    if (graphState.currentlySelectedKeyframes.empty() == true) {
+    if (graphState.keyframeSelectionState.HasSelected() == false) {
         //Should be impossible
         return;
     }//if
@@ -109,20 +110,19 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
     boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
 
     //Prevent dragging first key before start of entry block
-    if (graphState.movingKeyOrigTicks[graphState.currentlySelectedKeyframes.begin()->second] + diffTick + currentlySelectedEntryBlock->getStartTick() < currentlySelectedEntryBlock->getStartTick()) {
-        std::cout << "exit 1: " << graphState.movingKeyOrigTicks[graphState.currentlySelectedKeyframes.begin()->second] << " - " << graphState.movingKeyOrigTicks[graphState.currentlySelectedKeyframes.begin()->second] + diffTick << std::endl;
+    if (graphState.keyframeSelectionState.GetOrigTick(graphState.keyframeSelectionState.GetFirstKeyframe()) + diffTick + currentlySelectedEntryBlock->getStartTick() < currentlySelectedEntryBlock->getStartTick()) {
+        std::cout << "exit 1: " << graphState.keyframeSelectionState.GetOrigTick(graphState.keyframeSelectionState.GetFirstKeyframe()) << " - " 
+                                << graphState.keyframeSelectionState.GetOrigTick(graphState.keyframeSelectionState.GetFirstKeyframe()) + diffTick << std::endl;
         return;
     }//if
 
     std::map<int, boost::shared_ptr<Keyframe> > updatedCurrentlySelectedKeyframes;
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
-         keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
-        
-        boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
+    BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedEntryBlocks()) {
+        boost::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
-        int newTick = graphState.movingKeyOrigTicks[curKeyframe] + diffTick;
+        int newTick = graphState.keyframeSelectionState.GetOrigTick(curKeyframe) + diffTick;
 
-        double newValue = graphState.movingKeyOrigValues[curKeyframe] + diffValue;
+        double newValue = graphState.keyframeSelectionState.GetOrigValue(curKeyframe) + diffValue;
         newValue = std::max<double>(newValue, currentlySelectedEntryBlock->getOwningEntry()->getImpl()->minValue);
         newValue = std::min<double>(newValue, currentlySelectedEntryBlock->getOwningEntry()->getImpl()->maxValue);
 
@@ -135,7 +135,7 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
         //curKeyframe->tick += tickOffset;
         //curKeyframe->value += valueOffset;
 
-        std::cout << "curTick: " << curKeyframe->tick << std::endl;
+        //std::cout << "curTick: " << curKeyframe->tick << std::endl;
 
         //This checks to ensure we don't blow away another key when moving the current one
         if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(newTick + currentlySelectedEntryBlock->getStartTick()) == NULL) {
@@ -143,7 +143,7 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
             curKeyframe->tick = newTick;
             currentlySelectedEntryBlock->getCurve()->addKey(curKeyframe);
 
-            std::cout << " - newTick: " << curKeyframe->tick << std::endl;
+            //std::cout << " - newTick: " << curKeyframe->tick << std::endl;
         }//if
 
         curKeyframe->value = newValue;
@@ -155,14 +155,14 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
         graphState.didMoveKeyInTangent = true;
     }//for
 
-    graphState.currentlySelectedKeyframes.swap(updatedCurrentlySelectedKeyframes);
+    graphState.keyframeSelectionState.SetCurrentlySelectedKeyframes(updatedCurrentlySelectedKeyframes);
 
-std::cout << std::endl << std::endl;    
+//std::cout << std::endl << std::endl;    
 }//handleKeyScroll
 
 void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble mousePressDownX, gdouble mousePressDownY, int drawingAreaWidth, int drawingAreaHeight)
 {
-    if (graphState.currentlySelectedKeyframes.size() != 1) {
+    if (graphState.keyframeSelectionState.GetNumSelected() != 1) {
         return;
     }//if
 
@@ -175,7 +175,7 @@ void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, 
     int newTick = graphState.verticalPixelTickValues[eventX] - graphState.entryBlockSelectionState.GetFirstEntryBlock()->getStartTick();
     double newValue = graphState.horizontalPixelValues[eventY];
 
-    boost::shared_ptr<Keyframe> curKeyframe = graphState.selectedKey;
+    boost::shared_ptr<Keyframe> curKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
 
     if (InTangent == graphState.selectedEntity) {
         graphState.didMoveKeyInTangent = true;
@@ -200,11 +200,11 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBPress()
 
     boost::shared_ptr<Keyframe> selectedKey = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
-std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size() << " - " << ctrlCurrentlyPressed << std::endl;
+std::cout << "num selected keys: " << graphState.keyframeSelectionState.GetNumSelected() << " - " << ctrlCurrentlyPressed << std::endl;
 
     boost::shared_ptr<Keyframe> firstKey;
-    if (graphState.currentlySelectedKeyframes.empty() == false) {
-        firstKey = graphState.currentlySelectedKeyframes.begin()->second;
+    if (graphState.keyframeSelectionState.HasSelected() == true) {
+        firstKey = graphState.keyframeSelectionState.GetFirstKeyframe();
     }//if
 
     curveEditor->setKeyUIValues(uiXml, firstKey);
@@ -212,12 +212,8 @@ std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size
     if (selectedKey != NULL) {
         graphState.didMoveKey = false;
 
-        for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
-            keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
-        
-            boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
-            graphState.movingKeyOrigTicks[curKeyframe] = curKeyframe->tick; // - graphState.getCurrentlySelectedEntryBlock()->getStartTick();
-            graphState.movingKeyOrigValues[curKeyframe] = curKeyframe->value;
+        BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedEntryBlocks()) {
+            graphState.keyframeSelectionState.AddOrigKeyframe(keyIter.second);
         }//for
 
         menuCopy->set_sensitive(true);
@@ -232,11 +228,7 @@ std::cout << "num selected keys: " << graphState.currentlySelectedKeyframes.size
     (void)checkForTempoSelection(-100, datas->tempoChanges);
 
     if (true == graphState.doingRubberBanding) {
-        graphState.origSelectedKeyframes.clear();
-        for (std::map<int, boost::shared_ptr<Keyframe> >::iterator keyIter = graphState.currentlySelectedKeyframes.begin(); 
-            keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
-            graphState.origSelectedKeyframes.insert(keyIter->second);
-        }//for
+        graphState.keyframeSelectionState.ResetRubberbandingSelection();
     }//if
 }//handleCurveEditorMainCanvasLMBPress
 
@@ -255,8 +247,8 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
     curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
     boost::shared_ptr<Keyframe> firstKeyframe;
-    if (graphState.currentlySelectedKeyframes.empty() == false) {
-        firstKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
+    if (graphState.keyframeSelectionState.HasSelected() == true) {
+        firstKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
     }//if
 
     curveEditor->setKeyUIValues(uiXml, firstKeyframe);
@@ -336,22 +328,22 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
 
             //Move key back to where it was
             std::vector<boost::shared_ptr<MoveKeyframesCommand::KeyInfo> > keyInfos;
-            keyInfos.reserve(graphState.currentlySelectedKeyframes.size());
-            for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = graphState.currentlySelectedKeyframes.begin();
-                keyIter != graphState.currentlySelectedKeyframes.end(); ++keyIter) {
-        
-                boost::shared_ptr<Keyframe> curKeyframe = keyIter->second;
-                currentlySelectedEntryBlock->getCurve()->deleteKey(curKeyframe);
-                std::swap(curKeyframe->tick, graphState.movingKeyOrigTicks[curKeyframe]);
-                std::swap(curKeyframe->value, graphState.movingKeyOrigValues[curKeyframe]);
-                currentlySelectedEntryBlock->getCurve()->addKey(curKeyframe);
+            keyInfos.reserve(graphState.keyframeSelectionState.GetNumSelected());
+
+            BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedEntryBlocks()) {
+                boost::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
                 boost::shared_ptr<MoveKeyframesCommand::KeyInfo> keyInfo(new MoveKeyframesCommand::KeyInfo);
                 keyInfo->keyframe = curKeyframe;
-                keyInfo->movingKeyOrigTick = graphState.movingKeyOrigTicks[curKeyframe];
-                keyInfo->movingKeyOrigValue = graphState.movingKeyOrigValues[curKeyframe];
+                keyInfo->movingKeyOrigTick = curKeyframe->tick;
+                keyInfo->movingKeyOrigValue = curKeyframe->value;
                 keyInfos.push_back(keyInfo);
-            }//for
+
+                currentlySelectedEntryBlock->getCurve()->deleteKey(curKeyframe);
+                curKeyframe->tick = graphState.keyframeSelectionState.GetOrigTick(curKeyframe);
+                curKeyframe->value = graphState.keyframeSelectionState.GetOrigValue(curKeyframe);
+                currentlySelectedEntryBlock->getCurve()->addKey(curKeyframe);
+            }//foreach
 
             boost::shared_ptr<Command> moveKeyframeCommand(new MoveKeyframesCommand(currentlySelectedEntryBlock, keyInfos));
             CommandManager::Instance().setNewCommand(moveKeyframeCommand, true);
@@ -384,8 +376,8 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPo
         }//if
     } else {
         boost::shared_ptr<Keyframe> firstKeyframe;
-        if (graphState.currentlySelectedKeyframes.empty() == false) {
-            firstKeyframe = graphState.currentlySelectedKeyframes.begin()->second;
+        if (graphState.keyframeSelectionState.HasSelected() == true) {
+            firstKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
         }//if
 
         if (graphState.selectedEntity == KeyValue) {
@@ -400,8 +392,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPo
     }//if
 
     if (true == graphState.doingRubberBanding) {
-        curveEditor->updateSelectedKeyframesInRange(graphState.currentlySelectedKeyframes,
-                                                    graphState.origSelectedKeyframes, mousePressDownX, mousePressDownY, xPos, yPos,
+        curveEditor->updateSelectedKeyframesInRange(graphState.keyframeSelectionState, mousePressDownX, mousePressDownY, xPos, yPos,
                                                     drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerCurveEditorMouseMove

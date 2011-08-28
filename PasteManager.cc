@@ -146,7 +146,7 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance()
     }//for
 }//doPasteInstance
 
-PasteSequencerKeyframesCommand::PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > &keyframes_)
+PasteSequencerKeyframesCommand::PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > keyframes_)
 {
     keyframes = keyframes_;
 }//constructor

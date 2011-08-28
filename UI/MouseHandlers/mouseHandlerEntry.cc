@@ -431,7 +431,6 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
 
     if (true == shiftCurrentlyPressed) {
         graphState.doingRubberBanding = false;
-        std::cout << "doingRubberBanding = false" << std::endl;
     }//if
 
     MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState.displayMode);

@@ -128,6 +128,39 @@ public:
     void RemoveSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
 };//EntryBlockSelectionState
 
+class KeyframeSelectionState
+{
+    boost::shared_ptr<Keyframe> selectedKey; //mostly useful for who owns the selected tangent grab handle
+    std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
+    std::set<boost::shared_ptr<Keyframe> > origSelectedKeyframes;
+    std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
+    std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;
+
+public:
+    KeyframeSelectionState() {}
+    ~KeyframeSelectionState() {}
+
+    bool HasSelected();
+    void ClearSelectedKeyframes();
+    void ResetRubberbandingSelection();
+    bool IsSelected(boost::shared_ptr<Keyframe> keyframe);
+    bool IsOrigSelected(boost::shared_ptr<Keyframe> keyframe); //checks origSelectedKeyframes
+    int GetNumSelected();
+    boost::shared_ptr<Keyframe> GetFirstKeyframe();
+    int GetOrigTick(boost::shared_ptr<Keyframe> keyframe);
+    double GetOrigValue(boost::shared_ptr<Keyframe> keyframe);    
+
+    std::pair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedEntryBlocks();
+
+    std::map<int, boost::shared_ptr<Keyframe> > GetSelectedKeyframesCopy();
+
+    void SetCurrentlySelectedKeyframes(std::map<int, boost::shared_ptr<Keyframe> > &origSelectedKeyframes); //FIXME: This feels very questionable
+
+    void AddKeyframe(boost::shared_ptr<Keyframe> keyframe);
+    void AddOrigKeyframe(boost::shared_ptr<Keyframe> keyframe);
+    void RemoveKeyframe(boost::shared_ptr<Keyframe> keyframe);
+};//KeyframeSelectionState
+
 struct GraphState
 {    
     double baseOffsetX; //when actively scrolling
@@ -149,8 +182,6 @@ struct GraphState
     std::vector<double> horizontalPixelValues;
     std::vector<int> roundedHorizontalValues;
 
-    SelectedEntity selectedEntity;
-
     int curMousePosX;
     int curMousePosY;
 
@@ -163,24 +194,18 @@ struct GraphState
     int leftMarkerTickXPixel;
     int rightMarkerTickXPixel;
 
+    SelectedEntity selectedEntity;
     EntryBlockSelectionState entryBlockSelectionState;
-    ///boost::shared_ptr<SequencerEntryBlock> getCurrentlySelectedEntryBlock(); -- replaced by entryBlockSelectionState.GetFirstEntryBlock()
+    KeyframeSelectionState keyframeSelectionState;
 
     bool didMoveKey;
     bool didMoveKeyOutTangent;
     bool didMoveKeyInTangent;
 
-    boost::shared_ptr<Keyframe> selectedKey; //mostly useful for who owns the selected tangent grab handle
-    std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
-    std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
-    std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;
-
     DisplayMode::DisplayMode displayMode;
     int lastSequencerPointerTick; //for swaping back to the seqeucner
 
-    //Rubberband selection stuff
     bool doingRubberBanding;
-    std::set<boost::shared_ptr<Keyframe> > origSelectedKeyframes;
     
     GraphState();
     ~GraphState();

@@ -20,6 +20,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+#include "FMidiAutomationMainWindow.h" //FIXME: Refactor this.. Needed for KeyframeSelectionState
 
 class FMidiAutomationMainWindow;
 struct Keyframe;
@@ -51,8 +52,7 @@ public:
     boost::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
     void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<Keyframe> currentlySelectedKeyframe);
 
-    void updateSelectedKeyframesInRange(std::map<int, boost::shared_ptr<Keyframe> > &currentlySelectedKeyframes,
-                                            std::set<boost::shared_ptr<Keyframe> > &origSelectedKeyframes,
+    void updateSelectedKeyframesInRange(KeyframeSelectionState &keyframeSelectionState,
                                             gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,
                                             int areaWidth, int areaHeight);
 };//CurveEditor

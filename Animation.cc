@@ -282,10 +282,12 @@ boost::shared_ptr<Keyframe> Animation::getKeyframeAtTick(int tick)
 
     tick -= *startTick;
 
+    /*
     std::cout << "getKeyframeAtTick: " << tick << std::endl;
     for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator tmpIter = curKeyframes->begin(); tmpIter != curKeyframes->end(); ++tmpIter) {
         std::cout << "key at: " << tmpIter->first << std::endl;
     }//for
+    */
 
     std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->find(tick);
     if (keyIter != curKeyframes->end()) {

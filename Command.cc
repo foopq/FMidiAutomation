@@ -562,7 +562,7 @@ void AddKeyframesCommand::undoAction()
 
 //DeleteKeyframesCommand
 DeleteKeyframesCommand::DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
-                                                std::map<int, boost::shared_ptr<Keyframe> > &keyframes_) : Command("Delete Keyframe")
+                                                std::map<int, boost::shared_ptr<Keyframe> > keyframes_) : Command("Delete Keyframe")
 {
     entryBlock = entryBlock_;
     keyframes = keyframes_;

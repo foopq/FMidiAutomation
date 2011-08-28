@@ -233,6 +233,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
                 new MoveSequencerEntryBlockCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy(), 
                                                     graphState.entryBlockSelectionState.GetEntryOriginalStartTicksCopy(), entryNewStartTicks));
         CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand, true);
+
         graphState.entryBlockSelectionState.SetCurrentlySelectedEntryOriginalStartTicks(entryNewStartTicks); //XXX: Is this necessary here?
     }//if
 }//handleSequencerMainCanvasLMBRelease
