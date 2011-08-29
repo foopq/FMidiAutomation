@@ -23,6 +23,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/thread.hpp>
 #include <jack/transport.h>
 #include "SerializationHelper.h"
+#include "Config.h"
 
 struct TempoGlobals;
 class Sequencer;
@@ -38,6 +39,8 @@ struct Globals
     ~Globals();
 
     static Globals &Instance();
+
+    FMidiAutomationConfig config;
 
     std::string versionStr;
 

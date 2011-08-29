@@ -1,4 +1,6 @@
 - add recent file queue
+    -> on load/save update mru list
+    -> add mru list to menu
 
 - for some reason, somtimes entry blocks don't appear in the same order as saved
 
