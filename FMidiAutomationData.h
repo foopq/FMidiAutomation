@@ -11,21 +11,21 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __FMIDIAUTOMATIONDATA_H
 
 #include <gtkmm.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
 #include "Tempo.h"
+#include "SerializationHelper.h"
 
 struct FMidiAutomationData
 {
     Glib::ustring entryGlade;
-    std::map<int, boost::shared_ptr<Tempo> > tempoChanges; //int index is tick value (>= 0)
+    std::map<int, std::shared_ptr<Tempo> > tempoChanges; //int index is tick value (>= 0)
 
-    void addTempoChange(int tick, boost::shared_ptr<Tempo> tempo);
+    void addTempoChange(int tick, std::shared_ptr<Tempo> tempo);
     void removeTempoChange(int tick);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);

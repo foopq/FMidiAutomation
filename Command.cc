@@ -53,7 +53,7 @@ void CommandManager::doRedo()/*{{{*/
         return;
     }//if
 
-    boost::shared_ptr<Command> command = redoStack.top();
+    std::shared_ptr<Command> command = redoStack.top();
     redoStack.pop();
 
     if (redoStack.empty() == true) {
@@ -78,7 +78,7 @@ void CommandManager::doUndo()/*{{{*/
         return;
     }//if
 
-    boost::shared_ptr<Command> command = undoStack.top();
+    std::shared_ptr<Command> command = undoStack.top();
     undoStack.pop();
 
     if (undoStack.empty() == true) {
@@ -97,7 +97,7 @@ void CommandManager::doUndo()/*{{{*/
     mainWindow->queue_draw();
 }//doUndo/*}}}*/
 
-void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool applyCommand)/*{{{*/
+void CommandManager::setNewCommand(std::shared_ptr<Command> command, bool applyCommand)/*{{{*/
 {
     while (redoStack.empty() == false) {
         redoStack.pop();
@@ -120,7 +120,7 @@ void CommandManager::setNewCommand(boost::shared_ptr<Command> command, bool appl
 }//setNewcommand/*}}}*/
 
 //UpdateTempoChangeCommand
-UpdateTempoChangeCommand::UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,/*{{{*/
+UpdateTempoChangeCommand::UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,/*{{{*/
                                                     unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData_) : Command("Update Tempo Change")
 {
     old_bpm = new_bpm;
@@ -150,8 +150,8 @@ void UpdateTempoChangeCommand::undoAction()
 }//undoAction/*}}}*/
 
 //AddTempoChangeCommand
-AddTempoChangeCommand::AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_,/*{{{*/
-                                                boost::shared_ptr<FMidiAutomationData> datas_,
+AddTempoChangeCommand::AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_,/*{{{*/
+                                                std::shared_ptr<FMidiAutomationData> datas_,
                                                 boost::function<void (void)> updateTempoChangesUIData_) : Command("Add Tempo Change")
 {
     datas = datas_;
@@ -181,7 +181,7 @@ void AddTempoChangeCommand::undoAction()
 
 //DeleteTempoChangeCommand
 DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,/*{{{*/
-                                                    boost::shared_ptr<FMidiAutomationData> datas_,
+                                                    std::shared_ptr<FMidiAutomationData> datas_,
                                                     boost::function<void (void)> updateTempoChangesUIData_) : Command("Delete Tempo Change")
 {
     datas = datas_;
@@ -213,7 +213,7 @@ void DeleteTempoChangeCommand::undoAction()
 }//undoAction/*}}}*/
 
 //AddSequencerEntryCommand
-AddSequencerEntryCommand::AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, bool useDefaults_) : Command("Add Sequencer Entry")/*{{{*/
+AddSequencerEntryCommand::AddSequencerEntryCommand(std::shared_ptr<Sequencer> sequencer_, bool useDefaults_) : Command("Add Sequencer Entry")/*{{{*/
 {
     sequencer = sequencer_;
     useDefaults = useDefaults_;
@@ -239,7 +239,7 @@ void AddSequencerEntryCommand::undoAction()
 }//undoAction/*}}}*/
 
 //DeleteSequencerEntryCommand
-DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Delete Sequencer Entry")/*{{{*/
+DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(std::shared_ptr<Sequencer> sequencer_, std::shared_ptr<SequencerEntry> entry_) : Command("Delete Sequencer Entry")/*{{{*/
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -262,7 +262,7 @@ void DeleteSequencerEntryCommand::undoAction()
 }//undoAction/*}}}*/
 
 //SequencerEntryUpCommand
-SequencerEntryUpCommand::SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Up")/*{{{*/
+SequencerEntryUpCommand::SequencerEntryUpCommand(std::shared_ptr<Sequencer> sequencer_, std::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Up")/*{{{*/
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -287,7 +287,7 @@ void SequencerEntryUpCommand::undoAction()
 }//undoAction/*}}}*/
 
 //SequencerEntryDownCommand
-SequencerEntryDownCommand::SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer_, boost::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Down")/*{{{*/
+SequencerEntryDownCommand::SequencerEntryDownCommand(std::shared_ptr<Sequencer> sequencer_, std::shared_ptr<SequencerEntry> entry_) : Command("Sequencer Entry Down")/*{{{*/
 {
     sequencer = sequencer_;
     entry = entry_;
@@ -312,7 +312,7 @@ void SequencerEntryDownCommand::undoAction()
 }//undoAction/*}}}*/
 
 //AddSequencerEntryBlockCommand
-AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Add Sequencer Entry Block")/*{{{*/
+AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(std::shared_ptr<SequencerEntry> entry_, std::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Add Sequencer Entry Block")/*{{{*/
 {
     entry = entry_;
     entryBlock = entryBlock_;
@@ -337,7 +337,7 @@ void AddSequencerEntryBlockCommand::undoAction()
 }//undoAction/*}}}*/
 
 //AddSequencerEntryBlocksCommand
-AddSequencerEntryBlocksCommand::AddSequencerEntryBlocksCommand(std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> &entryBlocks_) : Command("Add Sequencer Entry Blocks")/*{{{*/
+AddSequencerEntryBlocksCommand::AddSequencerEntryBlocksCommand(std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> &entryBlocks_) : Command("Add Sequencer Entry Blocks")/*{{{*/
 {
     entryBlocks.swap(entryBlocks_);
 }//constructor
@@ -363,7 +363,7 @@ void AddSequencerEntryBlocksCommand::undoAction()
 
 
 //DeleteSequencerEntryBlockCommand
-DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Delete Sequencer Entry Block")/*{{{*/
+DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_) : Command("Delete Sequencer Entry Block")/*{{{*/
 {
     entryBlock = entryBlock_;
     entry = entryBlock->getOwningEntry();
@@ -385,7 +385,7 @@ void DeleteSequencerEntryBlockCommand::undoAction()
 }//undoAction/*}}}*/
 
 //DeleteSequencerEntryBlocksCommand
-DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
+DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks_) : Command("Delete Sequencer Entry Blocks")/*{{{*/
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -397,9 +397,9 @@ DeleteSequencerEntryBlocksCommand::~DeleteSequencerEntryBlocksCommand()
 
 void DeleteSequencerEntryBlocksCommand::doAction()
 {
-    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
-        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
-        boost::shared_ptr<SequencerEntry> entry = entryBlock->getOwningEntry();
+    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        std::shared_ptr<SequencerEntry> entry = entryBlock->getOwningEntry();
 
         entry->removeEntryBlock(entryBlock);
     }//for
@@ -407,16 +407,16 @@ void DeleteSequencerEntryBlocksCommand::doAction()
 
 void DeleteSequencerEntryBlocksCommand::undoAction()
 {
-    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
-        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
-        boost::shared_ptr<SequencerEntry> entry = entryBlock->getOwningEntry();
+    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+        std::shared_ptr<SequencerEntry> entry = entryBlock->getOwningEntry();
 
         entry->addEntryBlock(entryBlock->getStartTick(), entryBlock);
     }//for
 }//undoAction/*}}}*/
 
 //ChangeSequencerEntryBlockPropertiesCommand
-ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_) : Command("Change Sequencer Entry Block Properties")/*{{{*/
+ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_) : Command("Change Sequencer Entry Block Properties")/*{{{*/
 {
     entryBlock = entryBlock_;
     prevTitle = newTitle_;
@@ -441,9 +441,9 @@ void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
 
 //MoveSequencerEntryBlockCommand
 MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(/*{{{*/
-                                                                std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks_,
-                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks_,
-                                                                std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks_) : Command("Move Sequencer Entry Block")
+                                                                std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks_,
+                                                                std::map<std::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks_,
+                                                                std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks_) : Command("Move Sequencer Entry Block")
 {
     entryBlocks = entryBlocks_;
 
@@ -452,11 +452,11 @@ MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(/*{{{*/
 
 std::cout << "move entry block: " << std::endl;
 
-for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator mapIter = entryOriginalStartTicks.begin(); mapIter != entryOriginalStartTicks.end(); ++mapIter) {
+for (std::map<std::shared_ptr<SequencerEntryBlock>, int>::iterator mapIter = entryOriginalStartTicks.begin(); mapIter != entryOriginalStartTicks.end(); ++mapIter) {
     std::cout << "entryOriginalStartTicks: " << mapIter->second << std::endl;
 }//for
 
-for (std::map<boost::shared_ptr<SequencerEntryBlock>, int>::iterator mapIter = entryNewStartTicks.begin(); mapIter != entryNewStartTicks.end(); ++mapIter) {
+for (std::map<std::shared_ptr<SequencerEntryBlock>, int>::iterator mapIter = entryNewStartTicks.begin(); mapIter != entryNewStartTicks.end(); ++mapIter) {
     std::cout << "entryNewStartTicks: " << mapIter->second << std::endl;
 }//for
 
@@ -471,8 +471,8 @@ void MoveSequencerEntryBlockCommand::doAction()
 {
     std::cout << "MoveSequencerEntryBlockCommand::doAction()" << std::endl;
 
-    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
-        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
         entryBlock->moveBlock(entryNewStartTicks[entryBlock]);
     }//for
 }//doAction
@@ -481,14 +481,14 @@ void MoveSequencerEntryBlockCommand::undoAction()
 {
     std::cout << "MoveSequencerEntryBlockCommand::undoAction()" << std::endl;
 
-    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
-        boost::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
+    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = entryBlocks.begin(); blockIter != entryBlocks.end(); ++blockIter) {
+        std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter->second;
         entryBlock->moveBlock(entryOriginalStartTicks[entryBlock]);
     }//for
 }//undoAction/*}}}*/
 
 //ChangeSequencerEntryPropertiesCommand
-ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry_, boost::shared_ptr<SequencerEntryImpl> origImpl_, boost::shared_ptr<SequencerEntryImpl> newImpl_) : Command("Change Sequencer Entry Properties")/*{{{*/
+ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(std::shared_ptr<SequencerEntry> entry_, std::shared_ptr<SequencerEntryImpl> origImpl_, std::shared_ptr<SequencerEntryImpl> newImpl_) : Command("Change Sequencer Entry Properties")/*{{{*/
 {
     entry = entry_;
     origImpl = origImpl_;
@@ -511,23 +511,23 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 }//undoAction/*}}}*/
 
 //AddKeyframesCommand
-AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, /*{{{*/
-                                            std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick) : Command("Add Keyframe")
+AddKeyframesCommand::AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, /*{{{*/
+                                            std::map<int, std::shared_ptr<Keyframe> > &origKeyframes, int newTick) : Command("Add Keyframe")
 {
     if (origKeyframes.empty() == true) {
         return;
     }//if
 
-    boost::shared_ptr<Keyframe> firstKeyframe = origKeyframes.begin()->second;
+    std::shared_ptr<Keyframe> firstKeyframe = origKeyframes.begin()->second;
     int firstKeyTick = firstKeyframe->tick;
 
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     assert(currentlySelectedEntryBlock != NULL);
 
     keyframes.clear();
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = origKeyframes.begin(); keyIter != origKeyframes.end(); ++keyIter) {
-        boost::shared_ptr<Keyframe> origKeyframe = keyIter->second;
-        boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
+    for (std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = origKeyframes.begin(); keyIter != origKeyframes.end(); ++keyIter) {
+        std::shared_ptr<Keyframe> origKeyframe = keyIter->second;
+        std::shared_ptr<Keyframe> newKeyframe(new Keyframe);
 
         *newKeyframe = *origKeyframe;
         newKeyframe->tick = origKeyframe->tick - firstKeyTick + newTick;
@@ -539,7 +539,7 @@ AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> 
     std::cout << "AddKeyframesCommand constructor: " << origKeyframes.size() << " - " << keyframes.size() << std::endl;
 }//constructor
 
-AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_) : Command("Add Keyframe")
+AddKeyframesCommand::AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_) : Command("Add Keyframe")
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     //curMouseUnderTick = curMouseUnderTick_;
@@ -550,7 +550,7 @@ AddKeyframesCommand::AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> 
     //    return;
     //}//if
 
-    boost::shared_ptr<Keyframe> newKeyframe(new Keyframe);
+    std::shared_ptr<Keyframe> newKeyframe(new Keyframe);
 
     newKeyframe->tick = curMouseUnderTick_;
     newKeyframe->value = curMouseUnderValue_;
@@ -570,8 +570,8 @@ void AddKeyframesCommand::doAction()
 
     std::cout << "AddKeyframesCommand::doAction: " << keyframes.size() << std::endl;
 
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
-        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+    for (std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        std::shared_ptr<Keyframe> keyframe = keyIter->second;
         currentlySelectedEntryBlock->getCurve()->addKey(keyframe);
 
         std::cout << "addKey: " << keyframe->tick << std::endl;
@@ -580,15 +580,15 @@ void AddKeyframesCommand::doAction()
 
 void AddKeyframesCommand::undoAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
-        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+    for (std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        std::shared_ptr<Keyframe> keyframe = keyIter->second;
         currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
     }//for
 }//undoAction/*}}}*/
 
 //DeleteKeyframesCommand
-DeleteKeyframesCommand::DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
-                                                std::map<int, boost::shared_ptr<Keyframe> > keyframes_) : Command("Delete Keyframe")
+DeleteKeyframesCommand::DeleteKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
+                                                std::map<int, std::shared_ptr<Keyframe> > keyframes_) : Command("Delete Keyframe")
 {
     entryBlock = entryBlock_;
     keyframes = keyframes_;
@@ -601,23 +601,23 @@ DeleteKeyframesCommand::~DeleteKeyframesCommand()
 
 void DeleteKeyframesCommand::doAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
-        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+    for (std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        std::shared_ptr<Keyframe> keyframe = keyIter->second;
         entryBlock->getCurve()->deleteKey(keyframe);
     }//for
 }//doAction
 
 void DeleteKeyframesCommand::undoAction()
 {
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
-        boost::shared_ptr<Keyframe> keyframe = keyIter->second;
+    for (std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = keyframes.begin(); keyIter != keyframes.end(); ++keyIter) {
+        std::shared_ptr<Keyframe> keyframe = keyIter->second;
         entryBlock->getCurve()->addKey(keyframe);
     }//for
 }//undoAction/*}}}*/
 
 //MoveKeyframesCommand
-MoveKeyframesCommand::MoveKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
-                                            std::vector<boost::shared_ptr<KeyInfo> > &keyframes_) : Command("Move Keyframe")
+MoveKeyframesCommand::MoveKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
+                                            std::vector<std::shared_ptr<KeyInfo> > &keyframes_) : Command("Move Keyframe")
 {
     entryBlock = entryBlock_;
     keyframes = keyframes_;
@@ -630,7 +630,7 @@ MoveKeyframesCommand::~MoveKeyframesCommand()
 
 void MoveKeyframesCommand::doAction()
 {
-    BOOST_FOREACH (boost::shared_ptr<KeyInfo> keyframe, keyframes) {
+    BOOST_FOREACH (std::shared_ptr<KeyInfo> keyframe, keyframes) {
         entryBlock->getCurve()->deleteKey(keyframe->keyframe);
 
         std::swap(keyframe->keyframe->tick, keyframe->movingKeyOrigTick);
@@ -646,7 +646,7 @@ void MoveKeyframesCommand::undoAction()
 }//undoAction/*}}}*/
 
 //ProcessRecordedMidiCommand
-ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap_) : Command("Process Recorded Midi")/*{{{*/
+ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(std::map<std::shared_ptr<SequencerEntry>, int > origEntryMap_, std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap_) : Command("Process Recorded Midi")/*{{{*/
 {
     origEntryMap = origEntryMap_;
     newEntryMap = newEntryMap_;

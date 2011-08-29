@@ -10,7 +10,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #ifndef __COMMAND_H
 #define __COMMAND_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/function.hpp>
 #include <stack>
 
@@ -35,8 +35,8 @@ struct Command
 
 class CommandManager
 {
-    std::stack<boost::shared_ptr<Command> > undoStack;
-    std::stack<boost::shared_ptr<Command> > redoStack;
+    std::stack<std::shared_ptr<Command> > undoStack;
+    std::stack<std::shared_ptr<Command> > redoStack;
     Gtk::ImageMenuItem *menuUndo;
     Gtk::ImageMenuItem *menuRedo;
     boost::function<void (void)> titleStarFunc;
@@ -50,28 +50,28 @@ public:
 
     void doRedo();
     void doUndo();
-    void setNewCommand(boost::shared_ptr<Command> command, bool applyCommand);
+    void setNewCommand(std::shared_ptr<Command> command, bool applyCommand);
 };//CommandManager
 
 struct ChangeSequencerEntryPropertiesCommand : public Command
 {
-    ChangeSequencerEntryPropertiesCommand(boost::shared_ptr<SequencerEntry> entry, boost::shared_ptr<SequencerEntryImpl> origImpl, boost::shared_ptr<SequencerEntryImpl> newImpl);
+    ChangeSequencerEntryPropertiesCommand(std::shared_ptr<SequencerEntry> entry, std::shared_ptr<SequencerEntryImpl> origImpl, std::shared_ptr<SequencerEntryImpl> newImpl);
     ~ChangeSequencerEntryPropertiesCommand();
 
     void doAction();
     void undoAction();
 
 private:    
-    boost::shared_ptr<SequencerEntry> entry;
-    boost::shared_ptr<SequencerEntryImpl> origImpl;
-    boost::shared_ptr<SequencerEntryImpl> newImpl;
+    std::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<SequencerEntryImpl> origImpl;
+    std::shared_ptr<SequencerEntryImpl> newImpl;
 };//ChangeSequencerEntryPropertiesCommand
 
 struct MoveSequencerEntryBlockCommand : public Command
 {
-    MoveSequencerEntryBlockCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks,
-                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks, //FIXME: This should be a reference
-                                    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks);
+    MoveSequencerEntryBlockCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks,
+                                    std::map<std::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks, //FIXME: This should be a reference
+                                    std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks);
 
     ~MoveSequencerEntryBlockCommand();
 
@@ -79,134 +79,134 @@ struct MoveSequencerEntryBlockCommand : public Command
     void undoAction();
 
 private:
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks;
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
+    std::map<std::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks;
+    std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
 };//MoveSequencerEntryBlockCommand
 
 struct ChangeSequencerEntryBlockPropertiesCommand : public Command
 {
-    ChangeSequencerEntryBlockPropertiesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, Glib::ustring newTitle);
+    ChangeSequencerEntryBlockPropertiesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock, Glib::ustring newTitle);
     ~ChangeSequencerEntryBlockPropertiesCommand();
 
     void doAction();
     void undoAction();
 
 private:    
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::shared_ptr<SequencerEntryBlock> entryBlock;
     Glib::ustring prevTitle;
 };//ChangeSequencerEntryBlockPropertiesCommand
 
 struct AddSequencerEntryBlockCommand : public Command
 {
-    AddSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntry> entry, boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    AddSequencerEntryBlockCommand(std::shared_ptr<SequencerEntry> entry, std::shared_ptr<SequencerEntryBlock> entryBlock);
     ~AddSequencerEntryBlockCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<SequencerEntry> entry;
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<SequencerEntryBlock> entryBlock;
 };//AddSequencerEntryBlockCommand
 
 struct AddSequencerEntryBlocksCommand : public Command
 {
-    AddSequencerEntryBlocksCommand(std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> &entryBlocks_);
+    AddSequencerEntryBlocksCommand(std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> &entryBlocks_);
     ~AddSequencerEntryBlocksCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> entryBlocks;
+    std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> entryBlocks;
 };//AddSequencerEntryBlocksCommand
 
 struct DeleteSequencerEntryBlocksCommand : public Command
 {
     //FIXME: This shouldn't be a copy, but a reference!
-    DeleteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks);
+    DeleteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks);
     ~DeleteSequencerEntryBlocksCommand();
 
     void doAction();
     void undoAction();
 
 private: 
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
 };//DeleteSequencerEntryBlocksCommand
 
 struct DeleteSequencerEntryBlockCommand : public Command
 {
-    DeleteSequencerEntryBlockCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    DeleteSequencerEntryBlockCommand(std::shared_ptr<SequencerEntryBlock> entryBlock);
     ~DeleteSequencerEntryBlockCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<SequencerEntry> entry;
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<SequencerEntryBlock> entryBlock;
 };//DeleteSequencerEntryBlockCommand
 
 struct SequencerEntryUpCommand : public Command
 {
-    SequencerEntryUpCommand(boost::shared_ptr<Sequencer> sequencer, boost::shared_ptr<SequencerEntry> entry);
+    SequencerEntryUpCommand(std::shared_ptr<Sequencer> sequencer, std::shared_ptr<SequencerEntry> entry);
     ~SequencerEntryUpCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<Sequencer> sequencer;
-    boost::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<SequencerEntry> entry;
     unsigned int origIndex;
 };//SequencerEntryUpCommand
 
 struct SequencerEntryDownCommand : public Command
 {
-    SequencerEntryDownCommand(boost::shared_ptr<Sequencer> sequencer, boost::shared_ptr<SequencerEntry> entry);
+    SequencerEntryDownCommand(std::shared_ptr<Sequencer> sequencer, std::shared_ptr<SequencerEntry> entry);
     ~SequencerEntryDownCommand();
 
     void doAction();
     void undoAction();
 
 private: 
-    boost::shared_ptr<Sequencer> sequencer;
-    boost::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<SequencerEntry> entry;
     unsigned int origIndex;
 };//SequencerEntryDownCommand
 
 struct AddSequencerEntryCommand : public Command
 {
-    AddSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer, bool useDefaults);
+    AddSequencerEntryCommand(std::shared_ptr<Sequencer> sequencer, bool useDefaults);
     ~AddSequencerEntryCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<Sequencer> sequencer;
-    boost::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<SequencerEntry> entry;
     bool useDefaults;
 };//AddSequencerEntryCommand
 
 struct DeleteSequencerEntryCommand : public Command
 {
-    DeleteSequencerEntryCommand(boost::shared_ptr<Sequencer> sequencer, boost::shared_ptr<SequencerEntry> entry);
+    DeleteSequencerEntryCommand(std::shared_ptr<Sequencer> sequencer, std::shared_ptr<SequencerEntry> entry);
     ~DeleteSequencerEntryCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<Sequencer> sequencer;
-    boost::shared_ptr<SequencerEntry> entry;
+    std::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<SequencerEntry> entry;
     unsigned int entryIndex;
 };//DeleteSequencerEntryCommand
 
 struct AddTempoChangeCommand : public Command
 {
-    AddTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int tick_, boost::shared_ptr<FMidiAutomationData> datas_,
+    AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_, std::shared_ptr<FMidiAutomationData> datas_,
                             boost::function<void (void)> updateTempoChangesUIData);
     ~AddTempoChangeCommand();
 
@@ -214,30 +214,30 @@ struct AddTempoChangeCommand : public Command
     void undoAction();
 
 private:
-    boost::shared_ptr<FMidiAutomationData> datas;
-    boost::shared_ptr<Tempo> tempo;
+    std::shared_ptr<FMidiAutomationData> datas;
+    std::shared_ptr<Tempo> tempo;
     unsigned int tick;
     boost::function<void (void)> updateTempoChangesUIData;
 };//AddTempoChangeCommand
 
 struct DeleteTempoChangeCommand : public Command
 {
-    DeleteTempoChangeCommand(unsigned int tick_, boost::shared_ptr<FMidiAutomationData> datas_, boost::function<void (void)> updateTempoChangesUIData);
+    DeleteTempoChangeCommand(unsigned int tick_, std::shared_ptr<FMidiAutomationData> datas_, boost::function<void (void)> updateTempoChangesUIData);
     ~DeleteTempoChangeCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<FMidiAutomationData> datas;
-    boost::shared_ptr<Tempo> tempo;
+    std::shared_ptr<FMidiAutomationData> datas;
+    std::shared_ptr<Tempo> tempo;
     unsigned int tick;
     boost::function<void (void)> updateTempoChangesUIData;
 };//DeleteTempoChangeCommand
 
 struct UpdateTempoChangeCommand : public Command
 {
-    UpdateTempoChangeCommand(boost::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar, 
+    UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar, 
                                 unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData);
     ~UpdateTempoChangeCommand();
 
@@ -245,7 +245,7 @@ struct UpdateTempoChangeCommand : public Command
     void undoAction();
 
 private:
-    boost::shared_ptr<Tempo> tempo;
+    std::shared_ptr<Tempo> tempo;
     boost::function<void (void)> updateTempoChangesUIData;
     
     unsigned int old_bpm; //times 100
@@ -255,62 +255,62 @@ private:
 
 struct AddKeyframesCommand : public Command
 {
-    AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
-    AddKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, std::map<int, boost::shared_ptr<Keyframe> > &origKeyframes, int newTick);
+    AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
+    AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, std::map<int, std::shared_ptr<Keyframe> > &origKeyframes, int newTick);
     ~AddKeyframesCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
-    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock;
+    std::map<int, std::shared_ptr<Keyframe> > keyframes;
 };//AddKeyframesCommand
 
 struct DeleteKeyframesCommand : public Command
 {
-    DeleteKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, boost::shared_ptr<Keyframe> > keyframes);
+    DeleteKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, std::shared_ptr<Keyframe> > keyframes);
     ~DeleteKeyframesCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
-    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::map<int, std::shared_ptr<Keyframe> > keyframes;
 };//DeleteKeyframesCommand
 
 struct MoveKeyframesCommand : public Command
 {
     struct KeyInfo
     {
-        boost::shared_ptr<Keyframe> keyframe;
+        std::shared_ptr<Keyframe> keyframe;
         int movingKeyOrigTick;
         double movingKeyOrigValue;
     };//KeyInfo
 
-    MoveKeyframesCommand(boost::shared_ptr<SequencerEntryBlock> entryBlock, std::vector<boost::shared_ptr<KeyInfo> > &keyframes);
+    MoveKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock, std::vector<std::shared_ptr<KeyInfo> > &keyframes);
     ~MoveKeyframesCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
-    std::vector<boost::shared_ptr<KeyInfo> > keyframes;
+    std::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::vector<std::shared_ptr<KeyInfo> > keyframes;
 };//MoveKeyframesCommand
 
 struct ProcessRecordedMidiCommand : public Command
 {
-    ProcessRecordedMidiCommand(std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap, std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap);
+    ProcessRecordedMidiCommand(std::map<std::shared_ptr<SequencerEntry>, int > origEntryMap, std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap);
     ~ProcessRecordedMidiCommand();
 
     void doAction();
     void undoAction();
 
 private:
-    std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap;
-    std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap;
+    std::map<std::shared_ptr<SequencerEntry>, int > origEntryMap;
+    std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap;
 };//ProcessRecordedMidiCommand
 
 

@@ -15,7 +15,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <gtkmm.h>
 #include <vector>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class SequencerEntryBlock;
 
@@ -25,7 +25,7 @@ struct EntryBlockProperties
     Glib::ustring newTitle;
     Gdk::Color newColour;
 
-    EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<SequencerEntryBlock> entryBlock);
 };//EntryBlockProperties
 
 #endif

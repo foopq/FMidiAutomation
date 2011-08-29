@@ -61,7 +61,7 @@ bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, 
     bool changed = true;
     //double curValuesPerPixel = graphState.valuesPerPixel;
 
-    const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
+    const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
     int minValue = entryImpl->minValue;
     int maxValue = entryImpl->maxValue;
 

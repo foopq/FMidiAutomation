@@ -18,7 +18,7 @@ namespace
 }//anonymous namespace
 
 
-void FMidiAutomationData::addTempoChange(int tick, boost::shared_ptr<Tempo> tempo)
+void FMidiAutomationData::addTempoChange(int tick, std::shared_ptr<Tempo> tempo)
 {
     tempoChanges.insert(std::make_pair(tick, tempo));
     updateTempoChangesUIData(tempoChanges);

@@ -11,13 +11,14 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __TEMPO_H
 
 #include <gtkmm.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+
+#include "SerializationHelper.h"
 
 struct GraphState;
 struct FMidiAutomationData;
@@ -50,11 +51,11 @@ struct TempoGlobals
     bool tempoDataSelected;
 };//TempoGlobals
 
-void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, boost::shared_ptr<FMidiAutomationData> datas, 
+void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, 
                     unsigned int drawingAreaWidth, unsigned int drawingAreaHeight, std::vector<int> &verticalPixelTickValues, int ticksPerPixel);
-void updateTempoBox(GraphState &graphState, boost::shared_ptr<FMidiAutomationData> datas, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry);
-bool checkForTempoSelection(int xPos, std::map<int, boost::shared_ptr<Tempo> > &tempoChanges);
-void updateTempoChangesUIData(std::map<int, boost::shared_ptr<Tempo> > &tempoChanges);
+void updateTempoBox(GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry);
+bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &tempoChanges);
+void updateTempoChangesUIData(std::map<int, std::shared_ptr<Tempo> > &tempoChanges);
 
 BOOST_CLASS_VERSION(Tempo, 1);
 

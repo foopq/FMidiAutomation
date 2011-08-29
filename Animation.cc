@@ -64,7 +64,7 @@ double calculateBezierRatio(double start, double outTan, double inTan, double en
     return ratio;
 }//calculateBezierRatio
 
-double doBezierInterpolation(boost::shared_ptr<Keyframe> beforeKeyframe, boost::shared_ptr<Keyframe> afterKeyframe, int tick)
+double doBezierInterpolation(std::shared_ptr<Keyframe> beforeKeyframe, std::shared_ptr<Keyframe> afterKeyframe, int tick)
 {
     double ratio =  calculateBezierRatio(beforeKeyframe->tick, beforeKeyframe->outTangent[0] + beforeKeyframe->tick,
                                             afterKeyframe->tick - afterKeyframe->inTangent[0], afterKeyframe->tick, (double)tick);
@@ -78,7 +78,7 @@ double doBezierInterpolation(boost::shared_ptr<Keyframe> beforeKeyframe, boost::
     return resultVal;
 }//doLinearInterpolation
 
-double doLinearInterpolation(boost::shared_ptr<Keyframe> beforeKeyframe, boost::shared_ptr<Keyframe> afterKeyframe, int tick)
+double doLinearInterpolation(std::shared_ptr<Keyframe> beforeKeyframe, std::shared_ptr<Keyframe> afterKeyframe, int tick)
 {
     double ratio =  ((double)(tick - beforeKeyframe->tick)) / ((double)(afterKeyframe->tick - beforeKeyframe->tick));
     double resultVal = beforeKeyframe->value + (afterKeyframe->value - beforeKeyframe->value) * ratio;
@@ -86,7 +86,7 @@ double doLinearInterpolation(boost::shared_ptr<Keyframe> beforeKeyframe, boost::
     return resultVal;
 }//doLinearInterpolation
 
-double doStepInterpolation(boost::shared_ptr<Keyframe> beforeKeyframe, boost::shared_ptr<Keyframe> afterKeyframe, int tick)
+double doStepInterpolation(std::shared_ptr<Keyframe> beforeKeyframe, std::shared_ptr<Keyframe> afterKeyframe, int tick)
 {
     double resultVal = beforeKeyframe->value;
 
@@ -107,15 +107,15 @@ Keyframe::Keyframe()
     selectedState = KeySelectedType::NotSelected;
 };//constructor
 
-boost::shared_ptr<Keyframe> Keyframe::deepClone()
+std::shared_ptr<Keyframe> Keyframe::deepClone()
 {
-    boost::shared_ptr<Keyframe> clone(new Keyframe);
+    std::shared_ptr<Keyframe> clone(new Keyframe);
     *clone = *this;
 
     return clone;
 }//deepClone
 
-Animation::Animation(SequencerEntryBlock *owningEntryBlock_, boost::shared_ptr<Animation> instanceOf_)
+Animation::Animation(SequencerEntryBlock *owningEntryBlock_, std::shared_ptr<Animation> instanceOf_)
 {
     startTick = owningEntryBlock_->getRawStartTick();
     instanceOf = instanceOf_;
@@ -126,11 +126,11 @@ Animation::~Animation()
     //Nothing
 }//destructor
 
-boost::shared_ptr<Animation> Animation::deepClone()
+std::shared_ptr<Animation> Animation::deepClone()
 {
-    boost::shared_ptr<Animation> clone(new Animation);
+    std::shared_ptr<Animation> clone(new Animation);
 
-    for(std::map<int, boost::shared_ptr<Keyframe> >::const_iterator mapIter = keyframes.begin(); mapIter != keyframes.end(); ++mapIter) {
+    for(std::map<int, std::shared_ptr<Keyframe> >::const_iterator mapIter = keyframes.begin(); mapIter != keyframes.end(); ++mapIter) {
         clone->keyframes[mapIter->first] = mapIter->second->deepClone();
     }//for
 
@@ -139,45 +139,45 @@ boost::shared_ptr<Animation> Animation::deepClone()
     return clone;
 }//deepClone
 
-void Animation::absorbCurve(boost::shared_ptr<Animation> otherAnim)
+void Animation::absorbCurve(std::shared_ptr<Animation> otherAnim)
 {
     this->keyframes = otherAnim->keyframes;
 }//absorbCurve
 
-boost::shared_ptr<Keyframe> Animation::getNextKeyframe(boost::shared_ptr<Keyframe> keyframe)
+std::shared_ptr<Keyframe> Animation::getNextKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
-    std::map<int, boost::shared_ptr<Keyframe> >::iterator keyIter = curKeyframes->find(keyframe->tick);
+    std::map<int, std::shared_ptr<Keyframe> >::iterator keyIter = curKeyframes->find(keyframe->tick);
     if (keyIter == curKeyframes->end()) {
-        return boost::shared_ptr<Keyframe>();
+        return std::shared_ptr<Keyframe>();
     }//if
 
-    std::map<int, boost::shared_ptr<Keyframe> >::iterator nextKeyIter = keyIter;
+    std::map<int, std::shared_ptr<Keyframe> >::iterator nextKeyIter = keyIter;
     ++nextKeyIter;
 
     if (nextKeyIter == curKeyframes->end()) {
-        return boost::shared_ptr<Keyframe>();
+        return std::shared_ptr<Keyframe>();
     }//if
 
     return nextKeyIter->second;
 }//getNextKeyframe
 
-void Animation::addKey(boost::shared_ptr<Keyframe> keyframe)
+void Animation::addKey(std::shared_ptr<Keyframe> keyframe)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
     if (curKeyframes->find(keyframe->tick) == curKeyframes->end()) {
         (*curKeyframes)[keyframe->tick] = keyframe;
-        std::map<int, boost::shared_ptr<Keyframe> >::iterator keyIter = curKeyframes->find(keyframe->tick);
-        std::map<int, boost::shared_ptr<Keyframe> >::iterator nextKeyIter = keyIter;
-        std::map<int, boost::shared_ptr<Keyframe> >::iterator prevKeyIter = keyIter;
+        std::map<int, std::shared_ptr<Keyframe> >::iterator keyIter = curKeyframes->find(keyframe->tick);
+        std::map<int, std::shared_ptr<Keyframe> >::iterator nextKeyIter = keyIter;
+        std::map<int, std::shared_ptr<Keyframe> >::iterator prevKeyIter = keyIter;
         if (curKeyframes->begin() == prevKeyIter) {
             prevKeyIter = curKeyframes->end();
         } else {
@@ -218,9 +218,9 @@ void Animation::addKey(boost::shared_ptr<Keyframe> keyframe)
     }//if
 }//addKey
 
-void Animation::deleteKey(boost::shared_ptr<Keyframe> keyframe)
+void Animation::deleteKey(std::shared_ptr<Keyframe> keyframe)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
@@ -260,22 +260,22 @@ int Animation::getNumKeyframes() const
     }//if
 }//getNumKeyframes
 
-boost::shared_ptr<Keyframe> Animation::getKeyframe(unsigned int index)
+std::shared_ptr<Keyframe> Animation::getKeyframe(unsigned int index)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
     index = std::min(index, (unsigned int)curKeyframes->size());
-    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->begin();
+    std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->begin();
     std::advance(keyIter, index);
     return keyIter->second;
 }//getKeyframe
 
-boost::shared_ptr<Keyframe> Animation::getKeyframeAtTick(int tick)
+std::shared_ptr<Keyframe> Animation::getKeyframeAtTick(int tick)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
@@ -284,16 +284,16 @@ boost::shared_ptr<Keyframe> Animation::getKeyframeAtTick(int tick)
 
     /*
     std::cout << "getKeyframeAtTick: " << tick << std::endl;
-    for (std::map<int, boost::shared_ptr<Keyframe> >::const_iterator tmpIter = curKeyframes->begin(); tmpIter != curKeyframes->end(); ++tmpIter) {
+    for (std::map<int, std::shared_ptr<Keyframe> >::const_iterator tmpIter = curKeyframes->begin(); tmpIter != curKeyframes->end(); ++tmpIter) {
         std::cout << "key at: " << tmpIter->first << std::endl;
     }//for
     */
 
-    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->find(tick);
+    std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->find(tick);
     if (keyIter != curKeyframes->end()) {
         return keyIter->second;
     } else {
-        return boost::shared_ptr<Keyframe>();
+        return std::shared_ptr<Keyframe>();
     }//if
 }//getKeyframeAtTick
 
@@ -315,7 +315,7 @@ void Animation::serialize(Archive &ar, const unsigned int version)
 
 double Animation::sample(int tick)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
@@ -330,7 +330,7 @@ double Animation::sample(int tick)
         return curKeyframes->begin()->second->value;
     }//if
 
-    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->upper_bound(tick);
+    std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->upper_bound(tick);
 
     if (keyIter == curKeyframes->end()) {
         --keyIter;
@@ -341,7 +341,7 @@ double Animation::sample(int tick)
         return keyIter->second->value;
     }//if
 
-    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator beforeKeyIter = keyIter;
+    std::map<int, std::shared_ptr<Keyframe> >::const_iterator beforeKeyIter = keyIter;
     --beforeKeyIter;
 
     switch (beforeKeyIter->second->curveType) {

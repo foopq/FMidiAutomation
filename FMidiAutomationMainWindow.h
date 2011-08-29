@@ -11,18 +11,18 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __FMIDIAUTOMATIONMAINWINDOW_H
 
 #include <gtkmm.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 #include <string>
 #include <set>
 #include "FMidiAutomationData.h"
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/thread.hpp>
 #include <jack/transport.h>
+#include "SerializationHelper.h"
 
 struct TempoGlobals;
 class Sequencer;
@@ -51,7 +51,7 @@ struct Globals
 
     Gtk::DrawingArea *graphDrawingArea;
     GraphState *graphState;
-    boost::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<Sequencer> sequencer;
 
     TempoGlobals tempoGlobals;
 };//Globals
@@ -98,43 +98,43 @@ enum UIThreadOperation
 
 class EntryBlockSelectionState
 {
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
-    std::set<boost::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks; //for rubberbanding
+    std::map<std::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
+    std::set<std::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks; //for rubberbanding
 
 public:
     EntryBlockSelectionState() {}
     ~EntryBlockSelectionState() {}
 
     bool HasSelected();
-    bool IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock);
-    bool IsOrigSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock); //checks origSelectedEntryBlocks
+    bool IsSelected(std::shared_ptr<SequencerEntryBlock> entryBlock);
+    bool IsOrigSelected(std::shared_ptr<SequencerEntryBlock> entryBlock); //checks origSelectedEntryBlocks
     void ClearSelected();
     void ResetRubberbandingSelection();
 
     int GetNumSelected();
-    boost::shared_ptr<SequencerEntryBlock> GetFirstEntryBlock();
-    int GetOriginalStartTick(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    std::shared_ptr<SequencerEntryBlock> GetFirstEntryBlock();
+    int GetOriginalStartTick(std::shared_ptr<SequencerEntryBlock> entryBlock);
 
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > GetEntryBlocksMapCopy();
-    std::map<boost::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
-    std::set<boost::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > GetEntryBlocksMapCopy();
+    std::map<std::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
+    std::set<std::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
 
     std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
 
-    void SetCurrentlySelectedEntryOriginalStartTicks(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &origStartTicks); //FIXME: This feels very questionable
+    void SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlock>, int> &origStartTicks); //FIXME: This feels very questionable
 
-    void AddSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
-    void RemoveSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    void AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
+    void RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
 };//EntryBlockSelectionState
 
 class KeyframeSelectionState
 {
-    boost::shared_ptr<Keyframe> selectedKey; //mostly useful for who owns the selected tangent grab handle
-    std::map<int, boost::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
-    std::set<boost::shared_ptr<Keyframe> > origSelectedKeyframes;
-    std::map<boost::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
-    std::map<boost::shared_ptr<Keyframe>, double> movingKeyOrigValues;
+    std::shared_ptr<Keyframe> selectedKey; //mostly useful for who owns the selected tangent grab handle
+    std::map<int, std::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
+    std::set<std::shared_ptr<Keyframe> > origSelectedKeyframes;
+    std::map<std::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
+    std::map<std::shared_ptr<Keyframe>, double> movingKeyOrigValues;
 
 public:
     KeyframeSelectionState() {}
@@ -143,22 +143,22 @@ public:
     bool HasSelected();
     void ClearSelectedKeyframes();
     void ResetRubberbandingSelection();
-    bool IsSelected(boost::shared_ptr<Keyframe> keyframe);
-    bool IsOrigSelected(boost::shared_ptr<Keyframe> keyframe); //checks origSelectedKeyframes
+    bool IsSelected(std::shared_ptr<Keyframe> keyframe);
+    bool IsOrigSelected(std::shared_ptr<Keyframe> keyframe); //checks origSelectedKeyframes
     int GetNumSelected();
-    boost::shared_ptr<Keyframe> GetFirstKeyframe();
-    int GetOrigTick(boost::shared_ptr<Keyframe> keyframe);
-    double GetOrigValue(boost::shared_ptr<Keyframe> keyframe);    
+    std::shared_ptr<Keyframe> GetFirstKeyframe();
+    int GetOrigTick(std::shared_ptr<Keyframe> keyframe);
+    double GetOrigValue(std::shared_ptr<Keyframe> keyframe);    
 
     std::pair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedEntryBlocks();
 
-    std::map<int, boost::shared_ptr<Keyframe> > GetSelectedKeyframesCopy();
+    std::map<int, std::shared_ptr<Keyframe> > GetSelectedKeyframesCopy();
 
-    void SetCurrentlySelectedKeyframes(std::map<int, boost::shared_ptr<Keyframe> > &origSelectedKeyframes); //FIXME: This feels very questionable
+    void SetCurrentlySelectedKeyframes(std::map<int, std::shared_ptr<Keyframe> > &origSelectedKeyframes); //FIXME: This feels very questionable
 
-    void AddKeyframe(boost::shared_ptr<Keyframe> keyframe);
-    void AddOrigKeyframe(boost::shared_ptr<Keyframe> keyframe);
-    void RemoveKeyframe(boost::shared_ptr<Keyframe> keyframe);
+    void AddKeyframe(std::shared_ptr<Keyframe> keyframe);
+    void AddOrigKeyframe(std::shared_ptr<Keyframe> keyframe);
+    void RemoveKeyframe(std::shared_ptr<Keyframe> keyframe);
 };//KeyframeSelectionState
 
 struct GraphState
@@ -224,7 +224,7 @@ class FMidiAutomationMainWindow
 {
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Window *mainWindow;
-    boost::shared_ptr<CurveEditor> curveEditor;
+    std::shared_ptr<CurveEditor> curveEditor;
     Gtk::ScrolledWindow *trackListWindow;
     Gtk::DrawingArea *graphDrawingArea;
     Gtk::ImageMenuItem *menuOpen;
@@ -276,16 +276,16 @@ class FMidiAutomationMainWindow
     gdouble mousePressReleaseY;
     static const int MainCanvasOffsetY = 60;
     
-    boost::shared_ptr<Gtk::Image> backingImage;
-    boost::shared_ptr<Gtk::Image> backingTexture;
-    boost::shared_ptr<Gtk::Image> origBackingImage;
-    boost::shared_ptr<Gtk::Image> origBackingTexture;
+    std::shared_ptr<Gtk::Image> backingImage;
+    std::shared_ptr<Gtk::Image> backingTexture;
+    std::shared_ptr<Gtk::Image> origBackingImage;
+    std::shared_ptr<Gtk::Image> origBackingTexture;
 
     std::vector <Gtk::Window *> automationTrackWindows;
     
-    boost::shared_ptr<FMidiAutomationData> datas;
+    std::shared_ptr<FMidiAutomationData> datas;
     GraphState graphState;
-    boost::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<Sequencer> sequencer;
 
     Gtk::Label *statusBar;
     float statusTextAlpha;
@@ -351,7 +351,7 @@ class FMidiAutomationMainWindow
 
     void handleJackPressed();
 
-    boost::shared_ptr<boost::thread> recordThread;
+    std::shared_ptr<boost::thread> recordThread;
     void startRecordThread();
 
     bool handleEntryWindowScroll(Gtk::ScrollType, double);
@@ -447,7 +447,7 @@ public:
     void doTestInit();
 
     void unsetAllCurveFrames();
-    void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
+    void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
     void queue_draw();
 };//FMidiAutomationMainWindow
 

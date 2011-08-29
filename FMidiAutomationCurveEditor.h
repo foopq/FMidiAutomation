@@ -11,16 +11,16 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __FMIDIAUTOMATIONCURVEEDITOR_H
 
 #include <gtkmm.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 #include <string>
 #include <set>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
 #include "FMidiAutomationMainWindow.h" //FIXME: Refactor this.. Needed for KeyframeSelectionState
+#include "SerializationHelper.h"
 
 class FMidiAutomationMainWindow;
 struct Keyframe;
@@ -49,8 +49,8 @@ public:
     void handleAddKeyframe();
     void handleDeleteKeyframes();
     void setUnderMouseTickValue(int tick, int value);
-    boost::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
-    void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<Keyframe> currentlySelectedKeyframe);
+    std::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
+    void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<Keyframe> currentlySelectedKeyframe);
 
     void updateSelectedKeyframesInRange(KeyframeSelectionState &keyframeSelectionState,
                                             gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,

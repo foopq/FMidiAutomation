@@ -134,7 +134,7 @@ void setThemeColours(Gtk::Widget *widget)
 
 }//anonymous namespace
 
-SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry_, int startTick_, boost::shared_ptr<SequencerEntryBlock> instanceOf_)
+SequencerEntryBlock::SequencerEntryBlock(std::shared_ptr<SequencerEntry> owningEntry_, int startTick_, std::shared_ptr<SequencerEntryBlock> instanceOf_)
 {
     startTick_ = std::max(startTick_, 0);
 
@@ -148,23 +148,23 @@ SequencerEntryBlock::SequencerEntryBlock(boost::shared_ptr<SequencerEntry> ownin
     offsetY = 0;
 
     if (instanceOf == NULL) {
-        curve.reset(new Animation(this, boost::shared_ptr<Animation>()));
-        secondaryCurve.reset(new Animation(this, boost::shared_ptr<Animation>()));
+        curve.reset(new Animation(this, std::shared_ptr<Animation>()));
+        secondaryCurve.reset(new Animation(this, std::shared_ptr<Animation>()));
     } else {
         curve.reset(new Animation(this, instanceOf->curve));
         secondaryCurve.reset(new Animation(this, instanceOf->secondaryCurve));
     }//if
 }//constructor
 
-boost::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone()
+std::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone()
 {
-    boost::shared_ptr<SequencerEntryBlock> clone(new SequencerEntryBlock);
+    std::shared_ptr<SequencerEntryBlock> clone(new SequencerEntryBlock);
 
     clone->owningEntry = owningEntry;
     clone->title = title;
     clone->startTick = startTick;
 
-    //clone->boost::shared_ptr<SequencerEntryBlock> instanceOf;
+    //clone->std::shared_ptr<SequencerEntryBlock> instanceOf;
     //int duration; //in ticks, or unused if instanceOf isn't NULL
     
     clone->curve = curve->deepClone();
@@ -176,7 +176,7 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone()
     return clone;
 }//deepClone
 
-void SequencerEntryBlock::setInstanceOf(boost::shared_ptr<SequencerEntryBlock> instanceOf_)
+void SequencerEntryBlock::setInstanceOf(std::shared_ptr<SequencerEntryBlock> instanceOf_)
 {
     instanceOf = instanceOf_;
 
@@ -206,7 +206,7 @@ void SequencerEntryBlock::setOffsetY(double offsetY_)
 
 void SequencerEntryBlock::moveBlock(int startTick_)
 {
-    boost::shared_ptr<SequencerEntry> owningEntry_ = owningEntry.lock();
+    std::shared_ptr<SequencerEntry> owningEntry_ = owningEntry.lock();
     if (owningEntry_ == NULL) {
         return;
     }//if
@@ -224,21 +224,21 @@ void SequencerEntryBlock::moveBlock(int startTick_)
     owningEntry_->addEntryBlock(startTick, shared_from_this());
 }//moveBlock
 
-boost::shared_ptr<Keyframe> SequencerEntryBlock::getNextKeyframe(boost::shared_ptr<Keyframe> keyframe)
+std::shared_ptr<Keyframe> SequencerEntryBlock::getNextKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
-    boost::shared_ptr<Keyframe> afterFirst = curve->getNextKeyframe(keyframe);
+    std::shared_ptr<Keyframe> afterFirst = curve->getNextKeyframe(keyframe);
 
     if (afterFirst != NULL) {
         return afterFirst;
     }//if
 
-    boost::shared_ptr<Keyframe> afterSecond = secondaryCurve->getNextKeyframe(keyframe);
+    std::shared_ptr<Keyframe> afterSecond = secondaryCurve->getNextKeyframe(keyframe);
 
     if (afterSecond != NULL) {
         return afterSecond;
     }//if
 
-    return boost::shared_ptr<Keyframe>();
+    return std::shared_ptr<Keyframe>();
 }//getNextKeyframe
 
 //void SequencerEntryBlock::setDuration(int duration_)
@@ -246,7 +246,7 @@ boost::shared_ptr<Keyframe> SequencerEntryBlock::getNextKeyframe(boost::shared_p
 //    duration = duration_;
 //}//setDuration
 
-void SequencerEntryBlock::cloneCurves(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+void SequencerEntryBlock::cloneCurves(std::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     curve->absorbCurve(entryBlock->curve);
     secondaryCurve->absorbCurve(entryBlock->secondaryCurve);
@@ -275,7 +275,7 @@ int SequencerEntryBlock::getDuration() const
         if (curve != NULL) {
             int numKeys = curve->getNumKeyframes();
             if (numKeys > 0) {
-                boost::shared_ptr<Keyframe> lastKey = curve->getKeyframe(numKeys-1);
+                std::shared_ptr<Keyframe> lastKey = curve->getKeyframe(numKeys-1);
 
                 duration = std::max(duration, lastKey->tick);
             }//if
@@ -284,7 +284,7 @@ int SequencerEntryBlock::getDuration() const
         if (secondaryCurve != NULL) {
             int numKeys = secondaryCurve->getNumKeyframes();
             if (numKeys > 0) {
-                boost::shared_ptr<Keyframe> lastKey = secondaryCurve->getKeyframe(numKeys-1);
+                std::shared_ptr<Keyframe> lastKey = secondaryCurve->getKeyframe(numKeys-1);
 
                 duration = std::max(duration, lastKey->tick);
             }//if
@@ -301,22 +301,22 @@ Glib::ustring SequencerEntryBlock::getTitle() const
     return title;
 }//getTitle
 
-boost::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::getInstanceOf() const
+std::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::getInstanceOf() const
 {
     return instanceOf;
 }//getInstanceOf
 
-boost::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
+std::shared_ptr<SequencerEntry> SequencerEntryBlock::getOwningEntry() const
 {
     return owningEntry.lock();
 }//getOwningEntry
 
-boost::shared_ptr<Animation> SequencerEntryBlock::getCurve()
+std::shared_ptr<Animation> SequencerEntryBlock::getCurve()
 {
    return curve;
 }//getCurve
 
-boost::shared_ptr<Animation> SequencerEntryBlock::getSecondaryCurve()
+std::shared_ptr<Animation> SequencerEntryBlock::getSecondaryCurve()
 {
     return secondaryCurve;
 }//getSecondaryCurve
@@ -393,9 +393,9 @@ SequencerEntryImpl::~SequencerEntryImpl()
     //Nothing
 }//destructor
 
-boost::shared_ptr<SequencerEntryImpl> SequencerEntryImpl::clone()
+std::shared_ptr<SequencerEntryImpl> SequencerEntryImpl::clone()
 {
-    boost::shared_ptr<SequencerEntryImpl> retVal(new SequencerEntryImpl);
+    std::shared_ptr<SequencerEntryImpl> retVal(new SequencerEntryImpl);
     *retVal = *this;
     return retVal;
 }//clone
@@ -503,9 +503,9 @@ SequencerEntry::~SequencerEntry()
     //Nothing
 }//destructor
 
-boost::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
+std::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
 {
-    boost::shared_ptr<SequencerEntry> clone(new SequencerEntry);
+    std::shared_ptr<SequencerEntry> clone(new SequencerEntry);
 
     clone->impl.reset(new SequencerEntryImpl);
 
@@ -521,18 +521,18 @@ boost::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
     clone->isFullBox = isFullBox;
     clone->curIndex = curIndex;
  
-    std::map<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> > oldNewMap;
+    std::map<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > oldNewMap;
 
-    for(std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = entryBlocks.begin(); mapIter != entryBlocks.end(); ++mapIter) {
-        boost::shared_ptr<SequencerEntryBlock> entryBlockClone = mapIter->second->deepClone();
+    for(std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = entryBlocks.begin(); mapIter != entryBlocks.end(); ++mapIter) {
+        std::shared_ptr<SequencerEntryBlock> entryBlockClone = mapIter->second->deepClone();
         clone->entryBlocks[mapIter->first] = entryBlockClone;
 
         oldNewMap[mapIter->second] = entryBlockClone;
     }//for
 
-    for (std::map<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = oldNewMap.begin(); mapIter != oldNewMap.end(); ++mapIter) {
+    for (std::map<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = oldNewMap.begin(); mapIter != oldNewMap.end(); ++mapIter) {
         if (mapIter->second->getInstanceOf() != NULL) {
-            boost::shared_ptr<SequencerEntryBlock> entryBlockClone = oldNewMap[mapIter->second->getInstanceOf()];
+            std::shared_ptr<SequencerEntryBlock> entryBlockClone = oldNewMap[mapIter->second->getInstanceOf()];
             assert(entryBlockClone != NULL);
             mapIter->second->setInstanceOf(entryBlockClone);
         }//if
@@ -546,17 +546,17 @@ boost::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
     return clone;
 }//deepClone
 
-boost::shared_ptr<SequencerEntryImpl> SequencerEntry::getImplClone()
+std::shared_ptr<SequencerEntryImpl> SequencerEntry::getImplClone()
 {
     return impl->clone();
 }//getImplClone
 
-const boost::shared_ptr<SequencerEntryImpl> SequencerEntry::getImpl()
+const std::shared_ptr<SequencerEntryImpl> SequencerEntry::getImpl()
 {
     return impl;
 }//getImpl
 
-void SequencerEntry::setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl_)
+void SequencerEntry::setNewDataImpl(std::shared_ptr<SequencerEntryImpl> impl_)
 {
     impl = impl_;
 
@@ -901,7 +901,7 @@ void SequencerEntry::deselect()
 //    std::cout << "deselect: " << getTitle() << std::endl;
 }//deselect
 
-void SequencerEntry::addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock)
+void SequencerEntry::addEntryBlock(int, std::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     removeEntryBlock(entryBlock);
     entryBlocks[entryBlock->getStartTick()] = entryBlock;
@@ -915,7 +915,7 @@ void SequencerEntry::addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> e
 //    std::cout << "addEntryBlock: " << entryBlock->getTitle() << "  --  " << entryBlock->getStartTick() << "(" << entryBlocks.size() << ")" << std::endl;
 }//addEntryBlock
 
-void SequencerEntry::removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)
+void SequencerEntry::removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     if (entryBlocks.find(entryBlock->getStartTick()) != entryBlocks.end()) {
 //        std::cout << "removed at: " << entryBlock->getStartTick() << std::endl;
@@ -1000,12 +1000,12 @@ void SequencerEntryImpl::serialize(Archive &ar, const unsigned int version)
     std::cout << "TITLE: " << title << std::endl;
 }//serialize
 
-boost::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
+std::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
 {
     if (entryBlocks.find(tick) != entryBlocks.end()) {
         return entryBlocks[tick];
     } else {
-        return boost::shared_ptr<SequencerEntryBlock>();
+        return std::shared_ptr<SequencerEntryBlock>();
     }//if
 }//getEntryBlock
 
@@ -1035,7 +1035,7 @@ double SequencerEntry::sample(int tick)
         return 0;
     }//if
 
-    std::map<int, boost::shared_ptr<SequencerEntryBlock> >::iterator entryBlockIter = entryBlocks.upper_bound(tick);
+    std::map<int, std::shared_ptr<SequencerEntryBlock> >::iterator entryBlockIter = entryBlocks.upper_bound(tick);
     if (entryBlockIter != entryBlocks.begin()) {
         entryBlockIter--;
     }//if
@@ -1095,23 +1095,23 @@ void SequencerEntry::addRecordToken(MidiToken &token)
     recordTokenBuffer.push_back(token);
 }//addRecordToken
 
-std::pair<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> > SequencerEntry::splitEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock, int tick)
+std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > SequencerEntry::splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick)
 {
     if ((tick <= entryBlock->getStartTick()) || (tick >= (entryBlock->getStartTick() + entryBlock->getDuration()))) {
         return std::make_pair(entryBlock, entryBlock);
     }//if
 
-    boost::shared_ptr<Animation> curve = entryBlock->getCurve();
-    boost::shared_ptr<Animation> secondaryCurve = entryBlock->getSecondaryCurve();
+    std::shared_ptr<Animation> curve = entryBlock->getCurve();
+    std::shared_ptr<Animation> secondaryCurve = entryBlock->getSecondaryCurve();
 
-    boost::shared_ptr<SequencerEntryBlock> firstBlock(new SequencerEntryBlock(shared_from_this(), entryBlock->getStartTick(), boost::shared_ptr<SequencerEntryBlock>()));
-    boost::shared_ptr<Animation> newCurve = firstBlock->getCurve();
-    boost::shared_ptr<Animation> newSecondaryCurve = firstBlock->getSecondaryCurve();    
+    std::shared_ptr<SequencerEntryBlock> firstBlock(new SequencerEntryBlock(shared_from_this(), entryBlock->getStartTick(), std::shared_ptr<SequencerEntryBlock>()));
+    std::shared_ptr<Animation> newCurve = firstBlock->getCurve();
+    std::shared_ptr<Animation> newSecondaryCurve = firstBlock->getSecondaryCurve();    
 
     int curveNumKeys = curve->getNumKeyframes();
     int index = 0;
     for (index = 0; index < curveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
+        std::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
         if (curKey->tick + entryBlock->getStartTick() < tick) {
             newCurve->addKey(curKey->deepClone());
         } else {
@@ -1122,7 +1122,7 @@ std::pair<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEnt
     int secondaryCurveNumKeys = secondaryCurve->getNumKeyframes();
     int secondaryIndex = 0;
     for (secondaryIndex = 0; secondaryIndex < secondaryCurveNumKeys; ++secondaryIndex) {
-        boost::shared_ptr<Keyframe> curKey = secondaryCurve->getKeyframe(index);
+        std::shared_ptr<Keyframe> curKey = secondaryCurve->getKeyframe(index);
         if (curKey->tick + entryBlock->getStartTick() < tick) {
             newSecondaryCurve->addKey(curKey->deepClone());
         } else {
@@ -1131,21 +1131,21 @@ std::pair<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEnt
     }//for
 
     int secondStartTick = secondaryCurve->getKeyframe(index)->tick + entryBlock->getStartTick();
-    boost::shared_ptr<SequencerEntryBlock> secondBlock(new SequencerEntryBlock(shared_from_this(), secondStartTick, boost::shared_ptr<SequencerEntryBlock>()));
+    std::shared_ptr<SequencerEntryBlock> secondBlock(new SequencerEntryBlock(shared_from_this(), secondStartTick, std::shared_ptr<SequencerEntryBlock>()));
     newCurve = secondBlock->getCurve();
     newSecondaryCurve = secondBlock->getSecondaryCurve();    
 
     for (/*nothing*/; index < curveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
-        boost::shared_ptr<Keyframe> keyClone = curKey->deepClone();
+        std::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
+        std::shared_ptr<Keyframe> keyClone = curKey->deepClone();
 
         keyClone->tick -= secondStartTick;
         newCurve->addKey(keyClone);
     }//for
 
     for (/*nothing*/; secondaryIndex < secondaryCurveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = secondaryCurve->getKeyframe(index);
-        boost::shared_ptr<Keyframe> keyClone = curKey->deepClone();
+        std::shared_ptr<Keyframe> curKey = secondaryCurve->getKeyframe(index);
+        std::shared_ptr<Keyframe> keyClone = curKey->deepClone();
 
         keyClone->tick -= secondStartTick;
         newSecondaryCurve->addKey(keyClone);
@@ -1187,7 +1187,7 @@ void Sequencer::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget
 void Sequencer::adjustFillerHeight()
 {
     int totalHeight = 0;
-    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         if (true == mapIter->first->IsFullBox()) {
             totalHeight += entryWindowHeight;
         } else {
@@ -1207,7 +1207,7 @@ void Sequencer::adjustEntryIndices()
     for (Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().begin(); entryIter != parentWidget->children().end(); ++entryIter, ++index) {
         Gtk::Widget *curWidget = entryIter->get_widget();
 
-        for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+        for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
             Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
 
             if (entryHookWidget == curWidget) {
@@ -1222,7 +1222,7 @@ void Sequencer::notifyOnScroll(double pos)
 {
 /*    
     std::cout << std::endl << "notifyOnScroll" << std::endl;
-    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
 
         int x = 0;
@@ -1246,7 +1246,7 @@ unsigned int Sequencer::getNumEntries() const
     return entries.size();
 }//getNumEntries
 
-void Sequencer::addEntry(boost::shared_ptr<SequencerEntry> entry, int index)
+void Sequencer::addEntry(std::shared_ptr<SequencerEntry> entry, int index)
 {
     if (index < 0) {
         index = entries.size();
@@ -1269,9 +1269,9 @@ void Sequencer::addEntry(boost::shared_ptr<SequencerEntry> entry, int index)
 std::cout << "entries: " << entries.size() << std::endl;
 }//addEntry
 
-boost::shared_ptr<SequencerEntry> Sequencer::addEntry(int index, bool useDefaults)
+std::shared_ptr<SequencerEntry> Sequencer::addEntry(int index, bool useDefaults)
 {
-    boost::shared_ptr<SequencerEntry> newEntry(new SequencerEntry(entryGlade, this, entries.size()+1));
+    std::shared_ptr<SequencerEntry> newEntry(new SequencerEntry(entryGlade, this, entries.size()+1));
 
     if (false == useDefaults) {
         editSequencerEntryProperties(newEntry, false);
@@ -1281,7 +1281,7 @@ boost::shared_ptr<SequencerEntry> Sequencer::addEntry(int index, bool useDefault
     return newEntry;
 }//addEntry
 
-void Sequencer::deleteEntry(boost::shared_ptr<SequencerEntry> entry)
+void Sequencer::deleteEntry(std::shared_ptr<SequencerEntry> entry)
 {
     assert(entries.find(entry) != entries.end());
 
@@ -1292,23 +1292,23 @@ void Sequencer::deleteEntry(boost::shared_ptr<SequencerEntry> entry)
     notifyOnScroll(-1);
 }//deleteEntry
 
-unsigned int Sequencer::getEntryIndex(boost::shared_ptr<SequencerEntry> entry)
+unsigned int Sequencer::getEntryIndex(std::shared_ptr<SequencerEntry> entry)
 {
     return entry->getIndex();
 }//getEntryIndex
 
-boost::shared_ptr<SequencerEntry> Sequencer::getSelectedEntry()
+std::shared_ptr<SequencerEntry> Sequencer::getSelectedEntry()
 {
-    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         if (mapIter->first.get() == selectedEntry) {
             return mapIter->first;
         }//if
     }//for
 
-    return boost::shared_ptr<SequencerEntry>();
+    return std::shared_ptr<SequencerEntry>();
 }//getSelectedEntry
 
-std::pair<std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator> Sequencer::getEntryPair() const
+std::pair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> Sequencer::getEntryPair() const
 {
     return std::make_pair(entries.begin(), entries.end());
 }//getEntryPair
@@ -1346,12 +1346,12 @@ void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
     mainWindow->unsetAllCurveFrames();
 }//notifySelected
 
-boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
+std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
 {
     return selectedEntryBlock;
 }//getSelectedEntryBlock
 
-boost::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
 {
 //    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
 
@@ -1381,7 +1381,7 @@ if (selectedEntryBlock == NULL) {
         }//if
     }//foreach
 
-    return boost::shared_ptr<SequencerEntryBlock>();
+    return std::shared_ptr<SequencerEntryBlock>();
 }//getSelectedEntryBlock
 
 void Sequencer::updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entryBlockSelectionState,
@@ -1435,7 +1435,7 @@ void Sequencer::clearSelectedEntryBlock()
     selectedEntryBlock.reset();
 }//clearSelectedEntryBlock
 
-void Sequencer::editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
+void Sequencer::editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
 {
     mainWindow->editSequencerEntryProperties(entry, createUpdatePoint);
 }//editSequencerEntryProperties
@@ -1451,7 +1451,7 @@ void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
     Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().end();
     int entryNum = 0;
 
-    typedef std::pair<boost::shared_ptr<SequencerEntry>, int > SequencerEntryMapType;
+    typedef std::pair<std::shared_ptr<SequencerEntry>, int > SequencerEntryMapType;
     BOOST_FOREACH (SequencerEntryMapType entryPair, entries) {
         std::string entryTitle = entryPair.first->getTitle();
         entryPair.first->doInit(entryGlade, this, entryNum);
@@ -1487,10 +1487,10 @@ void Sequencer::doSave(boost::archive::xml_oarchive &outputArchive)
 
 void Sequencer::cloneEntryMap()
 {
-    std::map<boost::shared_ptr<SequencerEntry>, int > entriesClone;
-    std::map<int, boost::shared_ptr<SequencerEntry> > entriesCloneRev;
-    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-        boost::shared_ptr<SequencerEntry> entryClone = mapIter->first->deepClone();
+    std::map<std::shared_ptr<SequencerEntry>, int > entriesClone;
+    std::map<int, std::shared_ptr<SequencerEntry> > entriesCloneRev;
+    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+        std::shared_ptr<SequencerEntry> entryClone = mapIter->first->deepClone();
         entriesClone[entryClone] = mapIter->second;
         entriesCloneRev[mapIter->second] = entryClone;
 
@@ -1503,7 +1503,7 @@ void Sequencer::cloneEntryMap()
 
     parentWidget->children().clear();
 
-    for (std::map<int, boost::shared_ptr<SequencerEntry> >::iterator mapIter = entriesCloneRev.begin(); mapIter != entriesCloneRev.end(); ++mapIter) {
+    for (std::map<int, std::shared_ptr<SequencerEntry> >::iterator mapIter = entriesCloneRev.begin(); mapIter != entriesCloneRev.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
         parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
     }//for
@@ -1519,14 +1519,14 @@ void Sequencer::cloneEntryMap()
  std::cout << "cEM 5" << std::endl;   
 }//cloneEntryMap
 
-void Sequencer::setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > entryMap)
+void Sequencer::setEntryMap(std::map<std::shared_ptr<SequencerEntry>, int > entryMap)
 {
 ////!!!! Unset selected entry block
 ////!!!! Switch select selected entry
 
-    std::map<int, boost::shared_ptr<SequencerEntry> > entriesRev;
+    std::map<int, std::shared_ptr<SequencerEntry> > entriesRev;
 
-    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         entriesRev[mapIter->second] = mapIter->first;
         //parentWidget->children().remove(*mapIter->first->getHookWidget());
     }//for
@@ -1535,7 +1535,7 @@ void Sequencer::setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > en
 
     parentWidget->children().clear();
 
-    for (std::map<int, boost::shared_ptr<SequencerEntry> >::iterator mapIter = entriesRev.begin(); mapIter != entriesRev.end(); ++mapIter) {
+    for (std::map<int, std::shared_ptr<SequencerEntry> >::iterator mapIter = entriesRev.begin(); mapIter != entriesRev.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
         parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
     }//for
@@ -1549,15 +1549,15 @@ void Sequencer::setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > en
     selectedEntry = NULL;
 }//setEntryMap
 
-std::map<boost::shared_ptr<SequencerEntry>, int > Sequencer::getEntryMap()
+std::map<std::shared_ptr<SequencerEntry>, int > Sequencer::getEntryMap()
 {
     return entries;
 }//getEntryMap
 
 /*
-boost::shared_ptr<VectorStreambuf> Sequencer::serializeEntryMap()
+std::shared_ptr<VectorStreambuf> Sequencer::serializeEntryMap()
 {
-    boost::shared_ptr<VectorStreambuf> outputStream(new VectorStreambuf);
+    std::shared_ptr<VectorStreambuf> outputStream(new VectorStreambuf);
 
     boost::archive::binary_oarchive outputArchive(*outputStream, boost::archive::no_codecvt | boost::archive::no_header);
 
@@ -1566,7 +1566,7 @@ boost::shared_ptr<VectorStreambuf> Sequencer::serializeEntryMap()
     return outputStream;
 }//serializeEntryMap
 
-void Sequencer::deserializeEntryMap(boost::shared_ptr<VectorStreambuf> streambuf)
+void Sequencer::deserializeEntryMap(std::shared_ptr<VectorStreambuf> streambuf)
 {
     boost::archive::binary_iarchive inputArchive(*streambuf, boost::archive::no_codecvt | boost::archive::no_header);
 
@@ -1603,7 +1603,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
     Globals &globals = Globals::Instance();
 
-    for (std::map<boost::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
+    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
         Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
 
         Gdk::Rectangle entryRect;
@@ -1663,7 +1663,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 {
     Globals &globals = Globals::Instance();
 
-    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
+    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
         int startTick = entryBlockIter->second->getStartTick();
         int duration = entryBlockIter->second->getDuration();
 
@@ -1671,7 +1671,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
             continue;
         }//if
 
-        std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator nextEntryBlockIter = entryBlockIter;
+        std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator nextEntryBlockIter = entryBlockIter;
         ++nextEntryBlockIter;
 
         int relativeStartXTick = startTick;

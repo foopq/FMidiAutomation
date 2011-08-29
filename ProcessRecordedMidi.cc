@@ -178,14 +178,14 @@ void FMidiAutomationMainWindow::processRecordedMidi()
 
     JackSingleton &jackSingleton = JackSingleton::Instance();
 
-    typedef std::pair<jack_port_t *, boost::shared_ptr<PortStreamTokenizer> > StreamTokenizersPair;
-    std::map<jack_port_t *, boost::shared_ptr<PortStreamTokenizer> > streamTokenizers;
+    typedef std::pair<jack_port_t *, std::shared_ptr<PortStreamTokenizer> > StreamTokenizersPair;
+    std::map<jack_port_t *, std::shared_ptr<PortStreamTokenizer> > streamTokenizers;
 
-    typedef std::pair<jack_port_t *, boost::shared_ptr<SequencerEntry> > EntryMapPair;
-    std::multimap<jack_port_t *, boost::shared_ptr<SequencerEntry> > entryMap;
+    typedef std::pair<jack_port_t *, std::shared_ptr<SequencerEntry> > EntryMapPair;
+    std::multimap<jack_port_t *, std::shared_ptr<SequencerEntry> > entryMap;
     Globals &globals = Globals::Instance();
 
-    typedef std::pair<boost::shared_ptr<SequencerEntry>, int> EntryPairType;
+    typedef std::pair<std::shared_ptr<SequencerEntry>, int> EntryPairType;
     BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
         std::set<jack_port_t *> ports = entry.first->getInputPorts();
         BOOST_FOREACH (jack_port_t *port, ports) {
@@ -200,7 +200,7 @@ void FMidiAutomationMainWindow::processRecordedMidi()
     BOOST_FOREACH (std::string inputPort, inputPorts) {
         jack_port_t *jackPort = jackSingleton.getInputPort(inputPort);
 
-        boost::shared_ptr<PortStreamTokenizer> tokenizer(new PortStreamTokenizer);
+        std::shared_ptr<PortStreamTokenizer> tokenizer(new PortStreamTokenizer);
         streamTokenizers[jackPort] = tokenizer;
     }//foreach
 
@@ -216,7 +216,7 @@ void FMidiAutomationMainWindow::processRecordedMidi()
     std::cout << "recordBufferHeaders: " << bufferHeaders.size() << std::endl;
 
     BOOST_FOREACH (MidiInputInfoHeader header, bufferHeaders) {
-        boost::shared_ptr<PortStreamTokenizer> tokenizer = streamTokenizers[header.port];
+        std::shared_ptr<PortStreamTokenizer> tokenizer = streamTokenizers[header.port];
         tokenizer->addDataToStream(&recordBuffer[header.bufferPos], header.length);
 
         bool hadToken = false;
@@ -239,7 +239,7 @@ void FMidiAutomationMainWindow::processRecordedMidi()
     std::cout << "2" << std::endl;
 
 /*    
-    std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap = globals.sequencer->getEntryMap();
+    std::map<std::shared_ptr<SequencerEntry>, int > origEntryMap = globals.sequencer->getEntryMap();
     gdk_threads_enter();
     globals.sequencer->cloneEntryMap();
     gdk_threads_leave();
@@ -252,9 +252,9 @@ void FMidiAutomationMainWindow::processRecordedMidi()
 
     std::cout << "3" << std::endl;
 
-    std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap = globals.sequencer->getEntryMap();
+    std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap = globals.sequencer->getEntryMap();
 
-    boost::shared_ptr<Command> processRecordedMidiCommand(new ProcessRecordedMidiCommand(origEntryMap, newEntryMap));
+    std::shared_ptr<Command> processRecordedMidiCommand(new ProcessRecordedMidiCommand(origEntryMap, newEntryMap));
     CommandManager::Instance().setNewCommand(processRecordedMidiCommand, false);
 
     std::cout << "almost out processRecordMidi" << std::endl;
@@ -272,9 +272,9 @@ void FMidiAutomationMainWindow::finishProcessRecordedMidi()
     std::cout << "finishProcessRecordedMidi" << std::endl;
 
     Globals &globals = Globals::Instance();
-    typedef std::pair<boost::shared_ptr<SequencerEntry>, int> EntryPairType;
+    typedef std::pair<std::shared_ptr<SequencerEntry>, int> EntryPairType;
 
-    std::map<boost::shared_ptr<SequencerEntry>, int > origEntryMap = globals.sequencer->getEntryMap();
+    std::map<std::shared_ptr<SequencerEntry>, int > origEntryMap = globals.sequencer->getEntryMap();
     globals.sequencer->cloneEntryMap();
 
     std::cout << "2.5" << std::endl;
@@ -285,9 +285,9 @@ void FMidiAutomationMainWindow::finishProcessRecordedMidi()
 
     std::cout << "3" << std::endl;
 
-    std::map<boost::shared_ptr<SequencerEntry>, int > newEntryMap = globals.sequencer->getEntryMap();
+    std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap = globals.sequencer->getEntryMap();
 
-    boost::shared_ptr<Command> processRecordedMidiCommand(new ProcessRecordedMidiCommand(origEntryMap, newEntryMap));
+    std::shared_ptr<Command> processRecordedMidiCommand(new ProcessRecordedMidiCommand(origEntryMap, newEntryMap));
     CommandManager::Instance().setNewCommand(processRecordedMidiCommand, false);
 
     std::cout << "almost out processRecordMidi" << std::endl;
@@ -309,23 +309,23 @@ void SequencerEntry::commitRecordedTokens()
     int startTick = recordTokenBuffer[0].curFrame;
     int lastTickTime = startTick;
 
-    std::deque<boost::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
+    std::deque<std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
 
-    boost::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(shared_from_this(), startTick, boost::shared_ptr<SequencerEntryBlock>()));
+    std::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(shared_from_this(), startTick, std::shared_ptr<SequencerEntryBlock>()));
     addEntryBlock(startTick, entryBlock);
     newEntryBlocks.push_back(entryBlock);
 
-    boost::shared_ptr<Animation> animCurve = entryBlock->getCurve();
+    std::shared_ptr<Animation> animCurve = entryBlock->getCurve();
 
     BOOST_FOREACH (MidiToken &token, recordTokenBuffer) {
-        boost::shared_ptr<Keyframe> keyframe(new Keyframe);
+        std::shared_ptr<Keyframe> keyframe(new Keyframe);
 
         keyframe->tick = token.curFrame - startTick;
         keyframe->value = token.value;
         keyframe->curveType = CurveType::Step;
 
         if ((keyframe->tick - lastTickTime) > separationTickTime) {
-            entryBlock.reset(new SequencerEntryBlock(shared_from_this(), keyframe->tick, boost::shared_ptr<SequencerEntryBlock>()));
+            entryBlock.reset(new SequencerEntryBlock(shared_from_this(), keyframe->tick, std::shared_ptr<SequencerEntryBlock>()));
             addEntryBlock(keyframe->tick, entryBlock);
             animCurve = entryBlock->getCurve();
             newEntryBlocks.push_back(entryBlock);
@@ -338,7 +338,7 @@ void SequencerEntry::commitRecordedTokens()
     mergeEntryBlockLists(shared_from_this(), newEntryBlocks, mergePolicy);
 }//commitRecordedTokens
 
-void SequencerEntry::mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entry, std::deque<boost::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
+void SequencerEntry::mergeEntryBlockLists(std::shared_ptr<SequencerEntry> entry, std::deque<std::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
                                             EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy)
 {
     if (newEntryBlocks.empty() == true) {
@@ -346,13 +346,13 @@ void SequencerEntry::mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entr
         return;
     }//if
 
-    std::set<boost::shared_ptr<SequencerEntryBlock> > newEntryBlocksSet;
-    BOOST_FOREACH (boost::shared_ptr<SequencerEntryBlock> entryBlock, newEntryBlocks) {
+    std::set<std::shared_ptr<SequencerEntryBlock> > newEntryBlocksSet;
+    BOOST_FOREACH (std::shared_ptr<SequencerEntryBlock> entryBlock, newEntryBlocks) {
         newEntryBlocksSet.insert(entryBlock);
     }//foreach
 
-    std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter;
-    std::deque<boost::shared_ptr<SequencerEntryBlock> > oldEntryBlocks;
+    std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter;
+    std::deque<std::shared_ptr<SequencerEntryBlock> > oldEntryBlocks;
     for (entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
         if (newEntryBlocksSet.find(entryBlockIter->second) == newEntryBlocksSet.end()) {
             oldEntryBlocks.push_back(entryBlockIter->second);
@@ -360,8 +360,8 @@ void SequencerEntry::mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entr
     }//for
 
     while (oldEntryBlocks.empty() == false) {
-        boost::shared_ptr<SequencerEntryBlock> oldEntryBlock = oldEntryBlocks.front();
-        boost::shared_ptr<SequencerEntryBlock> newEntryBlock = newEntryBlocks.front();
+        std::shared_ptr<SequencerEntryBlock> oldEntryBlock = oldEntryBlocks.front();
+        std::shared_ptr<SequencerEntryBlock> newEntryBlock = newEntryBlocks.front();
 
         int oldEndTick = oldEntryBlock->getStartTick() + oldEntryBlock->getDuration();
         int newEndTick = newEntryBlock->getStartTick() + newEntryBlock->getDuration();
@@ -379,7 +379,7 @@ void SequencerEntry::mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entr
         }//if
 
         //otherwise new is appened to old or within old or vice-versa
-        boost::shared_ptr<SequencerEntryBlock> mergedBlock;
+        std::shared_ptr<SequencerEntryBlock> mergedBlock;
         mergedBlock = mergeEntryBlocks(oldEntryBlock, newEntryBlock, mergePolicy);
 
         oldEntryBlocks.pop_front();
@@ -389,27 +389,27 @@ void SequencerEntry::mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entr
     }//while
 }//void
 
-boost::shared_ptr<SequencerEntryBlock> SequencerEntry::mergeEntryBlocks(boost::shared_ptr<SequencerEntryBlock> oldEntryBlock, boost::shared_ptr<SequencerEntryBlock> newEntryBlock,
+std::shared_ptr<SequencerEntryBlock> SequencerEntry::mergeEntryBlocks(std::shared_ptr<SequencerEntryBlock> oldEntryBlock, std::shared_ptr<SequencerEntryBlock> newEntryBlock,
                                                                            EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy)
 {
-    boost::shared_ptr<Animation> oldCurve = oldEntryBlock->getCurve();
-    boost::shared_ptr<Animation> oldSecondaryCurve = oldEntryBlock->getSecondaryCurve();
-    boost::shared_ptr<Animation> newCurve = newEntryBlock->getCurve();
-    boost::shared_ptr<Animation> newSecondaryCurve = newEntryBlock->getSecondaryCurve();
+    std::shared_ptr<Animation> oldCurve = oldEntryBlock->getCurve();
+    std::shared_ptr<Animation> oldSecondaryCurve = oldEntryBlock->getSecondaryCurve();
+    std::shared_ptr<Animation> newCurve = newEntryBlock->getCurve();
+    std::shared_ptr<Animation> newSecondaryCurve = newEntryBlock->getSecondaryCurve();
 
     int newCurveStartTick = newEntryBlock->getStartTick();
     int newCurveEndTick = newCurveStartTick + newEntryBlock->getDuration();
 
     int startTick = std::min(oldEntryBlock->getStartTick(), newEntryBlock->getStartTick());
 
-    boost::shared_ptr<SequencerEntryBlock> merged(new SequencerEntryBlock(shared_from_this(), startTick, boost::shared_ptr<SequencerEntryBlock>()));
+    std::shared_ptr<SequencerEntryBlock> merged(new SequencerEntryBlock(shared_from_this(), startTick, std::shared_ptr<SequencerEntryBlock>()));
 
-    boost::shared_ptr<Animation> mergedCurve = merged->getCurve();
-    boost::shared_ptr<Animation> mergedSecondaryCurve = merged->getSecondaryCurve();    
+    std::shared_ptr<Animation> mergedCurve = merged->getCurve();
+    std::shared_ptr<Animation> mergedSecondaryCurve = merged->getSecondaryCurve();    
 
     int oldCurveNumKeys = oldCurve->getNumKeyframes();
     for (int index = 0; index < oldCurveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = oldCurve->getKeyframe(index);
+        std::shared_ptr<Keyframe> curKey = oldCurve->getKeyframe(index);
 
         switch (mergePolicy) {
             case EntryBlockMergePolicy::Merge:
@@ -438,13 +438,13 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntry::mergeEntryBlocks(boost::s
 
     int newCurveNumKeys = newCurve->getNumKeyframes();
     for (int index = 0; index < newCurveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = newCurve->getKeyframe(index);
+        std::shared_ptr<Keyframe> curKey = newCurve->getKeyframe(index);
         mergedCurve->addKey(curKey->deepClone());
     }//for
 
     int oldSecondaryCurveNumKeys = oldSecondaryCurve->getNumKeyframes();
     for (int index = 0; index < oldSecondaryCurveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = oldSecondaryCurve->getKeyframe(index);
+        std::shared_ptr<Keyframe> curKey = oldSecondaryCurve->getKeyframe(index);
 
         switch (mergePolicy) {
             case EntryBlockMergePolicy::Merge:
@@ -473,7 +473,7 @@ boost::shared_ptr<SequencerEntryBlock> SequencerEntry::mergeEntryBlocks(boost::s
 
     int newSecondaryCurveNumKeys = newSecondaryCurve->getNumKeyframes();
     for (int index = 0; index < newSecondaryCurveNumKeys; ++index) {
-        boost::shared_ptr<Keyframe> curKey = newSecondaryCurve->getKeyframe(index);
+        std::shared_ptr<Keyframe> curKey = newSecondaryCurve->getKeyframe(index);
         mergedSecondaryCurve->addKey(curKey->deepClone());
     }//for
 

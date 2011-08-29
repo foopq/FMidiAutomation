@@ -13,9 +13,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <gtkmm.h>
 #include <vector>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/function.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/serialization/version.hpp>
 #include "FMidiAutomationMainWindow.h"
 
@@ -63,7 +62,7 @@ struct Keyframe
     KeySelectedType::KeySelectedType getSelectedState();
     void setSelectedState(KeySelectedType::KeySelectedType state);
 
-    boost::shared_ptr<Keyframe> deepClone();
+    std::shared_ptr<Keyframe> deepClone();
 
 private:
     KeySelectedType::KeySelectedType selectedState;
@@ -74,28 +73,28 @@ private:
 
 class Animation
 {
-    boost::shared_ptr<Animation> instanceOf;
-    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::shared_ptr<Animation> instanceOf;
+    std::map<int, std::shared_ptr<Keyframe> > keyframes;
     int *startTick;
 
     Animation() {}
 
-    void absorbCurve(boost::shared_ptr<Animation> otherAnim);
+    void absorbCurve(std::shared_ptr<Animation> otherAnim);
 
 public:
-    Animation(SequencerEntryBlock *owningEntryBlock, boost::shared_ptr<Animation> instanceOf);
+    Animation(SequencerEntryBlock *owningEntryBlock, std::shared_ptr<Animation> instanceOf);
     ~Animation();
 
-    boost::shared_ptr<Animation> deepClone();
+    std::shared_ptr<Animation> deepClone();
 
-    void addKey(boost::shared_ptr<Keyframe> keyframe);
+    void addKey(std::shared_ptr<Keyframe> keyframe);
     //void deleteKey(int tick);
-    void deleteKey(boost::shared_ptr<Keyframe> keyframe);
+    void deleteKey(std::shared_ptr<Keyframe> keyframe);
     int getNumKeyframes() const;
-    boost::shared_ptr<Keyframe> getKeyframe(unsigned int index);
-    boost::shared_ptr<Keyframe> getKeyframeAtTick(int tick);
+    std::shared_ptr<Keyframe> getKeyframe(unsigned int index);
+    std::shared_ptr<Keyframe> getKeyframeAtTick(int tick);
 
-    boost::shared_ptr<Keyframe> getNextKeyframe(boost::shared_ptr<Keyframe> keyframe);
+    std::shared_ptr<Keyframe> getNextKeyframe(std::shared_ptr<Keyframe> keyframe);
 
     double sample(int tick);
 
@@ -108,7 +107,7 @@ public:
 };//Animation
 
 void drawAnimation(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, 
-                    std::vector<int> &verticalPixelTickValues, std::vector<float> &horizontalPixelValues, boost::shared_ptr<Animation> animation);
+                    std::vector<int> &verticalPixelTickValues, std::vector<float> &horizontalPixelValues, std::shared_ptr<Animation> animation);
 
 
 BOOST_CLASS_VERSION(Animation, 1);

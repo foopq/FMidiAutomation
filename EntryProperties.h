@@ -15,7 +15,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <gtkmm.h>
 #include <vector>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class SequencerEntry;
 struct SequencerEntryImpl;
@@ -23,11 +23,11 @@ struct SequencerEntryImpl;
 struct EntryProperties
 {
     bool wasChanged;
-    boost::shared_ptr<SequencerEntryImpl> origImpl;
-    boost::shared_ptr<SequencerEntryImpl> newImpl;
+    std::shared_ptr<SequencerEntryImpl> origImpl;
+    std::shared_ptr<SequencerEntryImpl> newImpl;
     Glib::RefPtr<Gtk::Builder> uiXml;
 
-    EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<SequencerEntry> entry, bool hideCancelButton);
+    EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<SequencerEntry> entry, bool hideCancelButton);
 
 private:
     void ccControllerValueChanged();

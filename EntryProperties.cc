@@ -12,7 +12,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <iostream>
 #include <boost/lexical_cast.hpp>
 
-EntryProperties::EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml_, boost::shared_ptr<SequencerEntry> entry, bool hideCancelButton)
+EntryProperties::EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_ptr<SequencerEntry> entry, bool hideCancelButton)
 {
     uiXml = uiXml_;
     origImpl = entry->getImplClone();

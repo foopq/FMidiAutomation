@@ -11,7 +11,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #ifndef __PASTEMANAGER_H
 #define __PASTEMANAGER_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/function.hpp>
 #include <stack>
 #include <gtkmm.h>
@@ -35,7 +35,7 @@ class PasteManager
     Gtk::ImageMenuItem *menuPasteInstance;
     bool pasteOnly;
 
-    boost::shared_ptr<PasteCommand> command;
+    std::shared_ptr<PasteCommand> command;
 
 public:
     static PasteManager &Instance();
@@ -48,31 +48,31 @@ public:
 
     void doPaste();
     void doPasteInstance();
-    void setNewCommand(boost::shared_ptr<PasteCommand> command);
+    void setNewCommand(std::shared_ptr<PasteCommand> command);
 };//PasteManager
 
 struct PasteSequencerEntryBlocksCommand : public PasteCommand
 {
-    PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
+    PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerEntryBlocksCommand();
 
     void doPaste();
     void doPasteInstance();
 
 private:    
-    std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
 };//PasteSequencerEntryBlocksCommand
 
 struct PasteSequencerKeyframesCommand : public PasteCommand
 {
-    PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
+    PasteSequencerKeyframesCommand(std::map<int, std::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerKeyframesCommand();
 
     void doPaste();
     void doPasteInstance();
 
 private:
-    std::map<int, boost::shared_ptr<Keyframe> > keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > keyframes;
 };//PasteSequencerKeyframesCommand
 
 

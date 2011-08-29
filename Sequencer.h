@@ -17,9 +17,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <set>
 #include <deque>
 #include <jack/jack.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/function.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
@@ -50,22 +49,22 @@ enum EntryBlockMergePolicy
 struct SequencerEntryBlockSelectionInfo
 {
     SequencerEntry *entry;
-    boost::shared_ptr<SequencerEntryBlock> entryBlock;
+    std::shared_ptr<SequencerEntryBlock> entryBlock;
     Gdk::Rectangle drawnArea;
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
 };//SequencerEntryBlockSelectionInfo
 
-class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntryBlock>
+class SequencerEntryBlock : public std::enable_shared_from_this<SequencerEntryBlock>
 {
-    boost::weak_ptr<SequencerEntry> owningEntry;
+    std::weak_ptr<SequencerEntry> owningEntry;
     Glib::ustring title;
     int startTick;
-    boost::shared_ptr<SequencerEntryBlock> instanceOf;
+    std::shared_ptr<SequencerEntryBlock> instanceOf;
     //int duration; //in ticks, or unused if instanceOf isn't NULL
-    boost::shared_ptr<Animation> curve;
-    boost::shared_ptr<Animation> secondaryCurve;
+    std::shared_ptr<Animation> curve;
+    std::shared_ptr<Animation> secondaryCurve;
 
     //UI properties
     double valuesPerPixel;
@@ -74,12 +73,12 @@ class SequencerEntryBlock : public boost::enable_shared_from_this<SequencerEntry
     SequencerEntryBlock() {} //For serialization
 
 protected:
-    void setInstanceOf(boost::shared_ptr<SequencerEntryBlock> instanceOf);
+    void setInstanceOf(std::shared_ptr<SequencerEntryBlock> instanceOf);
 
 public:    
-    SequencerEntryBlock(boost::shared_ptr<SequencerEntry> owningEntry, int startTick, boost::shared_ptr<SequencerEntryBlock> instanceOf);
+    SequencerEntryBlock(std::shared_ptr<SequencerEntry> owningEntry, int startTick, std::shared_ptr<SequencerEntryBlock> instanceOf);
 
-    void cloneCurves(boost::shared_ptr<SequencerEntryBlock> entryBlock);
+    void cloneCurves(std::shared_ptr<SequencerEntryBlock> entryBlock);
 
     void moveBlock(int startTick);
 //    void setDuration(int duration);
@@ -93,18 +92,18 @@ public:
     int getStartTick() const;
     int getDuration() const;
     Glib::ustring getTitle() const;
-    boost::shared_ptr<SequencerEntryBlock> getInstanceOf() const;
+    std::shared_ptr<SequencerEntryBlock> getInstanceOf() const;
 
-    boost::shared_ptr<SequencerEntry> getOwningEntry() const;
+    std::shared_ptr<SequencerEntry> getOwningEntry() const;
 
-    boost::shared_ptr<Animation> getCurve();
-    boost::shared_ptr<Animation> getSecondaryCurve();
+    std::shared_ptr<Animation> getCurve();
+    std::shared_ptr<Animation> getSecondaryCurve();
 
-    boost::shared_ptr<Keyframe> getNextKeyframe(boost::shared_ptr<Keyframe> keyframe);
+    std::shared_ptr<Keyframe> getNextKeyframe(std::shared_ptr<Keyframe> keyframe);
 
     int *getRawStartTick();
 
-    boost::shared_ptr<SequencerEntryBlock> deepClone();
+    std::shared_ptr<SequencerEntryBlock> deepClone();
 
     void renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
 
@@ -124,7 +123,7 @@ struct SequencerEntryImpl
     SequencerEntryImpl();
     ~SequencerEntryImpl();
 
-    boost::shared_ptr<SequencerEntryImpl> clone();
+    std::shared_ptr<SequencerEntryImpl> clone();
     bool operator==(SequencerEntryImpl &other);
 
     SequencerEntryImpl::ControlType controllerType;
@@ -147,9 +146,9 @@ struct SequencerEntryImpl
     friend class boost::serialization::access;
 };//SequencerEntryImpl
 
-class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
+class SequencerEntry : public std::enable_shared_from_this<SequencerEntry>
 {
-    boost::shared_ptr<SequencerEntryImpl> impl;
+    std::shared_ptr<SequencerEntryImpl> impl;
 
     Sequencer *sequencer;
     Glib::RefPtr<Gtk::Builder> uiXml;
@@ -161,7 +160,7 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     Gtk::CheckButton *activeCheckButton;
     bool isFullBox;
     int curIndex;
-    std::map<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks;
+    std::map<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
     std::set<jack_port_t *> inputPorts;
     std::set<jack_port_t *> outputPorts;
@@ -182,10 +181,10 @@ class SequencerEntry : public boost::enable_shared_from_this<SequencerEntry>
     void handleMutePressed();
     void handleMuteSmPressed();
 
-    void mergeEntryBlockLists(boost::shared_ptr<SequencerEntry> entry, std::deque<boost::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
+    void mergeEntryBlockLists(std::shared_ptr<SequencerEntry> entry, std::deque<std::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
                               EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy);
 
-    boost::shared_ptr<SequencerEntryBlock> mergeEntryBlocks(boost::shared_ptr<SequencerEntryBlock> oldEntryBlock, boost::shared_ptr<SequencerEntryBlock> newEntryBlock,
+    std::shared_ptr<SequencerEntryBlock> mergeEntryBlocks(std::shared_ptr<SequencerEntryBlock> oldEntryBlock, std::shared_ptr<SequencerEntryBlock> newEntryBlock,
                                                              EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy);
 
     SequencerEntry() {} //For serialization and clone
@@ -198,9 +197,9 @@ public:
     double sample(int tick);
     unsigned char sampleChar(int tick);
 
-    const boost::shared_ptr<SequencerEntryImpl> getImpl();
-    boost::shared_ptr<SequencerEntryImpl> getImplClone();
-    void setNewDataImpl(boost::shared_ptr<SequencerEntryImpl> impl);
+    const std::shared_ptr<SequencerEntryImpl> getImpl();
+    std::shared_ptr<SequencerEntryImpl> getImplClone();
+    void setNewDataImpl(std::shared_ptr<SequencerEntryImpl> impl);
 
     void setThemeColours();
 
@@ -216,10 +215,10 @@ public:
 
     void setLabelColour(Gdk::Color colour);
 
-    void addEntryBlock(int, boost::shared_ptr<SequencerEntryBlock> entryBlock);
-    void removeEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock);
-    boost::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
-    std::pair<boost::shared_ptr<SequencerEntryBlock>, boost::shared_ptr<SequencerEntryBlock> > splitEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock, int tick);
+    void addEntryBlock(int, std::shared_ptr<SequencerEntryBlock> entryBlock);
+    void removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
+    std::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
+    std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick);
 
     std::set<jack_port_t *> getInputPorts() const;
     std::set<jack_port_t *> getOutputPorts() const;
@@ -230,7 +229,7 @@ public:
     void addRecordToken(MidiToken &token);
     void commitRecordedTokens();
 
-    boost::shared_ptr<SequencerEntry> deepClone();
+    std::shared_ptr<SequencerEntry> deepClone();
 
     void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
                             std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo, 
@@ -243,13 +242,13 @@ public:
 class Sequencer
 {
     FMidiAutomationMainWindow *mainWindow;
-    std::map<boost::shared_ptr<SequencerEntry>, int > entries; //int is abs height
+    std::map<std::shared_ptr<SequencerEntry>, int > entries; //int is abs height
     Glib::ustring entryGlade;
     Gtk::VBox *parentWidget;
     Gtk::Label tmpLabel;
     Gtk::VBox tmpLabelBox;
     SequencerEntry *selectedEntry;
-    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock;
+    std::shared_ptr<SequencerEntryBlock> selectedEntryBlock;
     std::vector<SequencerEntryBlockSelectionInfo> selectionInfos;
 
     void adjustEntryIndices();
@@ -257,33 +256,33 @@ class Sequencer
 ////    Sequencer() {} //For serialization
 
 protected:
-    void setEntryMap(std::map<boost::shared_ptr<SequencerEntry>, int > entryMap);
+    void setEntryMap(std::map<std::shared_ptr<SequencerEntry>, int > entryMap);
 
 public:
     Sequencer(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
     void doInit(const Glib::ustring &entryGlade, Gtk::VBox *parentWidget, FMidiAutomationMainWindow *mainWindow);
 
-    boost::shared_ptr<SequencerEntry> addEntry(int index, bool useDefaults);
-    void addEntry(boost::shared_ptr<SequencerEntry> entry, int index);
-    void deleteEntry(boost::shared_ptr<SequencerEntry> entry);
+    std::shared_ptr<SequencerEntry> addEntry(int index, bool useDefaults);
+    void addEntry(std::shared_ptr<SequencerEntry> entry, int index);
+    void deleteEntry(std::shared_ptr<SequencerEntry> entry);
 
-    boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock() const;
-    boost::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection); //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+    std::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock() const;
+    std::shared_ptr<SequencerEntryBlock> getSelectedEntryBlock(int x, int y, bool setSelection); //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
     void updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entryBlockSelectionState,
                                             gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,
                                             int areaWidth, int areaHeight);
     void clearSelectedEntryBlock();
 
-    unsigned int getEntryIndex(boost::shared_ptr<SequencerEntry> entry);
-    boost::shared_ptr<SequencerEntry> getSelectedEntry();
-    std::pair<std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<boost::shared_ptr<SequencerEntry>, int >::const_iterator> getEntryPair() const;
+    unsigned int getEntryIndex(std::shared_ptr<SequencerEntry> entry);
+    std::shared_ptr<SequencerEntry> getSelectedEntry();
+    std::pair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> getEntryPair() const;
     unsigned int getNumEntries() const;
  
     void doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next);
     void notifySelected(SequencerEntry *selectedEntry);
     void notifyOnScroll(double pos);
 
-    void editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
+    void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 
     void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues);
 
@@ -295,10 +294,10 @@ public:
 
     //For midi processing
     void cloneEntryMap();
-    std::map<boost::shared_ptr<SequencerEntry>, int > getEntryMap();    
+    std::map<std::shared_ptr<SequencerEntry>, int > getEntryMap();    
 
-//    boost::shared_ptr<VectorStreambuf> serializeEntryMap();
-//    void deserializeEntryMap(boost::shared_ptr<VectorStreambuf> streambuf);
+//    std::shared_ptr<VectorStreambuf> serializeEntryMap();
+//    void deserializeEntryMap(std::shared_ptr<VectorStreambuf> streambuf);
 
     friend struct ProcessRecordedMidiCommand;
 };//Sequencer

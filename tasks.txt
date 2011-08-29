@@ -1,4 +1,6 @@
-- boost::shared_ptr to std::shared_ptr
+- add recent file queue
+
+- for some reason, somtimes entry blocks don't appear in the same order as saved
 
 - sequencer should show entry block properties directly in ui.. hiding/replacing "Selected Keyframe" bits
 

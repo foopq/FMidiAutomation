@@ -58,7 +58,7 @@ void PasteManager::clearCommand()
     command.reset();
 }//clearcommand
 
-void PasteManager::setNewCommand(boost::shared_ptr<PasteCommand> command_)
+void PasteManager::setNewCommand(std::shared_ptr<PasteCommand> command_)
 {
     command = command_;
     menuPaste->set_sensitive(true);
@@ -68,7 +68,7 @@ void PasteManager::setNewCommand(boost::shared_ptr<PasteCommand> command_)
     }//if
 }//setNewCommand
 
-PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > entryBlocks_)
+PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks_)
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -93,11 +93,11 @@ void PasteSequencerEntryBlocksCommand::doPaste()
     int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
     int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
 
-    std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
+    std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
     newEntryBlocks.reserve(entryBlocks.size());
 
     BOOST_FOREACH (auto entryIter, entryBlocks) {
-        boost::shared_ptr<SequencerEntry> selectedEntry = entryIter.second->getOwningEntry();
+        std::shared_ptr<SequencerEntry> selectedEntry = entryIter.second->getOwningEntry();
 
         if (selectedEntry == NULL) {
             continue;
@@ -105,14 +105,14 @@ void PasteSequencerEntryBlocksCommand::doPaste()
 
         int startTick = entryIter.second->getStartTick() + tickOffset;
 
-        boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter.second));
+        std::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter.second));
         newEntryBlock->setTitle(entryIter.second->getTitle());
         newEntryBlock->cloneCurves(entryIter.second);
 
         newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlock));
     }//for
 
-    boost::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
+    std::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
     CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPaste
 
@@ -131,11 +131,11 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance()
     int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
     int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
 
-    std::vector<std::pair<boost::shared_ptr<SequencerEntry>, boost::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
+    std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
     newEntryBlocks.reserve(entryBlocks.size());
 
-    for (std::map<int, boost::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
-        boost::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
+    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
+        std::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
 
         if (selectedEntry == NULL) {
             continue;
@@ -143,17 +143,17 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance()
 
         int startTick = entryIter->second->getStartTick() + tickOffset;
 
-        boost::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter->second));
+        std::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter->second));
         newEntryBlock->setTitle(entryIter->second->getTitle() + " (Instance)");
 
         newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlock));
     }//for
 
-    boost::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
+    std::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
     CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPasteInstance
 
-PasteSequencerKeyframesCommand::PasteSequencerKeyframesCommand(std::map<int, boost::shared_ptr<Keyframe> > keyframes_)
+PasteSequencerKeyframesCommand::PasteSequencerKeyframesCommand(std::map<int, std::shared_ptr<Keyframe> > keyframes_)
 {
     keyframes = keyframes_;
 }//constructor
@@ -171,7 +171,7 @@ void PasteSequencerKeyframesCommand::doPaste()
         return;
     }//if
 
-    boost::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
     if (currentlySelectedEntryBlock == NULL) {
         return;
     }//if
@@ -182,7 +182,7 @@ void PasteSequencerKeyframesCommand::doPaste()
     //    return;
     //}//if
 
-    boost::shared_ptr<Command> addKeyframesCommand(new AddKeyframesCommand(currentlySelectedEntryBlock, keyframes, tick - currentlySelectedEntryBlock->getStartTick()));
+    std::shared_ptr<Command> addKeyframesCommand(new AddKeyframesCommand(currentlySelectedEntryBlock, keyframes, tick - currentlySelectedEntryBlock->getStartTick()));
     CommandManager::Instance().setNewCommand(addKeyframesCommand, true);
 }//doPaste
 

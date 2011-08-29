@@ -11,7 +11,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Sequencer.h"
 #include <iostream>
 
-EntryBlockProperties::EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, boost::shared_ptr<SequencerEntryBlock> entryBlock)
+EntryBlockProperties::EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<SequencerEntryBlock> entryBlock)
 {
     Gtk::Dialog *mainDialog;
     uiXml->get_widget("entryBoxProperties", mainDialog);

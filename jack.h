@@ -38,7 +38,7 @@ class JackSingleton
     int curFrame;
     boost::mutex mutex; 
     boost::condition_variable condition;
-    boost::shared_ptr<boost::thread> thread;
+    std::shared_ptr<boost::thread> thread;
 
     bool recordMidi;
     std::vector<unsigned char> midiRecordBuffer;

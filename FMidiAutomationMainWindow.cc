@@ -210,7 +210,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     setThemeColours();
 
     datas.reset(new FMidiAutomationData);
-    datas->addTempoChange(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
+    datas->addTempoChange(0U, std::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
 
     Gtk::ToolButton *button;
     uiXml->get_widget("addButton", button);
@@ -622,7 +622,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
     Globals &globals = Globals::Instance();
 
     if (false == globals.tempoGlobals.tempoDataSelected) {
-        boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, false));
+        std::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, false));
         CommandManager::Instance().setNewCommand(addSequencerEntryCommand, true);
         trackListWindow->queue_draw();
     }//if
@@ -638,13 +638,13 @@ void FMidiAutomationMainWindow::handleAddPressed()
             }//if
 
             bool foundSelected = false;
-            typedef std::pair<int, boost::shared_ptr<Tempo> > TempoMarkerPair;
+            typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
             BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, datas->tempoChanges) {
                 if (true == tempoMarkerPair.second->currentlySelected) {
-                    boost::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
+                    std::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
 
                     boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
-                    boost::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions, callback));
+                    std::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions, callback));
                     CommandManager::Instance().setNewCommand(updateTempoChangeCommand, true);
 
                     foundSelected = true;
@@ -657,14 +657,14 @@ void FMidiAutomationMainWindow::handleAddPressed()
                 (void)checkForTempoSelection(-100, datas->tempoChanges);
         
                 if (datas->tempoChanges.find(graphState.curPointerTick) == datas->tempoChanges.end()) {
-                    boost::shared_ptr<Tempo> tempo(new Tempo);
+                    std::shared_ptr<Tempo> tempo(new Tempo);
                     tempo->bpm = (unsigned int)bpm;
                     tempo->beatsPerBar = beatsPerBar;
                     tempo->barSubDivisions = barSubDivisions;
                     tempo->currentlySelected = true;
 
                     boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
-                    boost::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas, callback));
+                    std::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas, callback));
                     CommandManager::Instance().setNewCommand(addTempoChangeCommand, true);
                 }//if
             }//if
@@ -681,13 +681,13 @@ void FMidiAutomationMainWindow::handleDeletePressed()
     Globals &globals = Globals::Instance();
 
     if (true == globals.tempoGlobals.tempoDataSelected) {
-        std::map<int, boost::shared_ptr<Tempo> >::iterator mapIter = datas->tempoChanges.begin();
+        std::map<int, std::shared_ptr<Tempo> >::iterator mapIter = datas->tempoChanges.begin();
         ++mapIter;
 
         for (/*nothing*/; mapIter != datas->tempoChanges.end(); ++mapIter) {
             if (true == mapIter->second->currentlySelected) {
                 boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
-                boost::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas, callback));
+                std::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas, callback));
                 CommandManager::Instance().setNewCommand(deleteTempoChangeCommand, true);
 
                 graphDrawingArea->queue_draw();
@@ -695,10 +695,10 @@ void FMidiAutomationMainWindow::handleDeletePressed()
             }//if
         }//for
     } else {
-        boost::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
+        std::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
 
         if (entry != NULL) {
-            boost::shared_ptr<Command> deleteSequencerEntryCommand(new DeleteSequencerEntryCommand(sequencer, entry));
+            std::shared_ptr<Command> deleteSequencerEntryCommand(new DeleteSequencerEntryCommand(sequencer, entry));
             CommandManager::Instance().setNewCommand(deleteSequencerEntryCommand, true);
         }//if
     }//if
@@ -706,35 +706,35 @@ void FMidiAutomationMainWindow::handleDeletePressed()
 
 void FMidiAutomationMainWindow::handleUpButtonPressed()
 {
-    boost::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
+    std::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
 
     if (entry != NULL) {
         if (entry->getIndex() == 0) {
             return;
         }//if
 
-        boost::shared_ptr<Command> sequencerEntryUpCommand(new SequencerEntryUpCommand(sequencer, entry));
+        std::shared_ptr<Command> sequencerEntryUpCommand(new SequencerEntryUpCommand(sequencer, entry));
         CommandManager::Instance().setNewCommand(sequencerEntryUpCommand, true);
     }//if
 }//handleUpPressed
 
 void FMidiAutomationMainWindow::handleDownButtonPressed()
 {
-    boost::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
+    std::shared_ptr<SequencerEntry> entry = sequencer->getSelectedEntry();
 
     if (entry != NULL) {
         if (entry->getIndex() == (sequencer->getNumEntries() - 1)) {
             return;
         }//if
 
-        boost::shared_ptr<Command> sequencerEntryDownCommand(new SequencerEntryDownCommand(sequencer, entry));
+        std::shared_ptr<Command> sequencerEntryDownCommand(new SequencerEntryDownCommand(sequencer, entry));
         CommandManager::Instance().setNewCommand(sequencerEntryDownCommand, true);
     }//if
 }//handleDownButtonPressed
 
 void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 {
-    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     assert(selectedEntryBlock != NULL);
 
     selectedEntryBlock->setValuesPerPixel(graphState.valuesPerPixel);
@@ -764,7 +764,7 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 
 void FMidiAutomationMainWindow::handleCurveButtonPressed()
 {
-    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (selectedEntryBlock == NULL) {
         return;
     }//if
@@ -793,7 +793,7 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     if (graphState.keyframeSelectionState.HasSelected() == true) {
         curveEditor->setKeyUIValues(uiXml, graphState.keyframeSelectionState.GetFirstKeyframe());
     } else {
-        curveEditor->setKeyUIValues(uiXml, boost::shared_ptr<Keyframe>());
+        curveEditor->setKeyUIValues(uiXml, std::shared_ptr<Keyframe>());
     }//if
 
     PasteManager::Instance().clearCommand();
@@ -951,13 +951,13 @@ void FMidiAutomationMainWindow::on_menuCopy()
     if (graphState.displayMode == DisplayMode::Sequencer) {
         PasteManager::Instance().setPasteOnly(false);
         if (graphState.entryBlockSelectionState.HasSelected() == true) {
-            boost::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
+            std::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
             PasteManager::Instance().setNewCommand(pasteSequencerEntryBlocksCommand);
         }//if
     } else {
         PasteManager::Instance().setPasteOnly(true);
         if (graphState.keyframeSelectionState.HasSelected() == true) {
-            boost::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(graphState.keyframeSelectionState.GetSelectedKeyframesCopy()));
+            std::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(graphState.keyframeSelectionState.GetSelectedKeyframesCopy()));
             PasteManager::Instance().setNewCommand(pasteSequencerKeyframesCommand);
         }//if
     }//if
@@ -1032,7 +1032,7 @@ void FMidiAutomationMainWindow::on_menuNew()
     Globals &globals = Globals::Instance();
 
     datas.reset(new FMidiAutomationData);
-    datas->addTempoChange(0U, boost::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
+    datas->addTempoChange(0U, std::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
     datas->entryGlade = readEntryGlade();
 
     currentFilename = "";
@@ -1343,15 +1343,15 @@ void FMidiAutomationMainWindow::handleDeleteKeyframe()
 
 void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
 {
-    boost::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
+    std::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     if (selectedEntry != NULL) {
         if (selectedEntry->getEntryBlock(graphState.curPointerTick) != NULL) {
             return;
         }//if
 
-        boost::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(selectedEntry, graphState.curPointerTick, boost::shared_ptr<SequencerEntryBlock>()));
+        std::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(selectedEntry, graphState.curPointerTick, std::shared_ptr<SequencerEntryBlock>()));
 
-        boost::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
+        std::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
 
         graphDrawingArea->queue_draw();
@@ -1360,9 +1360,9 @@ void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
 
 void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
 {
-    //boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    //std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (graphState.entryBlockSelectionState.HasSelected() == true) {
-        boost::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
+        std::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
         CommandManager::Instance().setNewCommand(deleteSequencerEntryBlocksCommand, true);
 
         graphDrawingArea->queue_draw();
@@ -1375,8 +1375,8 @@ void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock()
         return;
     }//if
 
-    //boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    boost::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.entryBlockSelectionState.GetFirstEntryBlock()));
+    //std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    std::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.entryBlockSelectionState.GetFirstEntryBlock()));
     CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
 
     graphDrawingArea->queue_draw();
@@ -1384,7 +1384,7 @@ void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock()
 
 void FMidiAutomationMainWindow::handleSequencerEntryProperties()
 {
-    boost::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (selectedEntryBlock == NULL) {
         return;
     }//if
@@ -1392,7 +1392,7 @@ void FMidiAutomationMainWindow::handleSequencerEntryProperties()
     EntryBlockProperties entryBlockProperties(uiXml, selectedEntryBlock);
 
     if (entryBlockProperties.wasChanged == true) {
-        boost::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockPropertiesCommand(selectedEntryBlock, entryBlockProperties.newTitle));
+        std::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockPropertiesCommand(selectedEntryBlock, entryBlockProperties.newTitle));
         CommandManager::Instance().setNewCommand(changeSequencerEntryBlockTitleCommand, true);
 
         graphDrawingArea->queue_draw();
@@ -1404,7 +1404,7 @@ void FMidiAutomationMainWindow::handleSequencerEntryCurve()
     handleCurveButtonPressed();
 }//handleSequencerEntryCurve
 
-void FMidiAutomationMainWindow::editSequencerEntryProperties(boost::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
+void FMidiAutomationMainWindow::editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
 {
 
 std::cout << "editSequencerEntryProperties 1" << std::endl;
@@ -1415,7 +1415,7 @@ std::cout << "editSequencerEntryProperties 1" << std::endl;
     if (true == entryProperties.wasChanged) {
  std::cout << "editSequencerEntryProperties 2" << std::endl;       
         if (true == createUpdatePoint) {
-            boost::shared_ptr<Command> changeSequencerEntryPropertiesCommand(new ChangeSequencerEntryPropertiesCommand(entry, entryProperties.origImpl, entryProperties.newImpl));
+            std::shared_ptr<Command> changeSequencerEntryPropertiesCommand(new ChangeSequencerEntryPropertiesCommand(entry, entryProperties.origImpl, entryProperties.newImpl));
             CommandManager::Instance().setNewCommand(changeSequencerEntryPropertiesCommand, true);
 
             graphDrawingArea->queue_draw();
@@ -1433,7 +1433,7 @@ void FMidiAutomationMainWindow::doTestInit()
     return; 
 
     /*
-    boost::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, true));
+    std::shared_ptr<Command> addSequencerEntryCommand(new AddSequencerEntryCommand(sequencer, true));
     CommandManager::Instance().setNewCommand(addSequencerEntryCommand);
 
     //sequencer->notifySelected(boost::dynamic_pointer_cast<AddSequencerEntryCommand>(addSequencerEntryCommand)->entry.get());
@@ -1441,8 +1441,8 @@ void FMidiAutomationMainWindow::doTestInit()
 
     handleAddSeqencerEntryBlock();
 
-    boost::shared_ptr<SequencerEntryBlock> entryBlock = boost::dynamic_pointer_cast<AddSequencerEntryCommand>(addSequencerEntryCommand)->entry->getEntryBlock(0);
-    boost::shared_ptr<SequencerEntryBlock> entryBlock2 = sequencer->getSelectedEntryBlock(-1, -1, true);
+    std::shared_ptr<SequencerEntryBlock> entryBlock = boost::dynamic_pointer_cast<AddSequencerEntryCommand>(addSequencerEntryCommand)->entry->getEntryBlock(0);
+    std::shared_ptr<SequencerEntryBlock> entryBlock2 = sequencer->getSelectedEntryBlock(-1, -1, true);
 
     assert(entryBlock == entryBlock2);
     

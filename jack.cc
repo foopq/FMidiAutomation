@@ -374,7 +374,7 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
                 portVec.reserve(maxPortSize);
             }//for
 
-            typedef std::pair<boost::shared_ptr<SequencerEntry>, int> EntryPairType;
+            typedef std::pair<std::shared_ptr<SequencerEntry>, int> EntryPairType;
             BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
 ////////// CHECK TO SEE IF WE SHOULD SAMPLE THIS ENTRY                
                 unsigned char sampledValue = entry.first->sampleChar(curFrame);

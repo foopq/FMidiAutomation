@@ -87,7 +87,7 @@ Glib::RefPtr<Gdk::Pixbuf> scale_keeping_ratio(const Glib::RefPtr<Gdk::Pixbuf>& p
     return pixbuf->scale_simple(target_width, target_height, Gdk::INTERP_BILINEAR);
 }//scale_keeping_ratio 
     
-void scaleImage(boost::shared_ptr<Gtk::Image> image, Glib::RefPtr<Gdk::Pixbuf> pixbuf, int width, int height, bool maintainAspect)
+void scaleImage(std::shared_ptr<Gtk::Image> image, Glib::RefPtr<Gdk::Pixbuf> pixbuf, int width, int height, bool maintainAspect)
 {
     if (true == maintainAspect) {
 	Glib::RefPtr<Gdk::Pixbuf> pixbuf_scaled = scale_keeping_ratio(pixbuf, height, width);
@@ -440,12 +440,12 @@ bool EntryBlockSelectionState::HasSelected()/*{{{*/
     return (currentlySelectedEntryBlocks.empty() == false);
 }//HasSelected/*}}}*/
 
-boost::shared_ptr<SequencerEntryBlock> EntryBlockSelectionState::GetFirstEntryBlock()/*{{{*/
+std::shared_ptr<SequencerEntryBlock> EntryBlockSelectionState::GetFirstEntryBlock()/*{{{*/
 {
     if (HasSelected() == true) {
         return ((*currentlySelectedEntryBlocks.begin()).second);
     } else {
-        return boost::shared_ptr<SequencerEntryBlock>();
+        return std::shared_ptr<SequencerEntryBlock>();
     }//if
 }//GetFirstEntryBlock/*}}}*/
 
@@ -455,12 +455,12 @@ void EntryBlockSelectionState::ClearSelected()/*{{{*/
     currentlySelectedEntryOriginalStartTicks.clear();
 }//ClearSelected/*}}}*/
 
-std::multimap<int, boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetEntryBlocksMapCopy()/*{{{*/
+std::multimap<int, std::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetEntryBlocksMapCopy()/*{{{*/
 {
     return currentlySelectedEntryBlocks;
 }//GetEntryBlocksMapCopy/*}}}*/
 
-bool EntryBlockSelectionState::IsSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+bool EntryBlockSelectionState::IsSelected(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
         return true;
@@ -469,7 +469,7 @@ bool EntryBlockSelectionState::IsSelected(boost::shared_ptr<SequencerEntryBlock>
     }//if
 }//IsSelected/*}}}*/
 
-bool EntryBlockSelectionState::IsOrigSelected(boost::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+bool EntryBlockSelectionState::IsOrigSelected(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
 {
     if (origSelectedEntryBlocks.find(entryBlock) != origSelectedEntryBlocks.end()) {
         return true;
@@ -488,7 +488,7 @@ void EntryBlockSelectionState::ResetRubberbandingSelection()/*{{{*/
     }//for
 }//ResetRubberbandingSelection/*}}}*/
 
-std::set<boost::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()/*{{{*/
+std::set<std::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()/*{{{*/
 {
     return origSelectedEntryBlocks;
 }//GetOrigSelectedEntryBlocksCopy/*}}}*/
@@ -498,7 +498,7 @@ int EntryBlockSelectionState::GetNumSelected()/*{{{*/
     return currentlySelectedEntryBlocks.size();
 }//GetNumSelected/*}}}*/
 
-int EntryBlockSelectionState::GetOriginalStartTick(boost::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+int EntryBlockSelectionState::GetOriginalStartTick(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
         return currentlySelectedEntryOriginalStartTicks[entryBlock];
@@ -507,7 +507,7 @@ int EntryBlockSelectionState::GetOriginalStartTick(boost::shared_ptr<SequencerEn
     }//if
 }//GetOriginalStartTick/*}}}*/
 
-std::map<boost::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()/*{{{*/
+std::map<std::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()/*{{{*/
 {
     return currentlySelectedEntryOriginalStartTicks;
 }//GetEntryOriginalStartTicksCopy/*}}}*/
@@ -517,18 +517,18 @@ std::pair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin(
     return std::make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
 }//GetCurrentlySelectedEntryBlocks/*}}}*/
 
-void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<boost::shared_ptr<SequencerEntryBlock>, int> &origStartTicks)/*{{{*/
+void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlock>, int> &origStartTicks)/*{{{*/
 {
     currentlySelectedEntryOriginalStartTicks.swap(origStartTicks);
 }//SetCurrentlySelectedEntryOriginalStartTicks/*}}}*/
 
-void EntryBlockSelectionState::AddSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+void EntryBlockSelectionState::AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
 {
     currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getStartTick();
     currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
 }//AddSelectedEntryBlock/*}}}*/
 
-void EntryBlockSelectionState::RemoveSelectedEntryBlock(boost::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+void EntryBlockSelectionState::RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
 {
     auto tickRangePair = currentlySelectedEntryBlocks.equal_range(entryBlock->getStartTick());
     for (auto tickRangeIter = tickRangePair.first; tickRangeIter != tickRangePair.second; ++tickRangeIter) {
@@ -553,21 +553,21 @@ int KeyframeSelectionState::GetNumSelected()
     return currentlySelectedKeyframes.size();
 }//GetNumSelected
 
-boost::shared_ptr<Keyframe> KeyframeSelectionState::GetFirstKeyframe()
+std::shared_ptr<Keyframe> KeyframeSelectionState::GetFirstKeyframe()
 {
     if (HasSelected() == true) {
         return currentlySelectedKeyframes.begin()->second;
     } else {
-        return boost::shared_ptr<Keyframe>();
+        return std::shared_ptr<Keyframe>();
     }//if
 }//GetFirstEntryBlock
 
-std::map<int, boost::shared_ptr<Keyframe> > KeyframeSelectionState::GetSelectedKeyframesCopy()
+std::map<int, std::shared_ptr<Keyframe> > KeyframeSelectionState::GetSelectedKeyframesCopy()
 {
     return currentlySelectedKeyframes;
 }//GetSelectedKeyframesCopy
 
-bool KeyframeSelectionState::IsOrigSelected(boost::shared_ptr<Keyframe> keyframe)
+bool KeyframeSelectionState::IsOrigSelected(std::shared_ptr<Keyframe> keyframe)
 {
    if (origSelectedKeyframes.find(keyframe) != origSelectedKeyframes.end()) {
        return true;
@@ -576,7 +576,7 @@ bool KeyframeSelectionState::IsOrigSelected(boost::shared_ptr<Keyframe> keyframe
    }//if
 }//IsOrigSelected
 
-bool KeyframeSelectionState::IsSelected(boost::shared_ptr<Keyframe> keyframe)
+bool KeyframeSelectionState::IsSelected(std::shared_ptr<Keyframe> keyframe)
 {
     BOOST_FOREACH (auto selectedKeyIter, currentlySelectedKeyframes) {
         if (selectedKeyIter.second == keyframe) {
@@ -587,7 +587,7 @@ bool KeyframeSelectionState::IsSelected(boost::shared_ptr<Keyframe> keyframe)
     return false;
 }//IsSelected
 
-void KeyframeSelectionState::RemoveKeyframe(boost::shared_ptr<Keyframe> keyframe)
+void KeyframeSelectionState::RemoveKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
     for (auto selectedKeyIter = currentlySelectedKeyframes.begin(); selectedKeyIter != currentlySelectedKeyframes.end(); ++selectedKeyIter) {
         if (selectedKeyIter->second == keyframe) {
@@ -606,7 +606,7 @@ void KeyframeSelectionState::RemoveKeyframe(boost::shared_ptr<Keyframe> keyframe
     }//foreach
 }//RemoveKeyframe
 
-void KeyframeSelectionState::AddKeyframe(boost::shared_ptr<Keyframe> keyframe)
+void KeyframeSelectionState::AddKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
     currentlySelectedKeyframes.insert(std::make_pair(keyframe->tick, keyframe));
 }//AddKeyframe
@@ -623,7 +623,7 @@ void KeyframeSelectionState::ClearSelectedKeyframes()
     movingKeyOrigValues.clear();
 }//ClearSelectedKeyframes
 
-int KeyframeSelectionState::GetOrigTick(boost::shared_ptr<Keyframe> keyframe)
+int KeyframeSelectionState::GetOrigTick(std::shared_ptr<Keyframe> keyframe)
 {
     if (movingKeyOrigTicks.find(keyframe) != movingKeyOrigTicks.end()) {
         return movingKeyOrigTicks[keyframe];
@@ -632,7 +632,7 @@ int KeyframeSelectionState::GetOrigTick(boost::shared_ptr<Keyframe> keyframe)
     }//if
 }//GetOrigTick
 
-double KeyframeSelectionState::GetOrigValue(boost::shared_ptr<Keyframe> keyframe)
+double KeyframeSelectionState::GetOrigValue(std::shared_ptr<Keyframe> keyframe)
 {
     if (movingKeyOrigValues.find(keyframe) != movingKeyOrigValues.end()) {
         return movingKeyOrigValues[keyframe];
@@ -646,7 +646,7 @@ std::pair<decltype(KeyframeSelectionState::currentlySelectedKeyframes.begin()), 
     return std::make_pair(currentlySelectedKeyframes.begin(), currentlySelectedKeyframes.end());
 }//GetCurrentlySelectedEntryBlocks
 
-void KeyframeSelectionState::AddOrigKeyframe(boost::shared_ptr<Keyframe> keyframe)
+void KeyframeSelectionState::AddOrigKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
     movingKeyOrigTicks[keyframe] = keyframe->tick;
     movingKeyOrigValues[keyframe] = keyframe->value;
@@ -660,14 +660,14 @@ void KeyframeSelectionState::ResetRubberbandingSelection()
     }//for
 }//ResetRubberbandingSelection
 
-void KeyframeSelectionState::SetCurrentlySelectedKeyframes(std::map<int, boost::shared_ptr<Keyframe> > &origSelectedKeyframes)
+void KeyframeSelectionState::SetCurrentlySelectedKeyframes(std::map<int, std::shared_ptr<Keyframe> > &origSelectedKeyframes)
 {
     currentlySelectedKeyframes.swap(origSelectedKeyframes);
 }//SetCurrentlySelectedKeyframes
 
 void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
 {
-    std::map<int, boost::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
     if (instanceOf != NULL) {
         curKeyframes = &instanceOf->keyframes;
     }//if
@@ -685,13 +685,13 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     context->rectangle(61, 61, areaWidth-61, areaHeight - 61);
     context->clip();
 
-    typedef std::pair<int, boost::shared_ptr<Keyframe> > KeyframeMapType;
+    typedef std::pair<int, std::shared_ptr<Keyframe> > KeyframeMapType;
 
     //Render curve
     int lastTimePixel = std::numeric_limits<int>::min();
     int lastValuePixel = std::numeric_limits<int>::min();
 
-    boost::shared_ptr<SequencerEntryBlock> firstSelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> firstSelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
 
     int maxEntryBlockValue = firstSelectedEntryBlock->getOwningEntry()->getImpl()->maxValue;
     int minEntryBlockValue = firstSelectedEntryBlock->getOwningEntry()->getImpl()->minValue;
@@ -744,10 +744,10 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     std::vector<int> selectedRectY; // = std::numeric_limits<int>::min();
 
     CurveType::CurveType lastCurveType = CurveType::Init;
-    boost::shared_ptr<Keyframe> lastDrawnKey;
+    std::shared_ptr<Keyframe> lastDrawnKey;
 
-    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->begin();
-    std::map<int, boost::shared_ptr<Keyframe> >::const_iterator nextKeyIter = keyIter;
+    std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->begin();
+    std::map<int, std::shared_ptr<Keyframe> >::const_iterator nextKeyIter = keyIter;
     if (nextKeyIter != curKeyframes->end()) {
         ++nextKeyIter;
     }//if
@@ -825,7 +825,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
 
         //And tangent points, if any
         if (graphState.keyframeSelectionState.GetNumSelected() == 1) {
-            boost::shared_ptr<Keyframe> firstKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
+            std::shared_ptr<Keyframe> firstKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
 
             //If we only have a single keyframe selected, and we're currently drawing it and it's bezier
             if ( ( (firstKeyframe == keyPair.second) || ((firstKeyframe == lastDrawnKey)) || 
@@ -1040,7 +1040,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//foreach
 
     if (graphState.displayMode == DisplayMode::Curve) {
-        const boost::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
+        const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
@@ -1166,10 +1166,10 @@ GraphState::~GraphState()
 }//destructor
 
 /*
-boost::shared_ptr<SequencerEntryBlock> GraphState::getFirstCurrentlySelectedEntryBlock()
+std::shared_ptr<SequencerEntryBlock> GraphState::getFirstCurrentlySelectedEntryBlock()
 {
     if (entryBlockSelectionState.HasSelected() == false) {
-        return boost::shared_ptr<SequencerEntryBlock>();
+        return std::shared_ptr<SequencerEntryBlock>();
     } else {
         return entryBlockSelectionState.GetFirstEntryBlock();
     }//if
@@ -1183,7 +1183,7 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
     }//if
 
     if (std::numeric_limits<double>::max() == valuesPerPixel) {
-        const boost::shared_ptr<SequencerEntryImpl> entryImpl = entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
+        const std::shared_ptr<SequencerEntryImpl> entryImpl = entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
