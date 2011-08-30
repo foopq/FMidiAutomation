@@ -231,6 +231,7 @@ class FMidiAutomationMainWindow
     Gtk::ScrolledWindow *trackListWindow;
     Gtk::DrawingArea *graphDrawingArea;
     Gtk::ImageMenuItem *menuOpen;
+    Gtk::MenuItem *menuOpenRecent;
     Gtk::ImageMenuItem *menuSave;
     Gtk::ImageMenuItem *menuSaveAs;
     Gtk::ImageMenuItem *menuNew;

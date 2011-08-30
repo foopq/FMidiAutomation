@@ -111,6 +111,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     graphDrawingArea->signal_scroll_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleScroll) );
 
     uiXml->get_widget("menu_open", menuOpen);
+    uiXml->get_widget("menu_recent", menuOpenRecent);
     uiXml->get_widget("menu_save", menuSave);
     uiXml->get_widget("menu_saveas", menuSaveAs);
     uiXml->get_widget("menu_new", menuNew);
@@ -119,6 +120,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("menu_cut", menuCut);
     uiXml->get_widget("menu_paste", menuPaste);
     uiXml->get_widget("menu_paste_instance", menuPasteInstance);
+
+    globals.config.getMRUList().setTopMenu(menuOpenRecent);
 
     uiXml->get_widget("menu_splitEntryBlock", menuSplitEntryBlock);
     uiXml->get_widget("menu_joinEntryBlocks", menuJoinEntryBlocks);
@@ -1071,6 +1074,9 @@ void FMidiAutomationMainWindow::on_menuSave()
         sequencer->doSave(outputArchive);
 
         setTitle(currentFilename);
+
+        Globals &globals = Globals::Instance();
+        globals.config.getMRUList().addFile(currentFilename);
     } else {
         on_menuSaveAs();
     }//if
@@ -1172,6 +1178,8 @@ void FMidiAutomationMainWindow::on_menuOpen()
             setTitle(currentFilename);
 
             trackListWindow->queue_draw();
+
+            globals.config.getMRUList().addFile(currentFilename);
             break;
         }
         case(Gtk::RESPONSE_CANCEL):

@@ -9,6 +9,8 @@ MRUList::MRUList(unsigned int depth_, Glib::ustring &&fileName_)
 {
     depth = depth_;
     fileName = fileName_;
+    menuOpenRecent = NULL;
+    m_refUIManager = Gtk::UIManager::create();
 
     loadFileList();
 }//constructor
@@ -17,6 +19,12 @@ MRUList::~MRUList()
 {
     //Nothing
 }//destructor
+
+void MRUList::setTopMenu(Gtk::MenuItem *menuOpenRecent_)
+{
+    menuOpenRecent = menuOpenRecent_;
+    updateRecentMenu();
+}//setTopMenu
 
 void MRUList::addFile(Glib::ustring &fileName)
 {
@@ -32,7 +40,28 @@ void MRUList::addFile(Glib::ustring &fileName)
     }//if
 
     saveFileList();
+    updateRecentMenu();
 }//addFile
+
+void MRUList::updateRecentMenu()
+{
+    if (NULL == menuOpenRecent) {
+        return;
+    }//if
+
+    mruSubmenu.reset(new Gtk::Menu);
+    mruMenuItems.clear();
+
+    BOOST_FOREACH (auto file, fileList) {
+        std::shared_ptr<Gtk::MenuItem> item(new Gtk::MenuItem(file));
+        mruMenuItems.push_back(item);
+        mruSubmenu->append(*item);
+    }//foreach
+
+    menuOpenRecent->set_submenu(*mruSubmenu);
+    menuOpenRecent->show_all();
+}//updateRecentMenu
+
 
 std::pair<decltype(MRUList::fileList.begin()), decltype(MRUList::fileList.end())> MRUList::getFileList()
 {
@@ -62,6 +91,8 @@ void MRUList::loadFileList()
         inputArchive & BOOST_SERIALIZATION_NVP(fileStr);
         fileList.push_back(fileStr);
     }//for
+
+    updateRecentMenu();
 }//loadFileList
 
 void MRUList::saveFileList()
@@ -86,7 +117,6 @@ void MRUList::saveFileList()
     BOOST_FOREACH (Glib::ustring fileStr, fileList) {
         std::string fileStrNarrow = Glib::locale_from_utf8(fileStr);
         outputArchive & BOOST_SERIALIZATION_NVP(fileStrNarrow);
-        fileList.push_back(fileStrNarrow);
     }//foreach
 }//saveFileList
 

@@ -13,11 +13,16 @@
 class MRUList
 {
     std::deque<Glib::ustring> fileList;
-    int depth;
+    unsigned int depth;
     std::string fileName;
+    Gtk::MenuItem *menuOpenRecent;
+    std::shared_ptr<Gtk::Menu> mruSubmenu;
+    std::vector<std::shared_ptr<Gtk::MenuItem>> mruMenuItems;
+    Glib::RefPtr<Gtk::UIManager> m_refUIManager;
 
     void loadFileList();
     void saveFileList();
+    void updateRecentMenu();
 
 public:
     MRUList(unsigned int depth, Glib::ustring &&fileName);
@@ -25,6 +30,8 @@ public:
 
     void addFile(Glib::ustring &fileName);
     std::pair<decltype(fileList.begin()), decltype(fileList.end())> getFileList();
+
+    void setTopMenu(Gtk::MenuItem *menuOpenRecent);
 };//MRUList
 
 class FMidiAutomationConfig

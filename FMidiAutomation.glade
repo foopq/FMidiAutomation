@@ -44,6 +44,14 @@
                               </object>
                             </child>
                             <child>
+                              <object class="GtkImageMenuItem" id="menu_recent">
+                                <property name="label" translatable="yes">Open Recent</property>
+                                <property name="visible">True</property>
+                                <property name="image">image3</property>
+                                <property name="use_stock">False</property>
+                              </object>
+                            </child>
+                            <child>
                               <object class="GtkImageMenuItem" id="menu_save">
                                 <property name="label">gtk-save</property>
                                 <property name="visible">True</property>
@@ -2097,5 +2105,9 @@
       <action-widget response="1">portNameDialogOKButton</action-widget>
       <action-widget response="0">button6</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkImage" id="image3">
+    <property name="visible">True</property>
+    <property name="stock">gtk-open</property>
   </object>
 </interface>
