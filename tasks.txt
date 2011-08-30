@@ -9,6 +9,7 @@
 - undo/redo needs to consider sequencer/curve editor mode
     - have two undo/redo stacks, delegate based on current mode, update menus when switching modes
     - seperate stacks for sequencer and each entry block's curve editor? -- i think so
+        - paste manager also needs to be per curve/sequencer
 
 - add unit testing
     -> some sort of macro ui recording?

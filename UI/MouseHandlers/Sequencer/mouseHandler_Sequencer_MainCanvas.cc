@@ -158,6 +158,8 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
                 "    <menuitem action='ContextAdd'/>"
                 "  </popup>"
                 "</ui>";
+        } else {
+            return;
         }//if
     }//if
 

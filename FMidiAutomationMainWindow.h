@@ -382,6 +382,8 @@ class FMidiAutomationMainWindow
 
     void doUIQueuedThreadStuff();
 
+    void actuallyLoadFile(const Glib::ustring &filename);
+
     //ui mouse handlers
     void handleSequencerFrameRegionLMBPress();
     void handleSequencerFrameRegionLMBRelease();

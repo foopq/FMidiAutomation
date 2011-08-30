@@ -5,7 +5,18 @@
 #include <fstream>
 #include <boost/foreach.hpp>
 
-MRUList::MRUList(unsigned int depth_, Glib::ustring &&fileName_)
+MRUFileLoadHelper::MRUFileLoadHelper(Glib::ustring &filename_, boost::function<void (const Glib::ustring &)> &loadCallback_)
+{
+    filename = filename_;
+    loadCallback = loadCallback_;
+}//constructor
+
+void MRUFileLoadHelper::doLoadFile()
+{
+    loadCallback(filename);
+}//doLoadFile
+
+MRUList::MRUList(unsigned int depth_, const Glib::ustring &&fileName_)
 {
     depth = depth_;
     fileName = fileName_;
@@ -26,7 +37,12 @@ void MRUList::setTopMenu(Gtk::MenuItem *menuOpenRecent_)
     updateRecentMenu();
 }//setTopMenu
 
-void MRUList::addFile(Glib::ustring &fileName)
+void MRUList::setLoadCallback(boost::function<void (const Glib::ustring &)> loadCallback_)
+{
+    loadCallback = loadCallback_;
+}//setLoadCallback
+
+void MRUList::addFile(const Glib::ustring &fileName)
 {
     auto fileListIter = std::find(fileList.begin(), fileList.end(), fileName);
     if (fileListIter != fileList.end()) {
@@ -51,11 +67,17 @@ void MRUList::updateRecentMenu()
 
     mruSubmenu.reset(new Gtk::Menu);
     mruMenuItems.clear();
+    mruFileLoadHelpers.clear();
 
     BOOST_FOREACH (auto file, fileList) {
         std::shared_ptr<Gtk::MenuItem> item(new Gtk::MenuItem(file));
         mruMenuItems.push_back(item);
         mruSubmenu->append(*item);
+       
+        std::shared_ptr<MRUFileLoadHelper> helper(new MRUFileLoadHelper(file, loadCallback));
+        mruFileLoadHelpers.push_back(helper);
+
+        item->signal_activate().connect(sigc::mem_fun(*helper, &MRUFileLoadHelper::doLoadFile));
     }//foreach
 
     menuOpenRecent->set_submenu(*mruSubmenu);

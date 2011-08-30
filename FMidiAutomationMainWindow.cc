@@ -121,6 +121,10 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("menu_paste", menuPaste);
     uiXml->get_widget("menu_paste_instance", menuPasteInstance);
 
+    boost::function<void (const std::string &)> loadCallback = 
+        boost::lambda::bind(boost::mem_fn(&FMidiAutomationMainWindow::actuallyLoadFile), this, boost::lambda::_1);
+
+    globals.config.getMRUList().setLoadCallback(loadCallback);
     globals.config.getMRUList().setTopMenu(menuOpenRecent);
 
     uiXml->get_widget("menu_splitEntryBlock", menuSplitEntryBlock);
@@ -1119,6 +1123,50 @@ void FMidiAutomationMainWindow::on_menuSaveAs()
     }//switch
 }//on_menuSaveAs
 
+void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFilename_)
+{
+    Globals &globals = Globals::Instance();
+
+    std::string filename = Glib::locale_from_utf8(currentFilename_);
+
+    std::ifstream inputStream(filename.c_str());
+    if (false == inputStream.good()) {
+        //FIXME: We should probably add some sort of message box or something
+        return;
+    }//if
+
+    boost::archive::xml_iarchive inputArchive(inputStream);
+
+    unsigned int FMidiAutomationVersion = 0;
+    inputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationVersion);
+
+    inputArchive & BOOST_SERIALIZATION_NVP(datas);
+    inputArchive & BOOST_SERIALIZATION_NVP(graphState);
+
+    datas->entryGlade = readEntryGlade();
+
+    Gtk::VBox *entryVBox;
+    uiXml->get_widget("entryVBox", entryVBox);
+    sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
+    globals.sequencer = sequencer;
+
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    jackSingleton.doLoad(inputArchive);
+
+    sequencer->doLoad(inputArchive);
+
+    graphState.displayMode = DisplayMode::Sequencer;
+    graphState.selectedEntity = Nobody;
+
+    datas->entryGlade = readEntryGlade();
+
+    setTitle(filename);
+
+    trackListWindow->queue_draw();
+
+    globals.config.getMRUList().addFile(currentFilename_);
+}//actuallyLoadFile
+
 void FMidiAutomationMainWindow::on_menuOpen()
 {
      Gtk::FileChooserDialog dialog("Load", Gtk::FILE_CHOOSER_ACTION_OPEN);
@@ -1140,46 +1188,8 @@ void FMidiAutomationMainWindow::on_menuOpen()
     switch(result) {
         case(Gtk::RESPONSE_OK):
         {
-            Globals &globals = Globals::Instance();
-
             currentFilename = dialog.get_filename();
-            std::string filename = Glib::locale_from_utf8(currentFilename);
-            std::ifstream inputStream(filename.c_str());
-            assert(inputStream.good());
-            if (false == inputStream.good()) {
-                return;
-            }//if
-
-            boost::archive::xml_iarchive inputArchive(inputStream);
-
-            unsigned int FMidiAutomationVersion = 0;
-            inputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationVersion);
-
-            inputArchive & BOOST_SERIALIZATION_NVP(datas);
-            inputArchive & BOOST_SERIALIZATION_NVP(graphState);
-
-            datas->entryGlade = readEntryGlade();
-
-            Gtk::VBox *entryVBox;
-            uiXml->get_widget("entryVBox", entryVBox);
-            sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
-            globals.sequencer = sequencer;
-
-            JackSingleton &jackSingleton = JackSingleton::Instance();
-            jackSingleton.doLoad(inputArchive);
-
-            sequencer->doLoad(inputArchive);
-
-            graphState.displayMode = DisplayMode::Sequencer;
-            graphState.selectedEntity = Nobody;
-
-            datas->entryGlade = readEntryGlade();
-
-            setTitle(currentFilename);
-
-            trackListWindow->queue_draw();
-
-            globals.config.getMRUList().addFile(currentFilename);
+            actuallyLoadFile(currentFilename);
             break;
         }
         case(Gtk::RESPONSE_CANCEL):
