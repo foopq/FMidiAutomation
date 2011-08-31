@@ -1,3 +1,5 @@
+- pressing escape in entry block properties dialog clears and commits blank name
+
 - for some reason, somtimes entry blocks don't appear in the same order as saved
 
 - sequencer should show entry block properties directly in ui.. hiding/replacing "Selected Keyframe" bits

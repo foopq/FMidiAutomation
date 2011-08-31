@@ -22,9 +22,11 @@ EntryBlockProperties::EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, std
     uiXml->get_widget("entryBoxLabelEntry", entry);
     entry->set_text(title);
 
+    wasChanged = false;
     int result = mainDialog->run();
     if (result == 0) {
         Glib::ustring newEntryTitle = entry->get_text();
+
         if ((newEntryTitle.empty() == false) && (newEntryTitle != entryBlock->getTitle())) {
             newTitle = newEntryTitle;
             wasChanged = true;
