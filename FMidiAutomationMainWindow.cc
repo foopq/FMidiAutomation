@@ -211,6 +211,10 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 
     positionTickEntry->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox));
  
+    Gtk::Entry *entry;
+    uiXml->get_widget("selectedEntryBlockNameEntry", entry);
+    entry->signal_key_release_event().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleKeyEntryOnSelectedEntryBlockNameEntryBox));
+
     uiXml->get_widget("statusLabel", statusBar);
     statusTextAlpha = 1.0;
     needsStatusTextUpdate = false;
@@ -973,6 +977,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey
         if (curTick >= 0) {
             curTick = std::max(0, curTick);
             graphState.entryBlockSelectionState.GetFirstEntryBlock()->moveBlock(curTick);
+            setTitleChanged();
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -982,6 +987,24 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey
         return false;
     }//try/catch
 }//handleKeyEntryOnPositionTickEntryBox
+
+bool FMidiAutomationMainWindow::handleKeyEntryOnSelectedEntryBlockNameEntryBox(GdkEventKey *event)
+{
+    if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
+        return false;
+    }//if
+
+    Gtk::Entry *entry;
+    uiXml->get_widget("selectedEntryBlockNameEntry", entry);
+
+    if (entry->get_text().empty() == false) {
+        graphState.entryBlockSelectionState.GetFirstEntryBlock()->setTitle(entry->get_text());
+        setTitleChanged();
+        graphDrawingArea->queue_draw();
+    }//if
+
+    return true;
+}//handleKeyEntryOnSelectedEntryBlockNameEntryBox
 
 void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 {
@@ -1479,11 +1502,8 @@ void FMidiAutomationMainWindow::handleSequencerEntryCurve()
 
 void FMidiAutomationMainWindow::editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
 {
-
 std::cout << "editSequencerEntryProperties 1" << std::endl;
     EntryProperties entryProperties(uiXml, entry, !createUpdatePoint);
-
-
 
     if (true == entryProperties.wasChanged) {
  std::cout << "editSequencerEntryProperties 2" << std::endl;       

@@ -249,6 +249,10 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
 
     if (graphState.entryBlockSelectionState.HasSelected() == true) {
         positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(graphState.entryBlockSelectionState.GetFirstEntryBlock()->getStartTick()));
+
+        Gtk::Entry *entry;
+        uiXml->get_widget("selectedEntryBlockNameEntry", entry);
+        entry->set_text(graphState.entryBlockSelectionState.GetFirstEntryBlock()->getTitle());
     } else {
         positionTickEntry->set_text("");
     }//if

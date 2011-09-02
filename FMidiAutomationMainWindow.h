@@ -338,6 +338,7 @@ class FMidiAutomationMainWindow
     bool handleKeyEntryOnRightTickEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnCursorTickEntryBox(GdkEventKey *event);
     bool handleKeyEntryOnPositionTickEntryBox(GdkEventKey *event);
+    bool handleKeyEntryOnSelectedEntryBlockNameEntryBox(GdkEventKey *event);
 
     bool handleBPMFrameClick(GdkEventButton *event);
     void handleBPMFrameClickBase();
