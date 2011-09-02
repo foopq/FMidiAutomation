@@ -3,7 +3,6 @@
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="mainWindow">
-    <property name="width_request">1024</property>
     <property name="height_request">768</property>
     <child>
       <object class="GtkViewport" id="viewport1">
@@ -90,7 +89,7 @@
                         <property name="label" translatable="yes">_Edit</property>
                         <property name="use_underline">True</property>
                         <child type="submenu">
-                          <object class="GtkMenu" id="menu2">
+                          <object class="GtkMenu" id="menu_edit">
                             <property name="visible">True</property>
                             <child>
                               <object class="GtkImageMenuItem" id="menu_undo">
@@ -162,6 +161,12 @@
                               <object class="GtkMenuItem" id="menu_joinEntryBlocks">
                                 <property name="visible">True</property>
                                 <property name="label" translatable="yes">Join Entry Blocks</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menu_resetTangents">
+                                <property name="label" translatable="yes">Reset Tangents</property>
                                 <property name="use_underline">True</property>
                               </object>
                             </child>
@@ -1221,6 +1226,60 @@
                     <property name="expand">False</property>
                     <property name="fill">False</property>
                     <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame" id="selectedEntryBlockFrame">
+                    <property name="visible">True</property>
+                    <property name="border_width">4</property>
+                    <property name="label_xalign">0</property>
+                    <property name="shadow_type">etched-out</property>
+                    <child>
+                      <object class="GtkAlignment" id="alignment12">
+                        <property name="visible">True</property>
+                        <property name="bottom_padding">4</property>
+                        <property name="left_padding">12</property>
+                        <property name="right_padding">4</property>
+                        <child>
+                          <object class="GtkTable" id="table5">
+                            <property name="visible">True</property>
+                            <property name="n_columns">2</property>
+                            <child>
+                              <object class="GtkLabel" id="label38">
+                                <property name="visible">True</property>
+                                <property name="xalign">1</property>
+                                <property name="xpad">10</property>
+                                <property name="label" translatable="yes">Name:</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="selectedEntryBlockNameEntry">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="invisible_char">&#x25CF;</property>
+                                <property name="width_chars">30</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                              </packing>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel" id="label49">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Selected Entry Block&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="position">3</property>
                   </packing>
                 </child>
               </object>
