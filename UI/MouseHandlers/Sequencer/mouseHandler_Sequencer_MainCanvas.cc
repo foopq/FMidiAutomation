@@ -246,6 +246,12 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
         menuCopy->set_sensitive(false);
         menuCut->set_sensitive(false);
     }//if
+
+    if (graphState.entryBlockSelectionState.HasSelected() == true) {
+        positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(graphState.entryBlockSelectionState.GetFirstEntryBlock()->getStartTick()));
+    } else {
+        positionTickEntry->set_text("");
+    }//if
 }//handleSequencerMainCanvasLMBRelease
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasMMBRelease()

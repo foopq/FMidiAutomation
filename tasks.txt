@@ -1,5 +1,3 @@
-- pressing escape in entry block properties dialog clears and commits blank name
-
 - for some reason, somtimes entry blocks don't appear in the same order as saved
 
 - sequencer should show entry block properties directly in ui.. hiding/replacing "Selected Keyframe" bits
@@ -35,6 +33,11 @@
 - split / merge entry blocks
     -> entry block multi-select?
 
+
+- middle mouse click + key command to zoom extents on curve / sequencer
+
+--------------
+
 - finish record token processing (ie: merging/overwriting entry blocks)
 
 -allow edit of curve in new window --> multiple curves edited at once
@@ -42,7 +45,6 @@
 
 - render tangents while also considering the next key, not just the current or previous
 
-- middle mouse click + key command to zoom extents on curve / sequencer
 
 - when moving key, tick value should be set to use nearest tick value, not floor of cur pixel pos
 - key/tangent selections/moves

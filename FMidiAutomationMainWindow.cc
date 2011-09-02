@@ -139,6 +139,10 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     menuSplitEntryBlock->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSplitEntryBlock));
     menuJoinEntryBlocks->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuJoinEntryBlocks));
 
+    Gtk::MenuItem *menuItem;
+    uiXml->get_widget("menu_resetTangents", menuItem);
+    menuItem->signal_activate().connect(sigc::mem_fun(*curveEditor, &CurveEditor::handleResetTangents));
+
     menuCopy->set_sensitive(false);
     menuCut->set_sensitive(false);
     menuPaste->set_sensitive(false);
@@ -234,6 +238,12 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     curveButton->signal_clicked().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleCurveButtonPressed) );
 
     sequencerButton->set_sensitive(false);
+
+    Gtk::Frame *frame;
+    uiXml->get_widget("selectedKeyframeFrame", frame);
+    frame->set_visible(false);
+    uiXml->get_widget("selectedEntryBlockFrame", frame);
+    frame->set_visible(true);
 
     Glib::RefPtr<Gtk::AccelGroup> accelGroup = mainWindow->get_accel_group();
     menuNew->add_accelerator("activate", accelGroup, GDK_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
@@ -741,6 +751,12 @@ void FMidiAutomationMainWindow::handleDownButtonPressed()
 
 void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 {
+    Gtk::Frame *frame;
+    uiXml->get_widget("selectedKeyframeFrame", frame);
+    frame->set_visible(false);
+    uiXml->get_widget("selectedEntryBlockFrame", frame);
+    frame->set_visible(true);
+
     std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     assert(selectedEntryBlock != NULL);
 
@@ -762,6 +778,22 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 
     PasteManager::Instance().clearCommand();
 
+    if (graphState.entryBlockSelectionState.HasSelected() == true) {
+        positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(graphState.entryBlockSelectionState.GetFirstEntryBlock()->getStartTick()));
+    } else {
+        positionTickEntry->set_text("");
+    }//if
+
+    //Update edit menu
+    Gtk::MenuItem *menuItem;
+    uiXml->get_widget("menu_splitEntryBlock", menuItem);
+    menuItem->set_visible(true);
+    uiXml->get_widget("menu_joinEntryBlocks", menuItem);
+    menuItem->set_visible(true);
+
+    uiXml->get_widget("menu_resetTangents", menuItem);
+    menuItem->set_visible(false);
+
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
@@ -775,6 +807,12 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     if (selectedEntryBlock == NULL) {
         return;
     }//if
+
+    Gtk::Frame *frame;
+    uiXml->get_widget("selectedKeyframeFrame", frame);
+    frame->set_visible(true);
+    uiXml->get_widget("selectedEntryBlockFrame", frame);
+    frame->set_visible(false);
 
     positionTickEntry->property_editable() = false;
 
@@ -804,6 +842,16 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     }//if
 
     PasteManager::Instance().clearCommand();
+
+    //Update edit menu
+    Gtk::MenuItem *menuItem;
+    uiXml->get_widget("menu_splitEntryBlock", menuItem);
+    menuItem->set_visible(false);
+    uiXml->get_widget("menu_joinEntryBlocks", menuItem);
+    menuItem->set_visible(false);
+
+    uiXml->get_widget("menu_resetTangents", menuItem);
+    menuItem->set_visible(true);
 
     graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
     graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
@@ -1051,6 +1099,11 @@ void FMidiAutomationMainWindow::on_menuNew()
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
     globals.sequencer = sequencer;
+
+    graphState.entryBlockSelectionState.ClearSelected();
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    graphDrawingArea->queue_draw();
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()
@@ -1135,6 +1188,8 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
         return;
     }//if
 
+    currentFilename = currentFilename_;
+
     boost::archive::xml_iarchive inputArchive(inputStream);
 
     unsigned int FMidiAutomationVersion = 0;
@@ -1165,6 +1220,11 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
     trackListWindow->queue_draw();
 
     globals.config.getMRUList().addFile(currentFilename_);
+
+    graphState.entryBlockSelectionState.ClearSelected();
+    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    graphDrawingArea->queue_draw();
 }//actuallyLoadFile
 
 void FMidiAutomationMainWindow::on_menuOpen()
@@ -1197,11 +1257,6 @@ void FMidiAutomationMainWindow::on_menuOpen()
         default:
             break;
     }//switch 
-
-    graphState.entryBlockSelectionState.ClearSelected();
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    graphDrawingArea->queue_draw();
 }//on_menuOpen
 
 void FMidiAutomationMainWindow::on_menuUndo()

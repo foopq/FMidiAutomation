@@ -137,7 +137,7 @@ class KeyframeSelectionState
     std::map<int, std::shared_ptr<Keyframe> > currentlySelectedKeyframes; //not a multimap since keys at ticks are unique
     std::set<std::shared_ptr<Keyframe> > origSelectedKeyframes;
     std::map<std::shared_ptr<Keyframe>, int> movingKeyOrigTicks;
-    std::map<std::shared_ptr<Keyframe>, double> movingKeyOrigValues;
+    std::map<std::shared_ptr<Keyframe>, double> movingKeyOrigValues;    
 
 public:
     KeyframeSelectionState() {}
@@ -153,7 +153,7 @@ public:
     int GetOrigTick(std::shared_ptr<Keyframe> keyframe);
     double GetOrigValue(std::shared_ptr<Keyframe> keyframe);    
 
-    std::pair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedEntryBlocks();
+    std::pair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedKeyframes();
 
     std::map<int, std::shared_ptr<Keyframe> > GetSelectedKeyframesCopy();
 
@@ -261,6 +261,7 @@ class FMidiAutomationMainWindow
     Gtk::Label *positionValueLabel;
     Gtk::Entry *currentSampledValue;
     Gtk::CheckButton *bpmFrameCheckButton;
+
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;

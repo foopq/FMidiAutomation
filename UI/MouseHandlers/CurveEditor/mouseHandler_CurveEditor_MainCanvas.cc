@@ -117,7 +117,7 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
     }//if
 
     std::map<int, std::shared_ptr<Keyframe> > updatedCurrentlySelectedKeyframes;
-    BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedEntryBlocks()) {
+    BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
         std::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
         int newTick = graphState.keyframeSelectionState.GetOrigTick(curKeyframe) + diffTick;
@@ -212,7 +212,7 @@ std::cout << "num selected keys: " << graphState.keyframeSelectionState.GetNumSe
     if (selectedKey != NULL) {
         graphState.didMoveKey = false;
 
-        BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedEntryBlocks()) {
+        BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
             graphState.keyframeSelectionState.AddOrigKeyframe(keyIter.second);
         }//for
 
@@ -280,9 +280,12 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
         graphState.selectedEntity = KeyValue;
 
         m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframes"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframes));
+        m_refActionGroup->add(Gtk::Action::create("ContextResetTangents", "Reset Tangents"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleResetTangents));
         ui_info =
             "<ui>"
             "  <popup name='PopupMenu'>"
+            "    <menuitem action='ContextResetTangents'/>"
+            "    <separator/>"
             "    <menuitem action='ContextDeleteKeyframe'/>"
             "  </popup>"
             "</ui>";
@@ -330,7 +333,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
             std::vector<std::shared_ptr<MoveKeyframesCommand::KeyInfo> > keyInfos;
             keyInfos.reserve(graphState.keyframeSelectionState.GetNumSelected());
 
-            BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedEntryBlocks()) {
+            BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
                 std::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
                 std::shared_ptr<MoveKeyframesCommand::KeyInfo> keyInfo(new MoveKeyframesCommand::KeyInfo);

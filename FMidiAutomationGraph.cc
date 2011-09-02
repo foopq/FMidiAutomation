@@ -641,7 +641,7 @@ double KeyframeSelectionState::GetOrigValue(std::shared_ptr<Keyframe> keyframe)
     }//if
 }//GetOrigValue
 
-std::pair<decltype(KeyframeSelectionState::currentlySelectedKeyframes.begin()), decltype(KeyframeSelectionState::currentlySelectedKeyframes.end())> KeyframeSelectionState::GetCurrentlySelectedEntryBlocks()
+std::pair<decltype(KeyframeSelectionState::currentlySelectedKeyframes.begin()), decltype(KeyframeSelectionState::currentlySelectedKeyframes.end())> KeyframeSelectionState::GetCurrentlySelectedKeyframes()
 {
     return std::make_pair(currentlySelectedKeyframes.begin(), currentlySelectedKeyframes.end());
 }//GetCurrentlySelectedEntryBlocks
@@ -1241,6 +1241,8 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
 
 void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
+std::cout << "refreshVerticalLines entry" << std::endl;
+
     //Ugly kluge to handle the case where if we've already reached the half-way zeroith point and keep scrolling over too far, bad things happen
     static int lastOffsetX = std::numeric_limits<int>::max();
     if (((areaWidth-2) * ticksPerPixel + offsetX * ticksPerPixel) < 0) {
@@ -1249,6 +1251,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
         }//if
 
         offsetX = lastOffsetX;
+
+        std::cout << "refreshVerticalLines exit 1" << std::endl;
         return;
     } else {
         lastOffsetX = std::numeric_limits<int>::max();
@@ -1389,6 +1393,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     std::cout << "zeroithTickPixel: " << zeroithTickPixel << std::endl;
     std::cout << std::endl;
 */
+
+    std::cout << "zeroithTickPixel: " << zeroithTickPixel << std::endl;
 }//refreshVerticalLines
 
 void GraphState::setOffsetCenteredOnValue(double value, int drawingAreaHeight)
