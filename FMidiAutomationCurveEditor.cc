@@ -14,6 +14,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/lexical_cast.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <boost/foreach.hpp>
 
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *event)
@@ -325,6 +326,58 @@ void CurveEditor::handleDeleteKeyframes()
     std::shared_ptr<Command> deleteKeyframesCommand(new DeleteKeyframesCommand(currentlySelectedEntryBlock, mainWindow->getGraphState().keyframeSelectionState.GetSelectedKeyframesCopy()));
     CommandManager::Instance().setNewCommand(deleteKeyframesCommand, true);
 }//handleDeletedKeyframe
+
+void CurveEditor::handleResetTangents()
+{
+std::cout << "handleResetTangents" << std::endl;
+
+    if (mainWindow->getGraphState().keyframeSelectionState.HasSelected() == false) {
+        return;
+    }//if
+
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    std::shared_ptr<Animation> curve = currentlySelectedEntryBlock->getCurve();
+    BOOST_FOREACH (auto selectedKey, mainWindow->getGraphState().keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+        auto prevKey = curve->getPrevKeyframe(selectedKey.second);
+        auto nextKey = curve->getNextKeyframe(selectedKey.second);
+
+        selectedKey.second->inTangent[1] = 0.0;
+        selectedKey.second->outTangent[1] = 0.0;
+
+        double prevThird = 0.0;
+        double nextThird = 0.0;
+
+        if (prevKey != NULL) {
+            prevThird = ((double)(selectedKey.second->tick - prevKey->tick)) / 3.0;
+        }//if
+
+        if (nextKey != NULL) {
+            nextThird = ((double)(nextKey->tick - selectedKey.second->tick)) / 3.0;
+        }//if
+
+        if (prevThird == 0.0) {
+            prevThird = nextThird;
+        }//if
+
+        if (nextThird == 0.0) {
+            nextThird = prevThird;
+        }//if
+
+        if (prevThird == 0.0) {
+            prevThird = 2000;
+        }//if
+
+        if (nextThird == 0.0) {
+            nextThird = 2000;
+        }//if
+
+        selectedKey.second->inTangent[0] = prevThird;
+        selectedKey.second->outTangent[0] = nextThird;
+    }//for
+
+    Globals &globals = Globals::Instance();
+    globals.graphDrawingArea->queue_draw();
+}//handleResetTangents
 
 std::shared_ptr<Keyframe> CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed)
 {

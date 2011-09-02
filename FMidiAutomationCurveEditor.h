@@ -48,6 +48,8 @@ public:
 
     void handleAddKeyframe();
     void handleDeleteKeyframes();
+    void handleResetTangents();
+
     void setUnderMouseTickValue(int tick, int value);
     std::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
     void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<Keyframe> currentlySelectedKeyframe);
