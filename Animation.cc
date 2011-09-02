@@ -166,6 +166,28 @@ std::shared_ptr<Keyframe> Animation::getNextKeyframe(std::shared_ptr<Keyframe> k
     return nextKeyIter->second;
 }//getNextKeyframe
 
+std::shared_ptr<Keyframe> Animation::getPrevKeyframe(std::shared_ptr<Keyframe> keyframe)
+{
+    std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
+    if (instanceOf != NULL) {
+        curKeyframes = &instanceOf->keyframes;
+    }//if
+
+    std::map<int, std::shared_ptr<Keyframe> >::iterator keyIter = curKeyframes->find(keyframe->tick);
+    if (keyIter == curKeyframes->end()) {
+        return std::shared_ptr<Keyframe>();
+    }//if
+
+    if (keyIter == curKeyframes->begin()) {
+        return std::shared_ptr<Keyframe>();
+    }//if
+
+    std::map<int, std::shared_ptr<Keyframe> >::iterator prevKeyIter = keyIter;
+    --prevKeyIter;
+
+    return prevKeyIter->second;
+}//getPrevKeyframe
+
 void Animation::addKey(std::shared_ptr<Keyframe> keyframe)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;

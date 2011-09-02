@@ -94,6 +94,7 @@ public:
     std::shared_ptr<Keyframe> getKeyframe(unsigned int index);
     std::shared_ptr<Keyframe> getKeyframeAtTick(int tick);
 
+    std::shared_ptr<Keyframe> getPrevKeyframe(std::shared_ptr<Keyframe> keyframe);
     std::shared_ptr<Keyframe> getNextKeyframe(std::shared_ptr<Keyframe> keyframe);
 
     double sample(int tick);
