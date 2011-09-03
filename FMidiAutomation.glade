@@ -165,6 +165,20 @@
                               </object>
                             </child>
                             <child>
+                              <object class="GtkMenuItem" id="menu_pasteSEBToSelectedEntry">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Paste Blocks to Entry</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menu_pasteSEBInstancesToSelectedEntry">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Paste Instances of Blocks to Entry</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
+                            <child>
                               <object class="GtkMenuItem" id="menu_resetTangents">
                                 <property name="label" translatable="yes">Reset Tangents</property>
                                 <property name="use_underline">True</property>

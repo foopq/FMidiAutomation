@@ -262,7 +262,6 @@ class FMidiAutomationMainWindow
     Gtk::Entry *currentSampledValue;
     Gtk::CheckButton *bpmFrameCheckButton;
 
-
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
     Gtk::Menu *m_pMenuPopup;
@@ -324,6 +323,8 @@ class FMidiAutomationMainWindow
     void on_menuPasteInstance();
     void on_menuSplitEntryBlock();
     void on_menuJoinEntryBlocks();
+    void on_menupasteSEBToSelectedEntry();
+    void on_menupasteSEBInstancesToSelectedEntry();
 
     void on_handleDelete();
 

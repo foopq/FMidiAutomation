@@ -30,26 +30,30 @@ void PasteManager::setPasteOnly(bool pasteOnly_)
     pasteOnly = pasteOnly_;
     if (true == pasteOnly) {
         menuPasteInstance->set_sensitive(false);
+        pasteInstanceBlocksToEntry->set_sensitive(false);
     }//if
 }//setPasteOnly
 
-void PasteManager::setMenuItems(Gtk::ImageMenuItem *menuPaste_, Gtk::ImageMenuItem *menuPasteInstance_)
+void PasteManager::setMenuItems(Gtk::ImageMenuItem *menuPaste_, Gtk::ImageMenuItem *menuPasteInstance_,
+                                Gtk::MenuItem *pasteBlocksToEntry_, Gtk::MenuItem *pasteInstanceBlocksToEntry_)
 {
     menuPaste = menuPaste_;
     menuPasteInstance = menuPasteInstance_;
+    pasteBlocksToEntry = pasteBlocksToEntry_;
+    pasteInstanceBlocksToEntry = pasteInstanceBlocksToEntry_;
 }//setMenuItems
 
-void PasteManager::doPaste()
+void PasteManager::doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry)
 {
     if (command != NULL) {
-        command->doPaste();
+        command->doPaste(targetSequencerEntry);
     }//if
 }//doPaste
 
-void PasteManager::doPasteInstance()
+void PasteManager::doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry)
 {
     if (command != NULL) {
-        command->doPasteInstance();
+        command->doPasteInstance(targetSequencerEntry);
     }//if
 }//doPasteInstance
 
@@ -62,15 +66,19 @@ void PasteManager::setNewCommand(std::shared_ptr<PasteCommand> command_)
 {
     command = command_;
     menuPaste->set_sensitive(true);
+    pasteBlocksToEntry->set_sensitive(true);
 
     if (false == pasteOnly) {
         menuPasteInstance->set_sensitive(true);
+        pasteInstanceBlocksToEntry->set_sensitive(true);
     }//if
 }//setNewCommand
 
 PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks_)
 {
     entryBlocks = entryBlocks_;
+
+std::cout << "PasteSequencerEntryBlocksCommand: " << entryBlocks.size() << std::endl;
 }//constructor
 
 PasteSequencerEntryBlocksCommand::~PasteSequencerEntryBlocksCommand()
@@ -78,7 +86,7 @@ PasteSequencerEntryBlocksCommand::~PasteSequencerEntryBlocksCommand()
     //Nothing
 }//destructor
 
-void PasteSequencerEntryBlocksCommand::doPaste()
+void PasteSequencerEntryBlocksCommand::doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry)
 {
     Globals &globals = Globals::Instance();
     
@@ -96,12 +104,22 @@ void PasteSequencerEntryBlocksCommand::doPaste()
     std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
     newEntryBlocks.reserve(entryBlocks.size());
 
+std::cout << "PasteSequencerEntryBlocksCommand::doPaste " << entryBlocks.size() << std::endl;
+
     BOOST_FOREACH (auto entryIter, entryBlocks) {
         std::shared_ptr<SequencerEntry> selectedEntry = entryIter.second->getOwningEntry();
+
+std::cout << "PasteSequencerEntryBlocksCommand 1" << std::endl;
+
+        if (targetSequencerEntry != NULL) {
+            selectedEntry = targetSequencerEntry;
+        }//if        
 
         if (selectedEntry == NULL) {
             continue;
         }//if
+
+std::cout << "PasteSequencerEntryBlocksCommand 2: " << selectedEntry->getTitle() << std::endl;
 
         int startTick = entryIter.second->getStartTick() + tickOffset;
 
@@ -116,7 +134,7 @@ void PasteSequencerEntryBlocksCommand::doPaste()
     CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPaste
 
-void PasteSequencerEntryBlocksCommand::doPasteInstance()
+void PasteSequencerEntryBlocksCommand::doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry)
 {
     Globals &globals = Globals::Instance();
     
@@ -136,6 +154,10 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance()
 
     for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
         std::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
+
+        if (targetSequencerEntry != NULL) {
+            selectedEntry = targetSequencerEntry;
+        }//if
 
         if (selectedEntry == NULL) {
             continue;
@@ -163,7 +185,7 @@ PasteSequencerKeyframesCommand::~PasteSequencerKeyframesCommand()
     //Nothing
 }//destructor
 
-void PasteSequencerKeyframesCommand::doPaste()
+void PasteSequencerKeyframesCommand::doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry)
 {
     Globals &globals = Globals::Instance();
     
@@ -186,9 +208,9 @@ void PasteSequencerKeyframesCommand::doPaste()
     CommandManager::Instance().setNewCommand(addKeyframesCommand, true);
 }//doPaste
 
-void PasteSequencerKeyframesCommand::doPasteInstance()
+void PasteSequencerKeyframesCommand::doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry)
 {
-    doPaste();
+    doPaste(std::shared_ptr<SequencerEntry>());
 }//doPasteInstance
 
 

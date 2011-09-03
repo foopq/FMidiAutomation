@@ -148,6 +148,16 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     menuPaste->set_sensitive(false);
     menuPasteInstance->set_sensitive(false);
 
+    Gtk::MenuItem *menu_pasteSEBToSelectedEntry;
+    uiXml->get_widget("menu_pasteSEBToSelectedEntry", menu_pasteSEBToSelectedEntry);
+    menu_pasteSEBToSelectedEntry->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menupasteSEBToSelectedEntry));
+    menu_pasteSEBToSelectedEntry->set_sensitive(false);
+
+    Gtk::MenuItem *menu_pasteSEBInstancesToSelectedEntry;
+    uiXml->get_widget("menu_pasteSEBInstancesToSelectedEntry", menu_pasteSEBInstancesToSelectedEntry);
+    menu_pasteSEBInstancesToSelectedEntry->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menupasteSEBInstancesToSelectedEntry));
+    menu_pasteSEBInstancesToSelectedEntry->set_sensitive(false);
+
     menuCopy->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuCopy));
     menuCut->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuCut));
     menuPaste->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuPaste));
@@ -159,7 +169,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("menu_undo", menuUndo);
 
     CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
-    PasteManager::Instance().setMenuItems(menuPaste, menuPasteInstance);
+    PasteManager::Instance().setMenuItems(menuPaste, menuPasteInstance, menu_pasteSEBToSelectedEntry, menu_pasteSEBInstancesToSelectedEntry);
 
     menuUndo->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuUndo));
     menuRedo->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuRedo));
@@ -794,6 +804,10 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     menuItem->set_visible(true);
     uiXml->get_widget("menu_joinEntryBlocks", menuItem);
     menuItem->set_visible(true);
+    uiXml->get_widget("menu_pasteSEBToSelectedEntry", menuItem);
+    menuItem->set_visible(true);
+    uiXml->get_widget("menu_pasteSEBInstancesToSelectedEntry", menuItem);
+    menuItem->set_visible(true);
 
     uiXml->get_widget("menu_resetTangents", menuItem);
     menuItem->set_visible(false);
@@ -852,6 +866,10 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     uiXml->get_widget("menu_splitEntryBlock", menuItem);
     menuItem->set_visible(false);
     uiXml->get_widget("menu_joinEntryBlocks", menuItem);
+    menuItem->set_visible(false);
+    uiXml->get_widget("menu_pasteSEBToSelectedEntry", menuItem);
+    menuItem->set_visible(false);
+    uiXml->get_widget("menu_pasteSEBInstancesToSelectedEntry", menuItem);
     menuItem->set_visible(false);
 
     uiXml->get_widget("menu_resetTangents", menuItem);
@@ -1071,15 +1089,29 @@ void FMidiAutomationMainWindow::on_handleDelete()
 
 void FMidiAutomationMainWindow::on_menuPaste()
 {
-    PasteManager::Instance().doPaste();
+    PasteManager::Instance().doPaste(std::shared_ptr<SequencerEntry>());
     graphDrawingArea->queue_draw();
 }//on_menuPaste
 
 void FMidiAutomationMainWindow::on_menuPasteInstance()
 {
-    PasteManager::Instance().doPasteInstance();
+    PasteManager::Instance().doPasteInstance(std::shared_ptr<SequencerEntry>());
     graphDrawingArea->queue_draw();
 }//on_menuPasteInstance
+
+void FMidiAutomationMainWindow::on_menupasteSEBToSelectedEntry()
+{
+    std::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
+    PasteManager::Instance().doPaste(selectedEntry);
+    graphDrawingArea->queue_draw();
+}//on_menupasteSEBToSelectedEntry
+
+void FMidiAutomationMainWindow::on_menupasteSEBInstancesToSelectedEntry()
+{
+    std::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
+    PasteManager::Instance().doPasteInstance(selectedEntry);
+    graphDrawingArea->queue_draw();
+}//on_menupasteSEBInstancesToSelectedEntry
 
 void FMidiAutomationMainWindow::on_menuPorts()
 {

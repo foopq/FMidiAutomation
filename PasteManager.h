@@ -25,14 +25,16 @@ struct Keyframe;
 
 struct PasteCommand
 {
-    virtual void doPaste() = 0;
-    virtual void doPasteInstance() = 0;
+    virtual void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry) = 0;
+    virtual void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry) = 0;
 };//PasteCommand
 
 class PasteManager
 {
     Gtk::ImageMenuItem *menuPaste;
     Gtk::ImageMenuItem *menuPasteInstance;
+    Gtk::MenuItem *pasteBlocksToEntry;
+    Gtk::MenuItem *pasteInstanceBlocksToEntry;
     bool pasteOnly;
 
     std::shared_ptr<PasteCommand> command;
@@ -42,12 +44,13 @@ public:
 
     PasteManager();
 
-    void setMenuItems(Gtk::ImageMenuItem *menuPaste, Gtk::ImageMenuItem *menuPasteInstance);
+    void setMenuItems(Gtk::ImageMenuItem *menuPaste, Gtk::ImageMenuItem *menuPasteInstance,
+                        Gtk::MenuItem *pasteBlocksToEntry, Gtk::MenuItem *pasteInstanceBlocksToEntry);
     void setPasteOnly(bool pasteOnly);
     void clearCommand();
 
-    void doPaste();
-    void doPasteInstance();
+    void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry);
+    void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry);
     void setNewCommand(std::shared_ptr<PasteCommand> command);
 };//PasteManager
 
@@ -56,8 +59,8 @@ struct PasteSequencerEntryBlocksCommand : public PasteCommand
     PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerEntryBlocksCommand();
 
-    void doPaste();
-    void doPasteInstance();
+    void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry);
+    void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry);
 
 private:    
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
@@ -68,8 +71,8 @@ struct PasteSequencerKeyframesCommand : public PasteCommand
     PasteSequencerKeyframesCommand(std::map<int, std::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerKeyframesCommand();
 
-    void doPaste();
-    void doPasteInstance();
+    void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry);
+    void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry);
 
 private:
     std::map<int, std::shared_ptr<Keyframe> > keyframes;
