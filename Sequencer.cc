@@ -1481,8 +1481,17 @@ void Sequencer::editSequencerEntryProperties(std::shared_ptr<SequencerEntry> ent
     mainWindow->editSequencerEntryProperties(entry, createUpdatePoint);
 }//editSequencerEntryProperties
 
+struct SortHelper
+{
+    bool operator()(const std::shared_ptr<SequencerEntry> &a, const std::shared_ptr<SequencerEntry> &b)
+    {
+        return a->getIndex() < b->getIndex();
+    }//operator()
+};//SortHelper
+
 void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
 {
+
     inputArchive & BOOST_SERIALIZATION_NVP(entries);
     inputArchive & BOOST_SERIALIZATION_NVP(selectedEntryBlock);
     inputArchive & BOOST_SERIALIZATION_NVP(selectionInfos);
@@ -1492,14 +1501,20 @@ void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
     Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().end();
     int entryNum = 0;
 
-    typedef std::pair<std::shared_ptr<SequencerEntry>, int > SequencerEntryMapType;
-    BOOST_FOREACH (SequencerEntryMapType entryPair, entries) {
-        std::string entryTitle = entryPair.first->getTitle();
-        entryPair.first->doInit(entryGlade, this, entryNum);
-        entryPair.first->setTitle(entryTitle);
-        Gtk::Widget *entryHookWidget = entryPair.first->getHookWidget();
+    std::vector<std::shared_ptr<SequencerEntry>> orderedEntries;
+    BOOST_FOREACH (auto entryPair, entries) {
+        orderedEntries.push_back(entryPair.first);
+    }//foreach
 
-std::cout << "HERE: " << entryHookWidget << " - " << entryTitle << " - " << entryPair.first->getTitle() << std::endl;
+    std::sort(orderedEntries.begin(), orderedEntries.end(), SortHelper());
+
+    BOOST_FOREACH (auto entry, orderedEntries) {
+        std::string entryTitle = entry->getTitle();
+        entry->doInit(entryGlade, this, entryNum);
+        entry->setTitle(entryTitle);
+        Gtk::Widget *entryHookWidget = entry->getHookWidget();
+
+std::cout << "HERE: " << entryHookWidget << " - " << entryTitle << " - " << entry->getTitle() << " - index: " << entry->getIndex() << std::endl;
 
         parentWidget->children().insert(entryIter, Gtk::Box_Helpers::Element(*entryHookWidget));
         
