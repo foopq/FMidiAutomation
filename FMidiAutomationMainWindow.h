@@ -164,6 +164,12 @@ public:
     void RemoveKeyframe(std::shared_ptr<Keyframe> keyframe);
 };//KeyframeSelectionState
 
+enum class InsertMode
+{
+    Merge,
+    Replace
+};//InsertMode
+
 struct GraphState
 {    
     double baseOffsetX; //when actively scrolling
@@ -209,6 +215,7 @@ struct GraphState
     int lastSequencerPointerTick; //for swaping back to the seqeucner
 
     bool doingRubberBanding;
+    InsertMode insertMode;
     
     GraphState();
     ~GraphState();
@@ -321,7 +328,7 @@ class FMidiAutomationMainWindow
     void on_menuPaste();
     void on_menuPorts();
     void on_menuPasteInstance();
-    void on_menuSplitEntryBlock();
+    void on_menuSplitEntryBlocks();
     void on_menuJoinEntryBlocks();
     void on_menupasteSEBToSelectedEntry();
     void on_menupasteSEBInstancesToSelectedEntry();
@@ -357,6 +364,8 @@ class FMidiAutomationMainWindow
     void handleRecordPressed();
 
     void handleJackPressed();
+
+    void handleInsertModeChanged();
 
     std::shared_ptr<boost::thread> recordThread;
     void startRecordThread();

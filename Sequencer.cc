@@ -176,6 +176,42 @@ std::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone()
     return clone;
 }//deepClone
 
+std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > SequencerEntryBlock::deepCloneSplit(int tick)
+{
+    std::shared_ptr<SequencerEntryBlock> clone1(new SequencerEntryBlock);
+    std::shared_ptr<SequencerEntryBlock> clone2(new SequencerEntryBlock);
+
+    int animOffset = tick - startTick;
+
+    clone1->owningEntry = owningEntry;
+    clone1->title = title + " Split";
+    clone1->startTick = startTick;
+    clone1->valuesPerPixel = valuesPerPixel;
+    clone1->offsetY = offsetY;
+
+    clone2->owningEntry = owningEntry;
+    clone2->title = title + " Split";
+    clone2->startTick = tick;
+    clone2->valuesPerPixel = valuesPerPixel;
+    clone2->offsetY = offsetY;
+
+    auto animationClonePair = curve->deepCloneSplit(animOffset, clone1.get(), clone2.get());
+    std::shared_ptr<Animation> animationClone1A = animationClonePair.first;
+    std::shared_ptr<Animation> animationClone1B = animationClonePair.second;
+
+    animationClonePair = secondaryCurve->deepCloneSplit(animOffset, clone1.get(), clone2.get());
+    std::shared_ptr<Animation> animationClone2A = animationClonePair.first;
+    std::shared_ptr<Animation> animationClone2B = animationClonePair.second;
+
+    clone1->curve = animationClone1A;
+    clone1->secondaryCurve = animationClone2A;
+
+    clone2->curve = animationClone1B;
+    clone2->secondaryCurve = animationClone2B;
+   
+    return std::make_pair(clone1, clone2);
+}//deepCloneSplit
+
 void SequencerEntryBlock::setInstanceOf(std::shared_ptr<SequencerEntryBlock> instanceOf_)
 {
     instanceOf = instanceOf_;

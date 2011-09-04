@@ -670,3 +670,79 @@ void ProcessRecordedMidiCommand::undoAction()
 }//undoAction/*}}}*/
 
 
+MergeSequencerEntryBlocksCommand::MergeSequencerEntryBlocksCommand(
+                                        std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &origEntryBlocks_,
+                                        std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &replacementEntryBlocks_) 
+                                        : Command("Merge Sequencer Entry Blocks")
+{
+    origEntryBlocks.swap(origEntryBlocks_);
+    replacementEntryBlocks.swap(replacementEntryBlocks_);
+}//constructor
+
+MergeSequencerEntryBlocksCommand::~MergeSequencerEntryBlocksCommand()
+{
+    //Nothing
+}//destructor
+
+void MergeSequencerEntryBlocksCommand::doAction()
+{
+    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+        blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
+    }//foreach
+
+    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+        blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
+    }//foreach
+}//doAction
+
+void MergeSequencerEntryBlocksCommand::undoAction()
+{
+    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+        blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
+    }//foreach
+
+    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+        blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
+    }//foreach
+}//undoAction
+
+SplitSequencerEntryBlocksCommand::SplitSequencerEntryBlocksCommand(
+                                        std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &origEntryBlocks_,
+                                        std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &replacementEntryBlocks_) 
+                                        : Command("Split Sequencer Entry Blocks")
+{
+    origEntryBlocks.swap(origEntryBlocks_);
+    replacementEntryBlocks.swap(replacementEntryBlocks_);
+}//constructor
+
+SplitSequencerEntryBlocksCommand::~SplitSequencerEntryBlocksCommand()
+{
+    //Nothing
+}//destructor
+
+void SplitSequencerEntryBlocksCommand::doAction()
+{
+    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+        blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
+    }//foreach
+
+    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+        blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
+    }//foreach
+}//doAction
+
+void SplitSequencerEntryBlocksCommand::undoAction()
+{
+    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+        blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
+    }//foreach
+
+    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+        blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
+    }//foreach
+}//undoAction
+
+
+
+
+

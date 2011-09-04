@@ -139,6 +139,73 @@ std::shared_ptr<Animation> Animation::deepClone()
     return clone;
 }//deepClone
 
+std::pair<std::shared_ptr<Animation>, std::shared_ptr<Animation> > Animation::deepCloneSplit(int offset, SequencerEntryBlock *owningEntryBlock1, 
+                                                                                                 SequencerEntryBlock *owningEntryBlock2)
+{
+    std::shared_ptr<Animation> animClone1 = deepClone();
+    std::shared_ptr<Animation> animClone2 = deepClone();
+
+    animClone1->startTick = owningEntryBlock1->getRawStartTick();
+    animClone2->startTick = owningEntryBlock2->getRawStartTick();
+
+    std::map<int, std::shared_ptr<Keyframe> > keyframesAfter;
+    auto splitIter = animClone1->keyframes.lower_bound(offset);
+
+    while (splitIter != animClone1->keyframes.end()) {
+        auto nextIter = splitIter;
+        ++nextIter;
+
+        std::shared_ptr<Keyframe> keyframeClone = splitIter->second->deepClone();
+        keyframeClone->tick -= offset;
+
+        keyframesAfter.insert(std::make_pair(keyframeClone->tick, keyframeClone));
+
+        animClone1->keyframes.erase(splitIter);
+        splitIter = nextIter;
+    }//while
+
+    animClone2->keyframes.swap(keyframesAfter);
+
+    return std::make_pair(animClone1, animClone2);
+}//deepCloneSplit
+
+void Animation::mergeOtherAnimation(std::shared_ptr<Animation> otherAnim, InsertMode insertMode)
+{
+    if (otherAnim->keyframes.empty() == true) {
+        return;
+    }//if
+
+    //We ensure an ordering to the merge
+    if (*otherAnim->startTick < *startTick) {
+        otherAnim->mergeOtherAnimation(shared_from_this(), insertMode);
+        return;
+    }//if
+
+    std::cout << "mergeOtherAnimation" << std::endl;
+
+    int offset = *otherAnim->startTick - *startTick;
+
+    if (InsertMode::Replace == insertMode) {
+        int firstTick = otherAnim->keyframes.begin()->first + offset;
+        int lastTick = (otherAnim->keyframes.end()--)->first + offset;
+
+        auto curIter = keyframes.lower_bound(firstTick);
+        while ((curIter != keyframes.end()) && (curIter->first < lastTick)) {
+            auto nextIter = curIter;
+            ++nextIter;
+            keyframes.erase(curIter);
+            curIter = nextIter;
+        }//while                
+    }//if
+
+    BOOST_FOREACH (auto keyframeIter, otherAnim->keyframes) {
+        std::shared_ptr<Keyframe> newKeyframe = keyframeIter.second->deepClone();
+        newKeyframe->tick += offset;
+
+        addKey(newKeyframe);
+    }//foreach
+}//mergeOtherAnimation
+
 void Animation::absorbCurve(std::shared_ptr<Animation> otherAnim)
 {
     this->keyframes = otherAnim->keyframes;

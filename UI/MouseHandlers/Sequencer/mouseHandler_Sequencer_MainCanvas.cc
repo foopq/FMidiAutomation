@@ -136,14 +136,28 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
         if (graphState.entryBlockSelectionState.GetNumSelected() > 1) {
             m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete All Selected Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks));
         }//if
+
         m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
         m_refActionGroup->add(Gtk::Action::create("ContextCurve", "Entry Block Curve"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryCurve));
+
         ui_info =
             "<ui>"
             "  <popup name='PopupMenu'>"
             "    <menuitem action='ContextCurve'/>"
             "    <menuitem action='ContextProperties'/>"
-            "    <menuitem action='ContextDelete'/>"
+            "    <menuitem action='ContextDelete'/>";
+
+        if (graphState.entryBlockSelectionState.HasSelected() == true) {
+            ui_info += "<separator/>";
+
+            m_refActionGroup->add(Gtk::Action::create("ContextSplitSEB", "Split Sequencer Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSplitEntryBlocks));
+            ui_info += "<menuitem action='ContextSplitSEB'/>";
+
+            m_refActionGroup->add(Gtk::Action::create("ContextJoinSEB", "Join Sequencer Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuJoinEntryBlocks));
+            ui_info += "<menuitem action='ContextJoinSEB'/>";
+        }//if
+
+        ui_info +=
             "  </popup>"
             "</ui>";
 
@@ -155,7 +169,19 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
             ui_info =
                 "<ui>"
                 "  <popup name='PopupMenu'>"
-                "    <menuitem action='ContextAdd'/>"
+                "    <menuitem action='ContextAdd'/>";
+
+            if (graphState.entryBlockSelectionState.HasSelected() == true) {
+                ui_info += "<separator/>";
+
+                m_refActionGroup->add(Gtk::Action::create("ContextSplitSEB", "Split Sequencer Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSplitEntryBlocks));
+                ui_info += "<menuitem action='ContextSplitSEB'/>";
+
+                m_refActionGroup->add(Gtk::Action::create("ContextJoinSEB", "Join Sequencer Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuJoinEntryBlocks));
+                ui_info += "<menuitem action='ContextJoinSEB'/>";
+            }//if
+
+            ui_info +=
                 "  </popup>"
                 "</ui>";
         } else {

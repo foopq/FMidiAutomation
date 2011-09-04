@@ -136,7 +136,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     menuNew->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuNew));
     menuQuit->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuQuit));
 
-    menuSplitEntryBlock->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSplitEntryBlock));
+    menuSplitEntryBlock->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuSplitEntryBlocks));
     menuJoinEntryBlocks->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuJoinEntryBlocks));
 
     Gtk::MenuItem *menuItem;
@@ -318,6 +318,12 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     jackSingleton.setTime(0);
 
     mainWindow->set_icon_from_file("pics/tmpicon.jpg");
+
+    Gtk::RadioButton *radioButton;
+    uiXml->get_widget("radiobutton_merge", radioButton);
+    radioButton->set_active(true);
+    radioButton->signal_toggled().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleInsertModeChanged) );
+    
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -500,6 +506,19 @@ bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollTy
     graphDrawingArea->queue_draw();
     return true;
 }//handleEntryWindowScroll
+
+void FMidiAutomationMainWindow::handleInsertModeChanged()
+{
+    Gtk::RadioButton *radioButton;
+    uiXml->get_widget("radiobutton_merge", radioButton);
+
+    bool isMerge = radioButton->get_active();
+    if (true == isMerge) {
+        graphState.insertMode = InsertMode::Merge;
+    } else {
+        graphState.insertMode = InsertMode::Replace;
+    }//if
+}//handleInsertModeChanged
 
 void FMidiAutomationMainWindow::handleJackPressed()
 {
@@ -1123,19 +1142,85 @@ void FMidiAutomationMainWindow::on_menuQuit()
     Gtk::Main::quit();
 }//on_menuQuit
 
-void FMidiAutomationMainWindow::on_menuSplitEntryBlock()
+void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
 {
     if (graphState.entryBlockSelectionState.HasSelected() == false) {
         return;
     }//if
 
-////
-//graphState.currentlySelectedEntryBlock = graphState.currentlySelectedEntryBlock->getOwningEntry()->splitEntryBlock(graphState.currentlySelectedEntryBlock, graphState.curPointerTick).first; ...
-}//on_menuSplitEntryBlock
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks;
+    auto entryBlockPair = graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
+
+    BOOST_FOREACH (auto entryBlock, entryBlockPair) {
+        if ( (entryBlock.second->getStartTick() < graphState.curPointerTick) && 
+             (graphState.curPointerTick < entryBlock.second->getStartTick() + entryBlock.second->getDuration()) ) {
+            origEntryBlocks.insert(std::make_pair(entryBlock.first, entryBlock.second));
+        }//if
+    }//foreach
+
+    if (origEntryBlocks.empty() == true) {
+        return;
+    }//if
+
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
+    BOOST_FOREACH (auto entryBlock, entryBlockPair) {
+        auto splitPair = entryBlock.second->deepCloneSplit(graphState.curPointerTick);
+        newEntryBlocks.insert(std::make_pair(splitPair.first->getStartTick(), splitPair.first));
+        newEntryBlocks.insert(std::make_pair(splitPair.second->getStartTick(), splitPair.second));
+    }//foreach
+
+    std::shared_ptr<Command> splitSequencerEntryBlocksCommand(new SplitSequencerEntryBlocksCommand(origEntryBlocks, newEntryBlocks));
+    CommandManager::Instance().setNewCommand(splitSequencerEntryBlocksCommand, true);
+
+    graphDrawingArea->queue_draw();
+}//on_menuSplitEntryBlocks
 
 void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
 {
-}//on_menuJoinEntryBlock
+    bool workToBeDone = false;
+    auto entryBlockPair = graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
+
+    std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<std::deque<std::shared_ptr<SequencerEntryBlock> > > > entryBlockMap;
+
+    BOOST_FOREACH (auto entryBlock, entryBlockPair) {
+        if (entryBlockMap[entryBlock.second->getOwningEntry()] == NULL) {
+            entryBlockMap[entryBlock.second->getOwningEntry()] = std::make_shared<std::deque<std::shared_ptr<SequencerEntryBlock> > >();
+        }//if
+
+        entryBlockMap[entryBlock.second->getOwningEntry()]->push_back(entryBlock.second);
+    }//foreach
+
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks = graphState.entryBlockSelectionState.GetEntryBlocksMapCopy();
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
+    BOOST_FOREACH (auto entryQueuePair, entryBlockMap) {        
+        std::deque<std::shared_ptr<SequencerEntryBlock> > &curDeque = *entryQueuePair.second;
+        if (curDeque.size() > 1) {
+            workToBeDone = true;
+        } else {
+            continue;
+        }//if
+
+        std::shared_ptr<SequencerEntryBlock> replacementBlock = curDeque.front()->deepClone();
+        newEntryBlocks.insert(std::make_pair(replacementBlock->getStartTick(), replacementBlock));
+        curDeque.pop_front();
+
+        while (curDeque.empty() == false) {
+            std::shared_ptr<SequencerEntryBlock> firstBlock = curDeque.front();
+            curDeque.pop_front();
+
+            //Do the actual merge
+            replacementBlock->getCurve()->mergeOtherAnimation(firstBlock->getCurve(), graphState.insertMode);
+            replacementBlock->getSecondaryCurve()->mergeOtherAnimation(firstBlock->getSecondaryCurve(), graphState.insertMode);
+        }//while
+    }//foreach
+
+    if (true == workToBeDone) {
+        std::shared_ptr<Command> mergeSequencerEntryBlocksCommand(new MergeSequencerEntryBlocksCommand(origEntryBlocks, newEntryBlocks));
+        CommandManager::Instance().setNewCommand(mergeSequencerEntryBlocksCommand, true);
+
+        graphDrawingArea->queue_draw();
+    }//if
+}//on_menuJoinEntryBlocks
 
 void FMidiAutomationMainWindow::on_menuNew()
 {

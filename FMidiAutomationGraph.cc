@@ -1158,6 +1158,7 @@ void GraphState::doInit()
     curMousePosX = -100;
     curMousePosY = -100;
     doingRubberBanding = false;
+    insertMode = InsertMode::Merge;
 }//doInit
 
 GraphState::~GraphState()

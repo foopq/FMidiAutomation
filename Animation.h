@@ -71,10 +71,10 @@ private:
     friend class boost::serialization::access;
 };//Keyframe
 
-class Animation
+class Animation : public std::enable_shared_from_this<Animation>
 {
     std::shared_ptr<Animation> instanceOf;
-    std::map<int, std::shared_ptr<Keyframe> > keyframes;
+    std::map<int, std::shared_ptr<Keyframe> > keyframes; //XXX: We use the ordered map properties.. reconsider if ever changing to a hash map
     int *startTick;
 
     Animation() {}
@@ -86,6 +86,8 @@ public:
     ~Animation();
 
     std::shared_ptr<Animation> deepClone();
+    std::pair<std::shared_ptr<Animation>, std::shared_ptr<Animation> > deepCloneSplit(int offset, SequencerEntryBlock *owningEntryBlock1, 
+                                                                                        SequencerEntryBlock *owningEntryBlock2);
 
     void addKey(std::shared_ptr<Keyframe> keyframe);
     //void deleteKey(int tick);
@@ -96,6 +98,8 @@ public:
 
     std::shared_ptr<Keyframe> getPrevKeyframe(std::shared_ptr<Keyframe> keyframe);
     std::shared_ptr<Keyframe> getNextKeyframe(std::shared_ptr<Keyframe> keyframe);
+
+    void mergeOtherAnimation(std::shared_ptr<Animation> otherAnim, InsertMode insertMode);
 
     double sample(int tick);
 

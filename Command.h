@@ -26,6 +26,7 @@ class CommandManager;
 struct Command
 {
     Command(Glib::ustring commandStr);
+    virtual ~Command() {};
 
     Glib::ustring commandStr;
 
@@ -56,7 +57,7 @@ public:
 struct ChangeSequencerEntryPropertiesCommand : public Command
 {
     ChangeSequencerEntryPropertiesCommand(std::shared_ptr<SequencerEntry> entry, std::shared_ptr<SequencerEntryImpl> origImpl, std::shared_ptr<SequencerEntryImpl> newImpl);
-    ~ChangeSequencerEntryPropertiesCommand();
+    virtual ~ChangeSequencerEntryPropertiesCommand();
 
     void doAction();
     void undoAction();
@@ -73,7 +74,7 @@ struct MoveSequencerEntryBlockCommand : public Command
                                     std::map<std::shared_ptr<SequencerEntryBlock>, int> entryOriginalStartTicks, //FIXME: This should be a reference
                                     std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks);
 
-    ~MoveSequencerEntryBlockCommand();
+    virtual ~MoveSequencerEntryBlockCommand();
 
     void doAction();
     void undoAction();
@@ -87,7 +88,7 @@ private:
 struct ChangeSequencerEntryBlockPropertiesCommand : public Command
 {
     ChangeSequencerEntryBlockPropertiesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock, Glib::ustring newTitle);
-    ~ChangeSequencerEntryBlockPropertiesCommand();
+    virtual ~ChangeSequencerEntryBlockPropertiesCommand();
 
     void doAction();
     void undoAction();
@@ -100,7 +101,7 @@ private:
 struct AddSequencerEntryBlockCommand : public Command
 {
     AddSequencerEntryBlockCommand(std::shared_ptr<SequencerEntry> entry, std::shared_ptr<SequencerEntryBlock> entryBlock);
-    ~AddSequencerEntryBlockCommand();
+    virtual ~AddSequencerEntryBlockCommand();
 
     void doAction();
     void undoAction();
@@ -113,7 +114,7 @@ private:
 struct AddSequencerEntryBlocksCommand : public Command
 {
     AddSequencerEntryBlocksCommand(std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> &entryBlocks_);
-    ~AddSequencerEntryBlocksCommand();
+    virtual ~AddSequencerEntryBlocksCommand();
 
     void doAction();
     void undoAction();
@@ -126,7 +127,7 @@ struct DeleteSequencerEntryBlocksCommand : public Command
 {
     //FIXME: This shouldn't be a copy, but a reference!
     DeleteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks);
-    ~DeleteSequencerEntryBlocksCommand();
+    virtual ~DeleteSequencerEntryBlocksCommand();
 
     void doAction();
     void undoAction();
@@ -138,7 +139,7 @@ private:
 struct DeleteSequencerEntryBlockCommand : public Command
 {
     DeleteSequencerEntryBlockCommand(std::shared_ptr<SequencerEntryBlock> entryBlock);
-    ~DeleteSequencerEntryBlockCommand();
+    virtual ~DeleteSequencerEntryBlockCommand();
 
     void doAction();
     void undoAction();
@@ -151,7 +152,7 @@ private:
 struct SequencerEntryUpCommand : public Command
 {
     SequencerEntryUpCommand(std::shared_ptr<Sequencer> sequencer, std::shared_ptr<SequencerEntry> entry);
-    ~SequencerEntryUpCommand();
+    virtual ~SequencerEntryUpCommand();
 
     void doAction();
     void undoAction();
@@ -165,7 +166,7 @@ private:
 struct SequencerEntryDownCommand : public Command
 {
     SequencerEntryDownCommand(std::shared_ptr<Sequencer> sequencer, std::shared_ptr<SequencerEntry> entry);
-    ~SequencerEntryDownCommand();
+    virtual ~SequencerEntryDownCommand();
 
     void doAction();
     void undoAction();
@@ -179,7 +180,7 @@ private:
 struct AddSequencerEntryCommand : public Command
 {
     AddSequencerEntryCommand(std::shared_ptr<Sequencer> sequencer, bool useDefaults);
-    ~AddSequencerEntryCommand();
+    virtual ~AddSequencerEntryCommand();
 
     void doAction();
     void undoAction();
@@ -193,7 +194,7 @@ private:
 struct DeleteSequencerEntryCommand : public Command
 {
     DeleteSequencerEntryCommand(std::shared_ptr<Sequencer> sequencer, std::shared_ptr<SequencerEntry> entry);
-    ~DeleteSequencerEntryCommand();
+    virtual ~DeleteSequencerEntryCommand();
 
     void doAction();
     void undoAction();
@@ -208,7 +209,7 @@ struct AddTempoChangeCommand : public Command
 {
     AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_, std::shared_ptr<FMidiAutomationData> datas_,
                             boost::function<void (void)> updateTempoChangesUIData);
-    ~AddTempoChangeCommand();
+    virtual ~AddTempoChangeCommand();
 
     void doAction();
     void undoAction();
@@ -223,7 +224,7 @@ private:
 struct DeleteTempoChangeCommand : public Command
 {
     DeleteTempoChangeCommand(unsigned int tick_, std::shared_ptr<FMidiAutomationData> datas_, boost::function<void (void)> updateTempoChangesUIData);
-    ~DeleteTempoChangeCommand();
+    virtual ~DeleteTempoChangeCommand();
 
     void doAction();
     void undoAction();
@@ -239,7 +240,7 @@ struct UpdateTempoChangeCommand : public Command
 {
     UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar, 
                                 unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData);
-    ~UpdateTempoChangeCommand();
+    virtual ~UpdateTempoChangeCommand();
 
     void doAction();
     void undoAction();
@@ -257,7 +258,7 @@ struct AddKeyframesCommand : public Command
 {
     AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, int curMouseUnderTick, int curMouseUnderValue);
     AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock, std::map<int, std::shared_ptr<Keyframe> > &origKeyframes, int newTick);
-    ~AddKeyframesCommand();
+    virtual ~AddKeyframesCommand();
 
     void doAction();
     void undoAction();
@@ -270,7 +271,7 @@ private:
 struct DeleteKeyframesCommand : public Command
 {
     DeleteKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock, std::map<int, std::shared_ptr<Keyframe> > keyframes);
-    ~DeleteKeyframesCommand();
+    virtual ~DeleteKeyframesCommand();
 
     void doAction();
     void undoAction();
@@ -290,7 +291,7 @@ struct MoveKeyframesCommand : public Command
     };//KeyInfo
 
     MoveKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock, std::vector<std::shared_ptr<KeyInfo> > &keyframes);
-    ~MoveKeyframesCommand();
+    virtual ~MoveKeyframesCommand();
 
     void doAction();
     void undoAction();
@@ -303,7 +304,7 @@ private:
 struct ProcessRecordedMidiCommand : public Command
 {
     ProcessRecordedMidiCommand(std::map<std::shared_ptr<SequencerEntry>, int > origEntryMap, std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap);
-    ~ProcessRecordedMidiCommand();
+    virtual ~ProcessRecordedMidiCommand();
 
     void doAction();
     void undoAction();
@@ -313,5 +314,32 @@ private:
     std::map<std::shared_ptr<SequencerEntry>, int > newEntryMap;
 };//ProcessRecordedMidiCommand
 
+struct MergeSequencerEntryBlocksCommand : public Command
+{
+    MergeSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &origEntryBlocks,
+                                        std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &replacementEntryBlocks);
+    virtual ~MergeSequencerEntryBlocksCommand();
+
+    void doAction();
+    void undoAction();
+
+private:    
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > replacementEntryBlocks;
+};//MergeSequencerEntryBlocksCommand
+
+struct SplitSequencerEntryBlocksCommand : public Command
+{
+    SplitSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &origEntryBlocks,
+                                        std::multimap<int, std::shared_ptr<SequencerEntryBlock> > &replacementEntryBlocks);
+    virtual ~SplitSequencerEntryBlocksCommand();
+
+    void doAction();
+    void undoAction();
+
+private:    
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > replacementEntryBlocks;
+};//SplitSequencerEntryBlocksCommand
 
 #endif

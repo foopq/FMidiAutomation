@@ -104,6 +104,7 @@ public:
     int *getRawStartTick();
 
     std::shared_ptr<SequencerEntryBlock> deepClone();
+    std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > deepCloneSplit(int tick);
 
     void renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
 
