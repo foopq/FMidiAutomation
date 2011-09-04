@@ -133,14 +133,15 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
     m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
 
     Glib::ustring ui_info = "<ui><popup name='PopupMenu'></popup></ui>";
-    std::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+    std::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, false);
 
     if (entryBlock != NULL) {
-        if (graphState->entryBlockSelectionState.IsSelected(entryBlock) == false) {
-            std::cout << "adding new entry block 2" << std::endl;
+        //XXX: I don't think we want to change the selection
+        //if (graphState->entryBlockSelectionState.IsSelected(entryBlock) == false) {
+        //    std::cout << "adding new entry block 2" << std::endl;
 
-            graphState->entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
-        }//if
+        //    graphState->entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
+        //}//if
 
         //Context menu to delete entry
         
