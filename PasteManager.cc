@@ -44,17 +44,17 @@ void PasteManager::setMenuItems(Gtk::ImageMenuItem *menuPaste_, Gtk::ImageMenuIt
     pasteInstanceBlocksToEntry = pasteInstanceBlocksToEntry_;
 }//setMenuItems
 
-void PasteManager::doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry)
+void PasteManager::doPaste(boost::any contextData)
 {
     if (command != NULL) {
-        command->doPaste(targetSequencerEntry);
+        command->doPaste(contextData);
     }//if
 }//doPaste
 
-void PasteManager::doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry)
+void PasteManager::doPasteInstance(boost::any contextData)
 {
     if (command != NULL) {
-        command->doPasteInstance(targetSequencerEntry);
+        command->doPasteInstance(contextData);
     }//if
 }//doPasteInstance
 
@@ -87,7 +87,7 @@ PasteSequencerEntryBlocksCommand::~PasteSequencerEntryBlocksCommand()
     //Nothing
 }//destructor
 
-void PasteSequencerEntryBlocksCommand::doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry)
+void PasteSequencerEntryBlocksCommand::doPaste(boost::any contextData)
 {
     Globals &globals = Globals::Instance();
     
@@ -98,6 +98,8 @@ void PasteSequencerEntryBlocksCommand::doPaste(std::shared_ptr<SequencerEntry> t
     if (entryBlocks.empty() == true) {
         return;
     }//if
+
+    std::shared_ptr<SequencerEntry> targetSequencerEntry = boost::any_cast<std::shared_ptr<SequencerEntry> >(contextData);
 
     int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
     int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
@@ -135,7 +137,7 @@ std::cout << "PasteSequencerEntryBlocksCommand 2: " << selectedEntry->getTitle()
     CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPaste
 
-void PasteSequencerEntryBlocksCommand::doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry)
+void PasteSequencerEntryBlocksCommand::doPasteInstance(boost::any contextData)
 {
     Globals &globals = Globals::Instance();
     
@@ -146,6 +148,8 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance(std::shared_ptr<Sequencer
     if (entryBlocks.empty() == true) {
         return;
     }//if
+
+    std::shared_ptr<SequencerEntry> targetSequencerEntry = boost::any_cast<std::shared_ptr<SequencerEntry> >(contextData);
 
     int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
     int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
@@ -186,7 +190,7 @@ PasteSequencerKeyframesCommand::~PasteSequencerKeyframesCommand()
     //Nothing
 }//destructor
 
-void PasteSequencerKeyframesCommand::doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry)
+void PasteSequencerKeyframesCommand::doPaste(boost::any contextData)
 {
     Globals &globals = Globals::Instance();
     
@@ -209,7 +213,7 @@ void PasteSequencerKeyframesCommand::doPaste(std::shared_ptr<SequencerEntry> tar
     CommandManager::Instance().setNewCommand(addKeyframesCommand, true);
 }//doPaste
 
-void PasteSequencerKeyframesCommand::doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry)
+void PasteSequencerKeyframesCommand::doPasteInstance(boost::any contextData)
 {
     doPaste(std::shared_ptr<SequencerEntry>());
 }//doPasteInstance

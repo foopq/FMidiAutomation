@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include <memory>
 #include <boost/function.hpp>
+#include <boost/any.hpp>
 #include <stack>
 #include <gtkmm.h>
 
@@ -25,8 +26,8 @@ struct Keyframe;
 
 struct PasteCommand
 {
-    virtual void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry) = 0;
-    virtual void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry) = 0;
+    virtual void doPaste(boost::any contextData) = 0;
+    virtual void doPasteInstance(boost::any contextData) = 0;
 };//PasteCommand
 
 class PasteManager
@@ -49,8 +50,8 @@ public:
     void setPasteOnly(bool pasteOnly);
     void clearCommand();
 
-    void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry);
-    void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry);
+    void doPaste(boost::any contextData);
+    void doPasteInstance(boost::any contextData);
     void setNewCommand(std::shared_ptr<PasteCommand> command);
 };//PasteManager
 
@@ -59,8 +60,8 @@ struct PasteSequencerEntryBlocksCommand : public PasteCommand
     PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerEntryBlocksCommand();
 
-    void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry);
-    void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry);
+    void doPaste(boost::any contextData);
+    void doPasteInstance(boost::any contextData);
 
 private:    
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
@@ -71,8 +72,8 @@ struct PasteSequencerKeyframesCommand : public PasteCommand
     PasteSequencerKeyframesCommand(std::map<int, std::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerKeyframesCommand();
 
-    void doPaste(std::shared_ptr<SequencerEntry> targetSequencerEntry);
-    void doPasteInstance(std::shared_ptr<SequencerEntry> targetSequencerEntry);
+    void doPaste(boost::any contextData);
+    void doPasteInstance(boost::any contextData);
 
 private:
     std::map<int, std::shared_ptr<Keyframe> > keyframes;
