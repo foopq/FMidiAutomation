@@ -908,6 +908,11 @@ bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
     return true;
 }//mouseButtonPressed
 
+void SequencerEntry::setFocus()
+{
+    (void)mouseButtonPressed(NULL);
+}//setFocus
+
 void SequencerEntry::select()
 {
     mouseButtonPressed(NULL);
@@ -961,6 +966,17 @@ void SequencerEntry::removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entry
 //        std::cout << "not removed at: " << entryBlock->getStartTick() << std::endl;
     }//if
 }//removeEntryBlock
+
+void SequencerEntry::setUIBounds(unsigned int relativeStartY_, unsigned int relativeEndY_)
+{
+    relativeStartY = relativeStartY_;
+    relativeEndY = relativeEndY_;
+}//setUIBounds
+
+std::pair<unsigned int, unsigned int> SequencerEntry::getUIBounds()
+{
+    return std::make_pair(relativeStartY, relativeEndY);
+}//getUIBounds
 
 template<class Archive>
 void SequencerEntry::serialize(Archive &ar, const unsigned int version)
@@ -1221,6 +1237,23 @@ void Sequencer::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget
     notifyOnScroll(-1);
 }//doInit
 
+void Sequencer::updateEntryFocus(unsigned int y)
+{
+    std::cout << "updateEntryFocus: " << y << std::endl;
+
+    BOOST_FOREACH (auto entryIter, entries) {
+        auto regionPair = entryIter.first->getUIBounds();
+
+        if ((regionPair.first <= y) && (y <= regionPair.second)) {
+            entryIter.first->setFocus();
+
+            auto regionPair = entryIter.first->getUIBounds();
+            std::cout << "** set focus for " << entryIter.first->getTitle() << " - " << regionPair.first << " | " << regionPair.second << std::endl;
+            break;
+        }//if
+    }//foreach
+}//updateEntryFocus
+
 void Sequencer::adjustFillerHeight()
 {
     int totalHeight = 0;
@@ -1389,9 +1422,9 @@ std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
 
 std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
 {
-    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
+//    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
 
-std::cout << "getSelectedEntryBlock: " << selectionInfos.size() << std::endl;
+//std::cout << "getSelectedEntryBlock: " << selectionInfos.size() << std::endl;
 
     if (x < 0) {
         selectedEntryBlock = (*entries.begin()).first->getEntryBlock(0);
@@ -1404,7 +1437,7 @@ if (selectedEntryBlock == NULL) {
 
     BOOST_FOREACH (SequencerEntryBlockSelectionInfo selectionInfo, selectionInfos) {
 
-        std::cout << "getSelectedEntryBlock entry: " << selectionInfo.entryBlock.get() << std::endl;
+//        std::cout << "getSelectedEntryBlock entry: " << selectionInfo.entryBlock.get() << std::endl;
 
 //        std::cout << "drawnArea: " << selectionInfo.drawnArea.get_x() << " - " << selectionInfo.drawnArea.get_y() << " - " << selectionInfo.drawnArea.get_width() << " - " << selectionInfo.drawnArea.get_height() << std::endl;
 
@@ -1414,9 +1447,9 @@ if (selectedEntryBlock == NULL) {
                 selectedEntryBlock = selectionInfo.entryBlock;
                 selectionInfo.entry->select();
 
-if (selectedEntryBlock == NULL) {
-    std::cout << "clearSelectedEntryBlock2" << std::endl;
-}//if
+//if (selectedEntryBlock == NULL) {
+//    std::cout << "clearSelectedEntryBlock2" << std::endl;
+//}//if
             }//if
             return selectedEntryBlock;
         }//if
@@ -1645,7 +1678,7 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 {
     selectionInfos.clear();
 
-    std::cout << "selectionInfos cleared" << std::endl;
+    //std::cout << "selectionInfos cleared" << std::endl;
 
 //std::cout << std::endl;    
 
@@ -1690,7 +1723,10 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
 //std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
 
-            std::cout << "drawEntryBoxes graphState: " << globals.graphState.get() << std::endl;
+            //std::cout << "drawEntryBoxes graphState: " << globals.graphState.get() << std::endl;
+
+            //std::cout << "ui bound for " << mapIter->first->getTitle() << ": " << relativeStartY << " - " << relativeStartY + relativeEndY - 1 << std::endl;
+            mapIter->first->setUIBounds(relativeStartY, relativeStartY + relativeEndY - 1);
 
             mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, 
                                             globals.graphState->entryBlockSelectionState);
@@ -1705,7 +1741,8 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
                 context->set_source_rgba(0.0, 1.0, 1.0, 0.3);
             }//if
             context->paint();
-            
+        } else {
+            mapIter->first->setUIBounds(std::numeric_limits<unsigned int>::max(), std::numeric_limits<unsigned int>::max());
         }//if
 
 //std::cout << "top: " << mapIter->second << " --- x: " << x << "   y: " << y << "    width: " << width << "   height: " << height << "   depth: " << depth << std::endl;
@@ -1724,7 +1761,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 
     for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
 
-        std::cout << "drawEntryBoxes SEB: " << entryBlockIter->second.get() << " - " << &entryBlockSelectionState << std::endl;
+        //std::cout << "drawEntryBoxes SEB: " << entryBlockIter->second.get() << " - " << &entryBlockSelectionState << std::endl;
 
         int startTick = entryBlockIter->second->getStartTick();
         int duration = entryBlockIter->second->getDuration();
@@ -1818,7 +1855,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         newSelectionInfo.drawnArea = Gdk::Rectangle(relativeStartX, relativeStartY + 10, relativeEndX - relativeStartX, relativeEndY - relativeStartY - 10);
         selectionInfos.push_back(newSelectionInfo);
 
-        std::cout << "selectionInfos added " << newSelectionInfo.entryBlock.get() << std::endl;
+        //std::cout << "selectionInfos added " << newSelectionInfo.entryBlock.get() << std::endl;
     }//for
 }//drawEntryBoxes
 

@@ -60,7 +60,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
 
         std::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
 
-std::cout << "handleSequencerMainCanvasLMBPress: entryBlock is: " << entryBlock << std::endl;
+//std::cout << "handleSequencerMainCanvasLMBPress: entryBlock is: " << entryBlock << std::endl;
 
         if (entryBlock == NULL) {
             sequencer->clearSelectedEntryBlock();
@@ -70,7 +70,7 @@ std::cout << "handleSequencerMainCanvasLMBPress: entryBlock is: " << entryBlock 
 
             graphState->entryBlockSelectionState.ClearSelected();
 
-std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is cleared" << std::endl;
+//std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is cleared" << std::endl;
 
             graphState->doingRubberBanding = true;
         } else {
@@ -80,7 +80,7 @@ std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is cleared
                 graphState->entryBlockSelectionState.ClearSelected();
                 graphState->entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
 
-std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is: " << entryBlock << " - " << graphState.get() <<  std::endl;
+//std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is: " << entryBlock << " - " << graphState.get() <<  std::endl;
 
                 positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
 
@@ -127,6 +127,8 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMMBPress()
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, guint32 time)
 {
+    std::cout << "handleSequencerMainCanvasRMBPress" << std::endl;
+
     m_refActionGroup = Gtk::ActionGroup::create();
     m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
 

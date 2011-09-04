@@ -163,6 +163,9 @@ class SequencerEntry : public std::enable_shared_from_this<SequencerEntry>
     int curIndex;
     std::map<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
 
+    unsigned int relativeStartY; //for UI
+    unsigned int relativeEndY; //for UI
+
     std::set<jack_port_t *> inputPorts;
     std::set<jack_port_t *> outputPorts;
 
@@ -216,6 +219,9 @@ public:
 
     void setLabelColour(Gdk::Color colour);
 
+    void setUIBounds(unsigned int relativeStartY, unsigned int relativeEndY);
+    std::pair<unsigned int, unsigned int> getUIBounds();
+
     void addEntryBlock(int, std::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
     std::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
@@ -229,6 +235,8 @@ public:
     void clearRecordTokenBuffer();
     void addRecordToken(MidiToken &token);
     void commitRecordedTokens();
+
+    void setFocus();
 
     std::shared_ptr<SequencerEntry> deepClone();
 
@@ -283,6 +291,7 @@ public:
     void notifySelected(SequencerEntry *selectedEntry);
     void notifyOnScroll(double pos);
 
+    void updateEntryFocus(unsigned int y);
     void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 
     void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, 

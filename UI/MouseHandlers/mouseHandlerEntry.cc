@@ -264,6 +264,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
             break;
 
         case DisplayMode::Sequencer:
+            sequencer->updateEntryFocus(event->y);
+
             switch (mouseRegion) {
                 case FrameRegion:
                     switch (event->button) {
