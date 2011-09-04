@@ -19,12 +19,11 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-#include "FMidiAutomationMainWindow.h" //FIXME: Refactor this.. Needed for KeyframeSelectionState
-#include "SerializationHelper.h"
 
 class FMidiAutomationMainWindow;
 struct Keyframe;
 class GraphState;
+class KeyframeSelectionState;
 
 class CurveEditor
 {

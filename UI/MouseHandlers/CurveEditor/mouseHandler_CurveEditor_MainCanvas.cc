@@ -12,6 +12,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "FMidiAutomationCurveEditor.h"
 #include "Animation.h"
 #include "Command.h"
+#include "GraphState.h"
+#include "FMidiAutomationData.h"
+#include "Tempo.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
@@ -198,22 +201,22 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBPress()
 {
     unsetAllCurveFrames();
 
-    std::shared_ptr<Keyframe> selectedKey = curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
+    std::shared_ptr<Keyframe> selectedKey = curveEditor->getKeySelection(*graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
-std::cout << "num selected keys: " << graphState.keyframeSelectionState.GetNumSelected() << " - " << ctrlCurrentlyPressed << std::endl;
+std::cout << "num selected keys: " << graphState->keyframeSelectionState.GetNumSelected() << " - " << ctrlCurrentlyPressed << std::endl;
 
     std::shared_ptr<Keyframe> firstKey;
-    if (graphState.keyframeSelectionState.HasSelected() == true) {
-        firstKey = graphState.keyframeSelectionState.GetFirstKeyframe();
+    if (graphState->keyframeSelectionState.HasSelected() == true) {
+        firstKey = graphState->keyframeSelectionState.GetFirstKeyframe();
     }//if
 
     curveEditor->setKeyUIValues(uiXml, firstKey);
 
     if (selectedKey != NULL) {
-        graphState.didMoveKey = false;
+        graphState->didMoveKey = false;
 
-        BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
-            graphState.keyframeSelectionState.AddOrigKeyframe(keyIter.second);
+        BOOST_FOREACH (auto keyIter, graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+            graphState->keyframeSelectionState.AddOrigKeyframe(keyIter.second);
         }//for
 
         menuCopy->set_sensitive(true);
@@ -221,14 +224,14 @@ std::cout << "num selected keys: " << graphState.keyframeSelectionState.GetNumSe
     } else {
         menuCopy->set_sensitive(false);
         menuCut->set_sensitive(false);
-        graphState.doingRubberBanding = true;
+        graphState->doingRubberBanding = true;
     }//if
 
     //Essentially clear the selection state of the tempo changes
     (void)checkForTempoSelection(-100, datas->tempoChanges);
 
-    if (true == graphState.doingRubberBanding) {
-        graphState.keyframeSelectionState.ResetRubberbandingSelection();
+    if (true == graphState->doingRubberBanding) {
+        graphState->keyframeSelectionState.ResetRubberbandingSelection();
     }//if
 }//handleCurveEditorMainCanvasLMBPress
 
@@ -244,24 +247,24 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
 
     Glib::ustring ui_info = "<ui><popup name='PopupMenu'></popup></ui>";
 
-    curveEditor->getKeySelection(graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
+    curveEditor->getKeySelection(*graphState, mousePressDownX, mousePressDownY, ctrlCurrentlyPressed);
 
     std::shared_ptr<Keyframe> firstKeyframe;
-    if (graphState.keyframeSelectionState.HasSelected() == true) {
-        firstKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
+    if (graphState->keyframeSelectionState.HasSelected() == true) {
+        firstKeyframe = graphState->keyframeSelectionState.GetFirstKeyframe();
     }//if
 
     curveEditor->setKeyUIValues(uiXml, firstKeyframe);
 
     if (firstKeyframe == NULL) {
-        graphState.selectedEntity = Nobody;
+        graphState->selectedEntity = Nobody;
 
         std::string menuStr = "Add Keyframe";
-        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
+        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState->entryBlockSelectionState.GetFirstEntryBlock();
 
-        int curMouseUnderTick = graphState.verticalPixelTickValues[xPos];
+        int curMouseUnderTick = graphState->verticalPixelTickValues[xPos];
 
-        if (xPos > graphState.zeroithTickPixel) { 
+        if (xPos > graphState->zeroithTickPixel) { 
             if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(curMouseUnderTick) != NULL) {
                 menuStr = "Keyframe exists at this tick";
             }//if
@@ -277,7 +280,7 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
             return false;
         }//if
     } else {
-        graphState.selectedEntity = KeyValue;
+        graphState->selectedEntity = KeyValue;
 
         m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframes"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframes));
         m_refActionGroup->add(Gtk::Action::create("ContextResetTangents", "Reset Tangents"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleResetTangents));
@@ -323,17 +326,17 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
 
 void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
 {
-    graphState.doingRubberBanding = false;
+    graphState->doingRubberBanding = false;
 
-    if (graphState.selectedEntity == KeyValue) {
-        if (true == graphState.didMoveKey) {                        
-            std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
+    if (graphState->selectedEntity == KeyValue) {
+        if (true == graphState->didMoveKey) {                        
+            std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState->entryBlockSelectionState.GetFirstEntryBlock();
 
             //Move key back to where it was
             std::vector<std::shared_ptr<MoveKeyframesCommand::KeyInfo> > keyInfos;
-            keyInfos.reserve(graphState.keyframeSelectionState.GetNumSelected());
+            keyInfos.reserve(graphState->keyframeSelectionState.GetNumSelected());
 
-            BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+            BOOST_FOREACH (auto keyIter, graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
                 std::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
                 std::shared_ptr<MoveKeyframesCommand::KeyInfo> keyInfo(new MoveKeyframesCommand::KeyInfo);
@@ -343,8 +346,8 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
                 keyInfos.push_back(keyInfo);
 
                 currentlySelectedEntryBlock->getCurve()->deleteKey(curKeyframe);
-                curKeyframe->tick = graphState.keyframeSelectionState.GetOrigTick(curKeyframe);
-                curKeyframe->value = graphState.keyframeSelectionState.GetOrigValue(curKeyframe);
+                curKeyframe->tick = graphState->keyframeSelectionState.GetOrigTick(curKeyframe);
+                curKeyframe->value = graphState->keyframeSelectionState.GetOrigValue(curKeyframe);
                 currentlySelectedEntryBlock->getCurve()->addKey(curKeyframe);
             }//foreach
 
@@ -353,7 +356,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
         }//if
     }//if
 
-    if (graphState.keyframeSelectionState.HasSelected() == true) {
+    if (graphState->keyframeSelectionState.HasSelected() == true) {
         menuCopy->set_sensitive(true);
         menuCut->set_sensitive(true);
     } else {
@@ -376,34 +379,34 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPo
 {
     if (true == shiftCurrentlyPressed) {
         //We are scrolling the canvas
-        gdouble curOffsetX = graphState.offsetX;
+        gdouble curOffsetX = graphState->offsetX;
 
-        handleGraphTimeScroll(xPos, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth);
-        bool didScroll = handleGraphValueScroll(yPos, graphState, mousePressDownX, mousePressDownY, drawingAreaHeight);
+        handleGraphTimeScroll(xPos, *graphState, mousePressDownX, mousePressDownY, drawingAreaWidth);
+        bool didScroll = handleGraphValueScroll(yPos, *graphState, mousePressDownX, mousePressDownY, drawingAreaHeight);
 
-        if ((graphState.offsetX != curOffsetX) || (true == didScroll)) {
-            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-            graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+        if ((graphState->offsetX != curOffsetX) || (true == didScroll)) {
+            graphState->refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+            graphState->refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
         }//if
     } else {
         std::shared_ptr<Keyframe> firstKeyframe;
-        if (graphState.keyframeSelectionState.HasSelected() == true) {
-            firstKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
+        if (graphState->keyframeSelectionState.HasSelected() == true) {
+            firstKeyframe = graphState->keyframeSelectionState.GetFirstKeyframe();
         }//if
 
-        if (graphState.selectedEntity == KeyValue) {
-            handleKeyScroll(xPos, yPos, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
+        if (graphState->selectedEntity == KeyValue) {
+            handleKeyScroll(xPos, yPos, *graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
             curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if
 
-        else if ((graphState.selectedEntity == InTangent) || (graphState.selectedEntity == OutTangent)) {
-            handleKeyTangentScroll(xPos, yPos, graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
+        else if ((graphState->selectedEntity == InTangent) || (graphState->selectedEntity == OutTangent)) {
+            handleKeyTangentScroll(xPos, yPos, *graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
             curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if
     }//if
 
-    if (true == graphState.doingRubberBanding) {
-        curveEditor->updateSelectedKeyframesInRange(graphState.keyframeSelectionState, mousePressDownX, mousePressDownY, xPos, yPos,
+    if (true == graphState->doingRubberBanding) {
+        curveEditor->updateSelectedKeyframesInRange(graphState->keyframeSelectionState, mousePressDownX, mousePressDownY, xPos, yPos,
                                                     drawingAreaWidth, drawingAreaHeight);
     }//if
 }//handleSequencerCurveEditorMouseMove

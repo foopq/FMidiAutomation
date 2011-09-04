@@ -13,14 +13,16 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <cairomm/surface.h>
 #include <iostream>
 #include <sstream>
-#include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
 #include "Animation.h"
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
-
+#include "GraphState.h"
+#include "Globals.h"
+#include "FMidiAutomationMainWindow.h"
+#include "Tempo.h"
 
 namespace
 {/*{{{*/
@@ -1020,39 +1022,39 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 //    context->paint();
  
     //Darken negative areas, if any
-    if (graphState.zeroithTickPixel != std::numeric_limits<int>::max()) {
+    if (graphState->zeroithTickPixel != std::numeric_limits<int>::max()) {
         context->reset_clip();
-        context->rectangle(0, 61, graphState.zeroithTickPixel, drawingAreaHeight - 61);
+        context->rectangle(0, 61, graphState->zeroithTickPixel, drawingAreaHeight - 61);
         context->clip();
 
         context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
         context->paint();
     }//if
 
-    graphState.roundedHorizontalValues.clear();
-    graphState.roundedHorizontalValues.reserve(graphState.horizontalPixelValues.size());
-    BOOST_FOREACH (double val, graphState.horizontalPixelValues) {
+    graphState->roundedHorizontalValues.clear();
+    graphState->roundedHorizontalValues.reserve(graphState->horizontalPixelValues.size());
+    BOOST_FOREACH (double val, graphState->horizontalPixelValues) {
         if (val >=0) {
-            graphState.roundedHorizontalValues.push_back(val+0.5);
+            graphState->roundedHorizontalValues.push_back(val+0.5);
         } else {
-            graphState.roundedHorizontalValues.push_back(val-0.5);
+            graphState->roundedHorizontalValues.push_back(val-0.5);
         }//if
     }//foreach
 
-    if (graphState.displayMode == DisplayMode::Curve) {
-        const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
+    if (graphState->displayMode == DisplayMode::Curve) {
+        const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState->entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
         //std::vector<int>::reverse_iterator maxIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), maxValue);
-        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), maxValue);
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(graphState->roundedHorizontalValues.rbegin(), graphState->roundedHorizontalValues.rend(), maxValue);
 
-        if (maxIterPair.first != graphState.roundedHorizontalValues.rend()) {
+        if (maxIterPair.first != graphState->roundedHorizontalValues.rend()) {
             //int rangeDist = std::distance(maxIterPair.first, maxIterPair.second) / 2.0;
             std::vector<int>::reverse_iterator maxIter = maxIterPair.second;
 ////            std::advance(maxIter, rangeDist);
 
-            unsigned int dist = (drawingAreaHeight-60) - std::distance(graphState.roundedHorizontalValues.rbegin(), maxIter);
+            unsigned int dist = (drawingAreaHeight-60) - std::distance(graphState->roundedHorizontalValues.rbegin(), maxIter);
 
             context->reset_clip();
             context->rectangle(60, 60, drawingAreaWidth-60, dist+1);
@@ -1063,12 +1065,12 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         }//if
 
         //std::vector<int>::reverse_iterator minIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), minValue);
-        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> minIterPair = std::equal_range(graphState.roundedHorizontalValues.rbegin(), graphState.roundedHorizontalValues.rend(), minValue);
-        if (minIterPair.first != graphState.roundedHorizontalValues.rend()) {
+        std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> minIterPair = std::equal_range(graphState->roundedHorizontalValues.rbegin(), graphState->roundedHorizontalValues.rend(), minValue);
+        if (minIterPair.first != graphState->roundedHorizontalValues.rend()) {
             //int rangeDist = std::distance(minIterPair.first, minIterPair.second) / 2.0;
             std::vector<int>::reverse_iterator minIter = minIterPair.first;
 
-            unsigned int dist = std::distance(graphState.roundedHorizontalValues.rbegin(), minIter);
+            unsigned int dist = std::distance(graphState->roundedHorizontalValues.rbegin(), minIter);
 
             context->reset_clip();
             context->rectangle(60, drawingAreaHeight-dist, drawingAreaWidth-60, dist);
@@ -1079,23 +1081,23 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         }//if
     }//if
 
-    drawTopBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
-    drawTempoBar(context, graphState, datas, drawingAreaWidth, drawingAreaHeight, graphState.verticalPixelTickValues, graphState.ticksPerPixel);
-    drawLeftMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
-    drawRightMarker(context, graphState, drawingAreaWidth, drawingAreaHeight);
-    drawCurrentTimePointer(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    drawTopBar(context, *graphState, drawingAreaWidth, drawingAreaHeight);
+    drawTempoBar(context, *graphState, datas, drawingAreaWidth, drawingAreaHeight, graphState->verticalPixelTickValues, graphState->ticksPerPixel);
+    drawLeftMarker(context, *graphState, drawingAreaWidth, drawingAreaHeight);
+    drawRightMarker(context, *graphState, drawingAreaWidth, drawingAreaHeight);
+    drawCurrentTimePointer(context, *graphState, drawingAreaWidth, drawingAreaHeight);
 
-    if (graphState.displayMode == DisplayMode::Sequencer) {
-        sequencer->drawEntryBoxes(graphDrawingArea, context, graphState, drawingAreaWidth, drawingAreaHeight, graphState.verticalPixelTickValues);
+    if (graphState->displayMode == DisplayMode::Sequencer) {
+        sequencer->drawEntryBoxes(graphDrawingArea, context, drawingAreaWidth, drawingAreaHeight, graphState->verticalPixelTickValues);
     }//if
 
-    if (graphState.displayMode == DisplayMode::Curve) {
-        graphState.entryBlockSelectionState.GetFirstEntryBlock()->renderCurves(context, graphState, drawingAreaWidth, drawingAreaHeight);
-        drawLeftBar(context, graphState, drawingAreaWidth, drawingAreaHeight);
+    if (graphState->displayMode == DisplayMode::Curve) {
+        graphState->entryBlockSelectionState.GetFirstEntryBlock()->renderCurves(context, *graphState, drawingAreaWidth, drawingAreaHeight);
+        drawLeftBar(context, *graphState, drawingAreaWidth, drawingAreaHeight);
     }//if
 
-    if (graphState.doingRubberBanding == true) {
-        drawRubberBand(context, graphState, drawingAreaWidth, drawingAreaHeight, mousePressDownX, mousePressDownY, graphState.curMousePosX, graphState.curMousePosY);
+    if (graphState->doingRubberBanding == true) {
+        drawRubberBand(context, *graphState, drawingAreaWidth, drawingAreaHeight, mousePressDownX, mousePressDownY, graphState->curMousePosX, graphState->curMousePosY);
     }//if
 
     /*
@@ -1128,7 +1130,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     
     //graphDrawingArea->show();
     
-    updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+    updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
 
     return true;
 }//updateGraph
@@ -1159,6 +1161,7 @@ void GraphState::doInit()
     curMousePosY = -100;
     doingRubberBanding = false;
     insertMode = InsertMode::Merge;
+    displayMode = DisplayMode::Sequencer;
 }//doInit
 
 GraphState::~GraphState()
@@ -1416,7 +1419,7 @@ void GraphState::setOffsetCenteredOnTick(int tick, int drawingAreaWidth)
 
         offsetX = (halfWindowsToSkip * (drawingAreaWidth/2)) + (remaningTicks / ticksPerPixel) - (drawingAreaWidth / 2);
     } else {
-        //int fullWindowTicks = drawingAreaWidth / abs(graphState.ticksPerPixel);
+        //int fullWindowTicks = drawingAreaWidth / abs(graphState->ticksPerPixel);
         //int halfWindowTicks = fullWindowTicks / 2;
         int baseOffset = abs(ticksPerPixel) * tick;
 

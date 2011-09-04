@@ -13,9 +13,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/function.hpp>
 #include <boost/foreach.hpp>
 #include <iostream>
-#include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
 #include <boost/serialization/vector.hpp>
+#include "Globals.h"
 
 //extern FMidiAutomationMainWindow *mainWindow;
 

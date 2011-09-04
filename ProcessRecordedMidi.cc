@@ -8,7 +8,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "ProcessRecordedMidi.h"
-#include "FMidiAutomationMainWindow.h"
 #include "jack.h"
 #include "Sequencer.h"
 #include "Animation.h"
@@ -19,6 +18,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <vector>
 #include <deque>
 #include <boost/foreach.hpp>
+#include "Globals.h"
+#include "FMidiAutomationMainWindow.h"
 
 namespace
 {

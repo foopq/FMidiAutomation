@@ -1,3 +1,12 @@
+/*
+FMidiAutomation -- A midi automation editor for jack / Linux
+Written by Chris Mennie (chris at chrismennie.ca or cmennie at rogers.com)
+Copyright (C) 2011 Chris A. Mennie                              
+
+License: Released under the GPL version 3 license. See the included LICENSE.
+*/
+
+
 #ifndef __SERIALIZATIONHELPER_H
 #define __SERIALIZATIONHELPER_H
 
@@ -8,7 +17,11 @@
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/tracking.hpp>
+#include <boost/any.hpp>
 
+#include <iostream>
+
+/*
 struct SharedPtrMapSingletonBase
 {
     virtual void ResetSharedPtrMapSingleton() = 0;
@@ -51,7 +64,39 @@ struct SharedPtrMapSingleton : public virtual SharedPtrMapSingletonBase
 private:
     std::map<T*, std::shared_ptr<T> > ptrMap;
 };//SharedPtrMapSingleton
+*/
 
+extern std::map<void *, boost::any> sharedPtrMapSingletonList;
+
+inline void ResetSharedPtrMapSingletonList()
+{
+    sharedPtrMapSingletonList.clear();
+}//ResetSharedPtrMapSingletonList
+
+template <typename T>
+struct SharedPtrMapSingleton
+{
+    static std::shared_ptr<T> GetSharedPtr(T *raw)
+    {
+        if (raw == NULL) {
+            return std::shared_ptr<T>();
+        }//if
+
+        auto ptrMapIter = sharedPtrMapSingletonList.find(raw);    
+        if (ptrMapIter != sharedPtrMapSingletonList.end()) {
+            boost::any anyVal = ptrMapIter->second;
+            std::shared_ptr<T> retPtr = boost::any_cast<std::shared_ptr<T> >(anyVal);
+//            std::cout << "here1: " << sharedPtrMapSingletonList.size() << " - " << raw << std::endl;           
+            return retPtr;
+        } else {
+//            std::cout << "here2: " << sharedPtrMapSingletonList.size() << "-" << raw << std::endl;
+            
+            std::shared_ptr<T> newPtr(raw);
+            sharedPtrMapSingletonList[raw] = newPtr;
+            return newPtr;
+        }//if
+    }//GetSharedPtr
+};//SharedPtrMapSingleton
 
 
 

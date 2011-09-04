@@ -15,6 +15,11 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 FMidiAutomationMainWindow *mainWindow;
 
+void queue_draw()
+{
+    mainWindow->queue_draw();
+}//queue_draw
+
 int main(int argc, char** argv) 
 {
     srand(time(NULL));

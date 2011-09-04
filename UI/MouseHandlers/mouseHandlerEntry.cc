@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Animation.h"
 #include "Command.h"
 #include <boost/lexical_cast.hpp>
+#include "GraphState.h"
 
 namespace
 {
@@ -59,7 +60,7 @@ MouseRegion determineMouseRegion(int x, int y, DisplayMode::DisplayMode displayM
 bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, int drawingAreaHeight)
 {
     bool changed = true;
-    //double curValuesPerPixel = graphState.valuesPerPixel;
+    //double curValuesPerPixel = graphState->valuesPerPixel;
 
     const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
     int minValue = entryImpl->minValue;
@@ -153,26 +154,26 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
     }//if
 
     if (true == shiftCurrentlyPressed) {
-        int curTicksPerPixel = graphState.ticksPerPixel;
+        int curTicksPerPixel = graphState->ticksPerPixel;
 
-        handleGraphTimeZoom(event->direction, graphState, drawingAreaWidth);
+        handleGraphTimeZoom(event->direction, *graphState, drawingAreaWidth);
 
-        if (curTicksPerPixel != graphState.ticksPerPixel) {
-            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-            graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+        if (curTicksPerPixel != graphState->ticksPerPixel) {
+            graphState->refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+            graphState->refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
         }//if
     } else {
-        if (DisplayMode::Curve == graphState.displayMode) {
-            bool ret = handleGraphValueZoom(event->direction, graphState, drawingAreaHeight);
+        if (DisplayMode::Curve == graphState->displayMode) {
+            bool ret = handleGraphValueZoom(event->direction, *graphState, drawingAreaHeight);
 
             if (true == ret) {
-                graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-                graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+                graphState->refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+                graphState->refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
             }//if
         }//if
     }//if
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
 
     return true;
 }//handleScroll/*}}}*/
@@ -202,7 +203,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
 
     if (event->type == GDK_BUTTON_PRESS) {
         if (LeftButton == event->button) {
-            graphState.selectedEntity = Nobody;
+            graphState->selectedEntity = Nobody;
             leftMouseCurrentlyPressed = true;
         }//if
 
@@ -210,9 +211,9 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
         mousePressDownY = event->y;
     }//if
 
-    MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState.displayMode);
+    MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState->displayMode);
 
-    switch (graphState.displayMode) {        
+    switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
                 case FrameRegion:
@@ -228,9 +229,9 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
                         case LeftButton: 
                             switch (event->type) {
                                 case GDK_BUTTON_PRESS:
-                                    graphState.inMotion = true;
-                                    graphState.baseOffsetX = graphState.offsetX;
-                                    graphState.baseOffsetY = graphState.offsetY;
+                                    graphState->inMotion = true;
+                                    graphState->baseOffsetX = graphState->offsetX;
+                                    graphState->baseOffsetY = graphState->offsetY;
 
                                     handleCurveEditorMainCanvasLMBPress();
                                     break;
@@ -277,15 +278,15 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
                         case LeftButton: 
                             switch (event->type) {
                                 case GDK_BUTTON_PRESS:
-                                    graphState.inMotion = true;
-                                    graphState.baseOffsetX = graphState.offsetX;
-                                    graphState.baseOffsetY = graphState.offsetY;
+                                    graphState->inMotion = true;
+                                    graphState->baseOffsetX = graphState->offsetX;
+                                    graphState->baseOffsetY = graphState->offsetY;
 
                                     handleSequencerMainCanvasLMBPress();
                                     break;
 
                                 case GDK_2BUTTON_PRESS:
-                                    if (SequencerEntrySelection == graphState.selectedEntity) {
+                                    if (SequencerEntrySelection == graphState->selectedEntity) {
                                         //Double click on a sequencer entry block means we open up the curve editor for it
                                         handleCurveButtonPressed();
                                     }//if
@@ -345,12 +346,12 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
 
     if (LeftButton == event->button) {
         leftMouseCurrentlyPressed = false;
-        graphState.inMotion = false;
+        graphState->inMotion = false;
     }//if
 
-    MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState.displayMode);
+    MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState->displayMode);
 
-    switch (graphState.displayMode) {        
+    switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
                 case FrameRegion:
@@ -426,24 +427,24 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
 
 bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
 {
-    graphState.curMousePosX = event->x;
-    graphState.curMousePosY = event->y;
+    graphState->curMousePosX = event->x;
+    graphState->curMousePosY = event->y;
 
     if (true == shiftCurrentlyPressed) {
-        graphState.doingRubberBanding = false;
+        graphState->doingRubberBanding = false;
     }//if
 
-    MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState.displayMode);
+    MouseRegion mouseRegion = determineMouseRegion(event->x, event->y, graphState->displayMode);
 
     if (false == leftMouseCurrentlyPressed) {
-        if (graphState.displayMode == DisplayMode::Curve) {
+        if (graphState->displayMode == DisplayMode::Curve) {
             int tick = 0;
             int value = 0;
 
             if (MainCanvas == mouseRegion) {
-                tick = graphState.verticalPixelTickValues[graphState.curMousePosX];
+                tick = graphState->verticalPixelTickValues[graphState->curMousePosX];
                 positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(tick));
-                value = (int)(graphState.horizontalPixelValues[graphState.curMousePosY - MainCanvasOffsetY] + 0.5);
+                value = (int)(graphState->horizontalPixelValues[graphState->curMousePosY - MainCanvasOffsetY] + 0.5);
                 positionValueEntry->set_text(boost::lexical_cast<Glib::ustring>(value));
             }//if
 
@@ -460,7 +461,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
         lastHandledTime = event->time;
     }//if
 
-    switch (graphState.displayMode) {        
+    switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
                 case FrameRegion: handleCurveEditorFrameRegionMouseMove(); break;
@@ -483,26 +484,26 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
 
     //We want to be a little more flexible with the tick bars, so we don't consider what region the mouse is in when they're selected
     if (false == ctrlCurrentlyPressed) {
-        if (graphState.selectedEntity == PointerTickBar) {
+        if (graphState->selectedEntity == PointerTickBar) {
             if ((event->x >= 0) && (event->x < drawingAreaWidth)) {
-                updateCursorTick(graphState.verticalPixelTickValues[event->x], true);
+                updateCursorTick(graphState->verticalPixelTickValues[event->x], true);
             }//if
         }//if
 
-        else if (graphState.selectedEntity == LeftTickBar) {
-            if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.rightMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] < graphState.rightMarkerTick))) {
-                graphState.leftMarkerTick = graphState.verticalPixelTickValues[event->x];
-                graphState.leftMarkerTick = std::max(graphState.leftMarkerTick, 0);
-                leftTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.leftMarkerTick));
+        else if (graphState->selectedEntity == LeftTickBar) {
+            if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState->rightMarkerTick == -1) || (graphState->verticalPixelTickValues[event->x] < graphState->rightMarkerTick))) {
+                graphState->leftMarkerTick = graphState->verticalPixelTickValues[event->x];
+                graphState->leftMarkerTick = std::max(graphState->leftMarkerTick, 0);
+                leftTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState->leftMarkerTick));
                 graphDrawingArea->queue_draw();
             }//if
         }//if
 
-        else if (graphState.selectedEntity == RightTickBar) {
-            if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState.leftMarkerTick == -1) || (graphState.verticalPixelTickValues[event->x] > graphState.leftMarkerTick))) {
-                graphState.rightMarkerTick = graphState.verticalPixelTickValues[event->x];
-                graphState.rightMarkerTick = std::max(graphState.rightMarkerTick, 0);
-                rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.rightMarkerTick));
+        else if (graphState->selectedEntity == RightTickBar) {
+            if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState->leftMarkerTick == -1) || (graphState->verticalPixelTickValues[event->x] > graphState->leftMarkerTick))) {
+                graphState->rightMarkerTick = graphState->verticalPixelTickValues[event->x];
+                graphState->rightMarkerTick = std::max(graphState->rightMarkerTick, 0);
+                rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState->rightMarkerTick));
                 graphDrawingArea->queue_draw();
             }//if
         }//if

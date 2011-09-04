@@ -11,11 +11,11 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <libglademm.h>
 #include "Command.h"
 #include "Tempo.h"
-#include "FMidiAutomationMainWindow.h"
 #include "FMidiAutomationData.h"
 #include "Sequencer.h"
 #include "Animation.h"
 #include <boost/foreach.hpp>
+#include "Globals.h"
 
 extern FMidiAutomationMainWindow *mainWindow;
 
@@ -69,7 +69,7 @@ void CommandManager::doRedo()/*{{{*/
 
     command->doAction();
 
-    mainWindow->queue_draw();
+    queue_draw();
 }//doRedo/*}}}*/
 
 void CommandManager::doUndo()/*{{{*/
@@ -94,7 +94,7 @@ void CommandManager::doUndo()/*{{{*/
 
     command->undoAction();
 
-    mainWindow->queue_draw();
+    queue_draw();
 }//doUndo/*}}}*/
 
 void CommandManager::setNewCommand(std::shared_ptr<Command> command, bool applyCommand)/*{{{*/
@@ -116,7 +116,7 @@ void CommandManager::setNewCommand(std::shared_ptr<Command> command, bool applyC
 
     titleStarFunc();
 
-    mainWindow->queue_draw();
+    queue_draw();
 }//setNewcommand/*}}}*/
 
 //UpdateTempoChangeCommand

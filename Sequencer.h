@@ -25,7 +25,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/access.hpp>
 #include "ProcessRecordedMidi.h"
 #include "VectorStreambuf.h"
-#include "FMidiAutomationMainWindow.h" //FIXME: I don't like including this here.. it was pulled in because we needed declaration for EntryBlockSelectionState
 
 class Sequencer;
 struct GraphState;
@@ -35,6 +34,7 @@ class FMidiAutomationMainWindow;
 class Animation;
 struct Keyframe;
 struct ProcessRecordedMidiCommand;
+class EntryBlockSelectionState;
 
 namespace EntryBlockMergePolicy
 {
@@ -285,7 +285,8 @@ public:
 
     void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
 
-    void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues);
+    void drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, 
+                        unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues);
 
     void doLoad(boost::archive::xml_iarchive &inputArchive);
     void doSave(boost::archive::xml_oarchive &outputArchive);

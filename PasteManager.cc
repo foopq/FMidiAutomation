@@ -8,11 +8,12 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "PasteManager.h"
-#include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
 #include "Command.h"
 #include "Animation.h"
 #include <boost/foreach.hpp>
+#include "Globals.h"
+#include "GraphState.h"
 
 PasteManager &PasteManager::Instance()
 {

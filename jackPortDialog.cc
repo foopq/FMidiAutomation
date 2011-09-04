@@ -14,12 +14,12 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <flowcanvas/Module.hpp>
 #include <flowcanvas/Port.hpp>
 #include "jack.h"
-#include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
 #include <boost/foreach.hpp>
 #include <set>
 #include <limits>
 #include <math.h>
+#include "Globals.h"
 
 namespace
 {

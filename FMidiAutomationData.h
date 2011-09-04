@@ -17,8 +17,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-#include "Tempo.h"
-#include "SerializationHelper.h"
+
+struct Tempo;
 
 struct FMidiAutomationData
 {

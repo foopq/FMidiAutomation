@@ -8,7 +8,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "Sequencer.h"
-#include "FMidiAutomationMainWindow.h"
 #include "Animation.h"
 #include "jack.h"
 #include <iostream>
@@ -22,7 +21,10 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/map.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-
+#include "SerializationHelper.h"
+#include "Globals.h"
+#include "GraphState.h"
+#include "FMidiAutomationMainWindow.h"
 
 static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
 static const unsigned int smallEntryWindowHeight = 46 + 4; //size plus padding
@@ -1389,7 +1391,9 @@ std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
 
 std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
 {
-//    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
+    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
+
+std::cout << "getSelectedEntryBlock: " << selectionInfos.size() << std::endl;
 
     if (x < 0) {
         selectedEntryBlock = (*entries.begin()).first->getEntryBlock(0);
@@ -1401,6 +1405,9 @@ if (selectedEntryBlock == NULL) {
     }//if
 
     BOOST_FOREACH (SequencerEntryBlockSelectionInfo selectionInfo, selectionInfos) {
+
+        std::cout << "getSelectedEntryBlock entry: " << selectionInfo.entryBlock.get() << std::endl;
+
 //        std::cout << "drawnArea: " << selectionInfo.drawnArea.get_x() << " - " << selectionInfo.drawnArea.get_y() << " - " << selectionInfo.drawnArea.get_width() << " - " << selectionInfo.drawnArea.get_height() << std::endl;
 
         if ( ((selectionInfo.drawnArea.get_x() <= x) && ((selectionInfo.drawnArea.get_x() + selectionInfo.drawnArea.get_width()) >= x)) &&
@@ -1621,12 +1628,13 @@ void Sequencer::deserializeEntryMap(std::shared_ptr<VectorStreambuf> streambuf)
 ///////////////////////////////////////////////////////////////////////////////////
 // Rendering code
 
-void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues)
+void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues)
 {
     selectionInfos.clear();
 
+    std::cout << "selectionInfos cleared" << std::endl;
+
 //std::cout << std::endl;    
-//std::cout << "drawEntryBoxes" << std::endl;
 
     int x1 = 0;
     int y1 = 0;
@@ -1669,6 +1677,8 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
 
 //std::cout << "relative start: " << relativeStartY << "  ---  rel end: " << relativeEndY << std::endl;
 
+            std::cout << "drawEntryBoxes graphState: " << globals.graphState.get() << std::endl;
+
             mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, 
                                             globals.graphState->entryBlockSelectionState);
             
@@ -1700,6 +1710,9 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
     Globals &globals = Globals::Instance();
 
     for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
+
+        std::cout << "drawEntryBoxes SEB: " << entryBlockIter->second.get() << " - " << &entryBlockSelectionState << std::endl;
+
         int startTick = entryBlockIter->second->getStartTick();
         int duration = entryBlockIter->second->getDuration();
 
@@ -1791,6 +1804,8 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         newSelectionInfo.entryBlock = entryBlockIter->second;
         newSelectionInfo.drawnArea = Gdk::Rectangle(relativeStartX, relativeStartY + 10, relativeEndX - relativeStartX, relativeEndY - relativeStartY - 10);
         selectionInfos.push_back(newSelectionInfo);
+
+        std::cout << "selectionInfos added " << newSelectionInfo.entryBlock.get() << std::endl;
     }//for
 }//drawEntryBoxes
 

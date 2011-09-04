@@ -1,7 +1,20 @@
+/*
+FMidiAutomation -- A midi automation editor for jack / Linux
+Written by Chris Mennie (chris at chrismennie.ca or cmennie at rogers.com)
+Copyright (C) 2011 Chris A. Mennie                              
+
+License: Released under the GPL version 3 license. See the included LICENSE.
+*/
+
+
 #include <list>
 #include "SerializationHelper.h"
 #include <boost/foreach.hpp>
+#include <boost/any.hpp>
 
+std::map<void *, boost::any> sharedPtrMapSingletonList;
+
+/*
 namespace
 {
     std::list<SharedPtrMapSingletonBase *> registeredSharedPtrMapSingletonBases;
@@ -61,8 +74,10 @@ struct SequencerEntryImpl;
 template SharedPtrMapSingleton<SequencerEntryImpl> &SharedPtrMapSingleton<SequencerEntryImpl>::Instance();
 template void SharedPtrMapSingleton<SequencerEntryImpl>::ResetSharedPtrMapSingleton();
 
-
-
+struct GraphState;
+template SharedPtrMapSingleton<GraphState> &SharedPtrMapSingleton<GraphState>::Instance();
+template void SharedPtrMapSingleton<GraphState>::ResetSharedPtrMapSingleton();
+*/
 
 
 

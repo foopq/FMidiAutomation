@@ -8,9 +8,11 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "Tempo.h"
-#include "FMidiAutomationMainWindow.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
+#include "FMidiAutomationData.h"
+#include "GraphState.h"
+#include "Globals.h"
 
 namespace
 {

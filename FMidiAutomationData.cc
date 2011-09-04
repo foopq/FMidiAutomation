@@ -10,6 +10,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "FMidiAutomationData.h"
 #include "FMidiAutomationMainWindow.h"
 #include "boost/serialization/map.hpp" 
+#include "GraphState.h"
+#include "SerializationHelper.h"
+#include "Tempo.h"
 
 namespace
 {

@@ -15,11 +15,15 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <map>
 #include <memory>
 #include <boost/function.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
-#include "FMidiAutomationMainWindow.h"
+#include <boost/serialization/access.hpp>
+#include "OrphanedEnums.h"
 
 class SequencerEntryBlock;
 class SequencerEntry;
+struct GraphState;
 
 namespace CurveType {
 enum CurveType

@@ -18,8 +18,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
 
-#include "SerializationHelper.h"
-
 struct GraphState;
 struct FMidiAutomationData;
 
@@ -43,13 +41,6 @@ struct Tempo
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
 };//Tempo
-
-struct TempoGlobals
-{
-    TempoGlobals();
-
-    bool tempoDataSelected;
-};//TempoGlobals
 
 void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, 
                     unsigned int drawingAreaWidth, unsigned int drawingAreaHeight, std::vector<int> &verticalPixelTickValues, int ticksPerPixel);

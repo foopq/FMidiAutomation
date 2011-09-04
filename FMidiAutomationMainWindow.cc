@@ -30,6 +30,10 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "EntryProperties.h"
 #include "Animation.h"
 #include "jackPortDialog.h"
+#include "GraphState.h"
+#include "Globals.h"
+#include "SerializationHelper.h"
+#include "Tempo.h"
 
 namespace
 {
@@ -78,6 +82,9 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
     Globals &globals = Globals::Instance();
 
+    graphState = std::make_shared<GraphState>();
+    globals.graphState = graphState;
+
     uiXml = Gtk::Builder::create_from_file("FMidiAutomation.glade");
 
     curveEditor.reset(new CurveEditor(this, uiXml));
@@ -87,9 +94,6 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     
     uiXml->get_widget("graphDrawingArea", graphDrawingArea);
     globals.graphDrawingArea = graphDrawingArea;
-    globals.graphState = &graphState;
-
-    graphState.displayMode = DisplayMode::Sequencer;
     
     backingImage.reset(new Gtk::Image());
     backingTexture.reset(new Gtk::Image());
@@ -497,7 +501,7 @@ Gtk::Window *FMidiAutomationMainWindow::MainWindow()
 
 GraphState &FMidiAutomationMainWindow::getGraphState()
 {
-    return graphState;
+    return *graphState;
 }//getGraphState
 
 bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollType, double pos)
@@ -514,9 +518,9 @@ void FMidiAutomationMainWindow::handleInsertModeChanged()
 
     bool isMerge = radioButton->get_active();
     if (true == isMerge) {
-        graphState.insertMode = InsertMode::Merge;
+        getGraphState().insertMode = InsertMode::Merge;
     } else {
-        graphState.insertMode = InsertMode::Replace;
+        getGraphState().insertMode = InsertMode::Replace;
     }//if
 }//handleInsertModeChanged
 
@@ -548,11 +552,11 @@ void FMidiAutomationMainWindow::handleRewPressed()
     jackSingleton.setTime(0);
 
     cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(0));
-    graphState.curPointerTick = 0;
-    updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
-    graphState.setOffsetCenteredOnTick(0, drawingAreaWidth);
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().curPointerTick = 0;
+    updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+    getGraphState().setOffsetCenteredOnTick(0, drawingAreaWidth);
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
 }//handleRewPressed
 
@@ -706,7 +710,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
                 //Essentially clear the selection state of the tempo changes
                 (void)checkForTempoSelection(-100, datas->tempoChanges);
         
-                if (datas->tempoChanges.find(graphState.curPointerTick) == datas->tempoChanges.end()) {
+                if (datas->tempoChanges.find(getGraphState().curPointerTick) == datas->tempoChanges.end()) {
                     std::shared_ptr<Tempo> tempo(new Tempo);
                     tempo->bpm = (unsigned int)bpm;
                     tempo->beatsPerBar = beatsPerBar;
@@ -714,7 +718,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
                     tempo->currentlySelected = true;
 
                     boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
-                    std::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, graphState.curPointerTick, datas, callback));
+                    std::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, getGraphState().curPointerTick, datas, callback));
                     CommandManager::Instance().setNewCommand(addTempoChangeCommand, true);
                 }//if
             }//if
@@ -737,7 +741,7 @@ void FMidiAutomationMainWindow::handleDeletePressed()
         for (/*nothing*/; mapIter != datas->tempoChanges.end(); ++mapIter) {
             if (true == mapIter->second->currentlySelected) {
                 boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->tempoChanges));
-                std::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(graphState.curPointerTick, datas, callback));
+                std::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(getGraphState().curPointerTick, datas, callback));
                 CommandManager::Instance().setNewCommand(deleteTempoChangeCommand, true);
 
                 graphDrawingArea->queue_draw();
@@ -793,11 +797,11 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     assert(selectedEntryBlock != NULL);
 
-    selectedEntryBlock->setValuesPerPixel(graphState.valuesPerPixel);
-    selectedEntryBlock->setOffsetY(graphState.offsetY);
+    selectedEntryBlock->setValuesPerPixel(getGraphState().valuesPerPixel);
+    selectedEntryBlock->setOffsetY(getGraphState().offsetY);
 
-    graphState.displayMode = DisplayMode::Sequencer;
-    graphState.curPointerTick = graphState.lastSequencerPointerTick;
+    getGraphState().displayMode = DisplayMode::Sequencer;
+    getGraphState().curPointerTick = getGraphState().lastSequencerPointerTick;
 
     sequencerButton->set_sensitive(false);
     curveButton->set_sensitive(true);
@@ -811,8 +815,8 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 
     PasteManager::Instance().clearCommand();
 
-    if (graphState.entryBlockSelectionState.HasSelected() == true) {
-        positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(graphState.entryBlockSelectionState.GetFirstEntryBlock()->getStartTick()));
+    if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
+        positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->getStartTick()));
     } else {
         positionTickEntry->set_text("");
     }//if
@@ -831,10 +835,10 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     uiXml->get_widget("menu_resetTangents", menuItem);
     menuItem->set_visible(false);
 
-    graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    updateCursorTick(graphState.curPointerTick, false);
+    getGraphState().setOffsetCenteredOnTick(getGraphState().curPointerTick, drawingAreaWidth);
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    updateCursorTick(getGraphState().curPointerTick, false);
     graphDrawingArea->queue_draw();
 }//handleSequencerButtonPressed
 
@@ -855,12 +859,12 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
 
     positionValueEntry->set_text("");
 
-    graphState.valuesPerPixel = selectedEntryBlock->getValuesPerPixel();
-    graphState.offsetY = selectedEntryBlock->getOffsetY();
+    getGraphState().valuesPerPixel = selectedEntryBlock->getValuesPerPixel();
+    getGraphState().offsetY = selectedEntryBlock->getOffsetY();
 
-    graphState.displayMode = DisplayMode::Curve;
-    graphState.lastSequencerPointerTick = selectedEntryBlock->getStartTick(); //graphState.curPointerTick;
-    graphState.curPointerTick = selectedEntryBlock->getStartTick();
+    getGraphState().displayMode = DisplayMode::Curve;
+    getGraphState().lastSequencerPointerTick = selectedEntryBlock->getStartTick(); //getGraphState().curPointerTick;
+    getGraphState().curPointerTick = selectedEntryBlock->getStartTick();
 
     sequencerButton->set_sensitive(true);
     curveButton->set_sensitive(false);
@@ -870,10 +874,10 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     positionValueEntry->show_all();
     positionValueLabel->show_all();
 
-    curveEditor->getKeySelection(graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), false);
+    curveEditor->getKeySelection(*graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), false);
 
-    if (graphState.keyframeSelectionState.HasSelected() == true) {
-        curveEditor->setKeyUIValues(uiXml, graphState.keyframeSelectionState.GetFirstKeyframe());
+    if (getGraphState().keyframeSelectionState.HasSelected() == true) {
+        curveEditor->setKeyUIValues(uiXml, getGraphState().keyframeSelectionState.GetFirstKeyframe());
     } else {
         curveEditor->setKeyUIValues(uiXml, std::shared_ptr<Keyframe>());
     }//if
@@ -894,10 +898,10 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     uiXml->get_widget("menu_resetTangents", menuItem);
     menuItem->set_visible(true);
 
-    graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    updateCursorTick(graphState.curPointerTick, false);
+    getGraphState().setOffsetCenteredOnTick(getGraphState().curPointerTick, drawingAreaWidth);
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    updateCursorTick(getGraphState().curPointerTick, false);
     graphDrawingArea->queue_draw();
 }//handleCurveButtonPressed
 
@@ -949,8 +953,8 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *ev
     try {
         std::string entryText = leftTickEntryBox->get_text();
         int pos = boost::lexical_cast<int>(entryText);
-        if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((graphState.rightMarkerTick == -1) || (graphState.rightMarkerTick > pos)))) {
-            graphState.leftMarkerTick = pos;
+        if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((getGraphState().rightMarkerTick == -1) || (getGraphState().rightMarkerTick > pos)))) {
+            getGraphState().leftMarkerTick = pos;
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -970,8 +974,8 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox(GdkEventKey *e
     try {
         std::string entryText = rightTickEntryBox->get_text();
         int pos = boost::lexical_cast<int>(rightTickEntryBox->get_text());
-        if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((graphState.leftMarkerTick == -1) || (graphState.leftMarkerTick < pos)))) {
-            graphState.rightMarkerTick = pos;
+        if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((getGraphState().leftMarkerTick == -1) || (getGraphState().leftMarkerTick < pos)))) {
+            getGraphState().rightMarkerTick = pos;
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -991,8 +995,8 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnCursorTickEntryBox(GdkEventKey *
     try {
         int pos = boost::lexical_cast<int>(cursorTickEntryBox->get_text());
         if (pos >= 0) {
-            graphState.curPointerTick = pos;
-            updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+            getGraphState().curPointerTick = pos;
+            updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
             graphDrawingArea->queue_draw();
             return true;
         } else {
@@ -1013,7 +1017,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey
         int curTick = boost::lexical_cast<int>(positionTickEntry->get_text());
         if (curTick >= 0) {
             curTick = std::max(0, curTick);
-            graphState.entryBlockSelectionState.GetFirstEntryBlock()->moveBlock(curTick);
+            getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->moveBlock(curTick);
             setTitleChanged();
             graphDrawingArea->queue_draw();
             return true;
@@ -1035,7 +1039,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnSelectedEntryBlockNameEntryBox(G
     uiXml->get_widget("selectedEntryBlockNameEntry", entry);
 
     if (entry->get_text().empty() == false) {
-        graphState.entryBlockSelectionState.GetFirstEntryBlock()->setTitle(entry->get_text());
+        getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->setTitle(entry->get_text());
         setTitleChanged();
         graphDrawingArea->queue_draw();
     }//if
@@ -1048,8 +1052,8 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
     drawingAreaWidth = allocation.get_width();
     drawingAreaHeight = allocation.get_height();
  
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
 
     static bool firstTime = true;
@@ -1063,16 +1067,16 @@ void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 
 void FMidiAutomationMainWindow::on_menuCopy()
 {
-    if (graphState.displayMode == DisplayMode::Sequencer) {
+    if (getGraphState().displayMode == DisplayMode::Sequencer) {
         PasteManager::Instance().setPasteOnly(false);
-        if (graphState.entryBlockSelectionState.HasSelected() == true) {
-            std::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
+        if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
+            std::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(getGraphState().entryBlockSelectionState.GetEntryBlocksMapCopy()));
             PasteManager::Instance().setNewCommand(pasteSequencerEntryBlocksCommand);
         }//if
     } else {
         PasteManager::Instance().setPasteOnly(true);
-        if (graphState.keyframeSelectionState.HasSelected() == true) {
-            std::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(graphState.keyframeSelectionState.GetSelectedKeyframesCopy()));
+        if (getGraphState().keyframeSelectionState.HasSelected() == true) {
+            std::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(getGraphState().keyframeSelectionState.GetSelectedKeyframesCopy()));
             PasteManager::Instance().setNewCommand(pasteSequencerKeyframesCommand);
         }//if
     }//if
@@ -1080,13 +1084,13 @@ void FMidiAutomationMainWindow::on_menuCopy()
 
 void FMidiAutomationMainWindow::on_menuCut()
 {
-    if (graphState.displayMode == DisplayMode::Sequencer) {
-        if (graphState.entryBlockSelectionState.HasSelected() == true) {
+    if (getGraphState().displayMode == DisplayMode::Sequencer) {
+        if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
             on_menuCopy();
             handleDeleteSequencerEntryBlocks();
         }//if
     } else {
-        if (graphState.keyframeSelectionState.HasSelected() == true) {
+        if (getGraphState().keyframeSelectionState.HasSelected() == true) {
             on_menuCopy();
             curveEditor->handleDeleteKeyframes();
         }//if
@@ -1095,12 +1099,12 @@ void FMidiAutomationMainWindow::on_menuCut()
 
 void FMidiAutomationMainWindow::on_handleDelete()
 {
-    if (graphState.displayMode == DisplayMode::Sequencer) {
-        if (graphState.entryBlockSelectionState.HasSelected() == true) {
+    if (getGraphState().displayMode == DisplayMode::Sequencer) {
+        if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
             handleDeleteSequencerEntryBlocks();
         }//if
     } else {
-        if (graphState.keyframeSelectionState.HasSelected() == true) {
+        if (getGraphState().keyframeSelectionState.HasSelected() == true) {
             curveEditor->handleDeleteKeyframes();
         }//if
     }//if
@@ -1144,16 +1148,16 @@ void FMidiAutomationMainWindow::on_menuQuit()
 
 void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
 {
-    if (graphState.entryBlockSelectionState.HasSelected() == false) {
+    if (getGraphState().entryBlockSelectionState.HasSelected() == false) {
         return;
     }//if
 
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks;
-    auto entryBlockPair = graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
+    auto entryBlockPair = getGraphState().entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
 
     BOOST_FOREACH (auto entryBlock, entryBlockPair) {
-        if ( (entryBlock.second->getStartTick() < graphState.curPointerTick) && 
-             (graphState.curPointerTick < entryBlock.second->getStartTick() + entryBlock.second->getDuration()) ) {
+        if ( (entryBlock.second->getStartTick() < getGraphState().curPointerTick) && 
+             (getGraphState().curPointerTick < entryBlock.second->getStartTick() + entryBlock.second->getDuration()) ) {
             origEntryBlocks.insert(std::make_pair(entryBlock.first, entryBlock.second));
         }//if
     }//foreach
@@ -1164,7 +1168,7 @@ void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
 
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
     BOOST_FOREACH (auto entryBlock, entryBlockPair) {
-        auto splitPair = entryBlock.second->deepCloneSplit(graphState.curPointerTick);
+        auto splitPair = entryBlock.second->deepCloneSplit(getGraphState().curPointerTick);
         newEntryBlocks.insert(std::make_pair(splitPair.first->getStartTick(), splitPair.first));
         newEntryBlocks.insert(std::make_pair(splitPair.second->getStartTick(), splitPair.second));
     }//foreach
@@ -1178,7 +1182,7 @@ void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
 void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
 {
     bool workToBeDone = false;
-    auto entryBlockPair = graphState.entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
+    auto entryBlockPair = getGraphState().entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
 
     std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<std::deque<std::shared_ptr<SequencerEntryBlock> > > > entryBlockMap;
 
@@ -1190,7 +1194,7 @@ void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
         entryBlockMap[entryBlock.second->getOwningEntry()]->push_back(entryBlock.second);
     }//foreach
 
-    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks = graphState.entryBlockSelectionState.GetEntryBlocksMapCopy();
+    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks = getGraphState().entryBlockSelectionState.GetEntryBlocksMapCopy();
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
     BOOST_FOREACH (auto entryQueuePair, entryBlockMap) {        
         std::deque<std::shared_ptr<SequencerEntryBlock> > &curDeque = *entryQueuePair.second;
@@ -1209,8 +1213,8 @@ void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
             curDeque.pop_front();
 
             //Do the actual merge
-            replacementBlock->getCurve()->mergeOtherAnimation(firstBlock->getCurve(), graphState.insertMode);
-            replacementBlock->getSecondaryCurve()->mergeOtherAnimation(firstBlock->getSecondaryCurve(), graphState.insertMode);
+            replacementBlock->getCurve()->mergeOtherAnimation(firstBlock->getCurve(), getGraphState().insertMode);
+            replacementBlock->getSecondaryCurve()->mergeOtherAnimation(firstBlock->getSecondaryCurve(), getGraphState().insertMode);
         }//while
     }//foreach
 
@@ -1233,16 +1237,16 @@ void FMidiAutomationMainWindow::on_menuNew()
     currentFilename = "";
     setTitle("Unknown");
 
-    graphState.doInit();
+    getGraphState().doInit();
 
     Gtk::VBox *entryVBox;
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
     globals.sequencer = sequencer;
 
-    graphState.entryBlockSelectionState.ClearSelected();
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().entryBlockSelectionState.ClearSelected();
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
 }//on_menuNew
 
@@ -1328,6 +1332,8 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
         return;
     }//if
 
+    ResetSharedPtrMapSingletonList();
+
     currentFilename = currentFilename_;
 
     boost::archive::xml_iarchive inputArchive(inputStream);
@@ -1350,8 +1356,8 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
 
     sequencer->doLoad(inputArchive);
 
-    graphState.displayMode = DisplayMode::Sequencer;
-    graphState.selectedEntity = Nobody;
+    getGraphState().displayMode = DisplayMode::Sequencer;
+    getGraphState().selectedEntity = Nobody;
 
     datas->entryGlade = readEntryGlade();
 
@@ -1361,9 +1367,13 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
 
     globals.config.getMRUList().addFile(currentFilename_);
 
-    graphState.entryBlockSelectionState.ClearSelected();
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    globals.graphState = graphState;
+    globals.sequencer = sequencer;
+
+
+    getGraphState().entryBlockSelectionState.ClearSelected();
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     graphDrawingArea->queue_draw();
 }//actuallyLoadFile
 
@@ -1413,21 +1423,21 @@ void FMidiAutomationMainWindow::on_menuRedo()
 
 void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
 {
-    graphState.curPointerTick = tick;
-    graphState.curPointerTick = std::max(graphState.curPointerTick, 0);
-    cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
-    updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+    getGraphState().curPointerTick = tick;
+    getGraphState().curPointerTick = std::max(getGraphState().curPointerTick, 0);
+    cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(getGraphState().curPointerTick));
+    updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
 
     if (true == updateJack) {
         JackSingleton &jackSingleton = JackSingleton::Instance();
-        jackSingleton.setTime(graphState.curPointerTick);
+        jackSingleton.setTime(getGraphState().curPointerTick);
 
-        transportTimeEntry->set_text(boost::lexical_cast<std::string>(graphState.curPointerTick));
+        transportTimeEntry->set_text(boost::lexical_cast<std::string>(getGraphState().curPointerTick));
     }//if
 
-    if (graphState.displayMode == DisplayMode::Sequencer) {
+    if (getGraphState().displayMode == DisplayMode::Sequencer) {
         if(sequencer->getSelectedEntry() != NULL) {
-            double sampledValueBase = sequencer->getSelectedEntry()->sample(graphState.curPointerTick);
+            double sampledValueBase = sequencer->getSelectedEntry()->sample(getGraphState().curPointerTick);
             int sampledValue = sampledValueBase + 0.5;
             if (sampledValueBase < 0) {
                 sampledValue = sampledValueBase - 0.5;
@@ -1437,9 +1447,9 @@ void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
         }//if
     }//if
 
-    if (graphState.displayMode == DisplayMode::Curve) {
-        if (graphState.entryBlockSelectionState.HasSelected() == true) {
-            double sampledValueBase = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->sample(graphState.curPointerTick);
+    if (getGraphState().displayMode == DisplayMode::Curve) {
+        if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
+            double sampledValueBase = getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->sample(getGraphState().curPointerTick);
             int sampledValue = sampledValueBase + 0.5;
             if (sampledValueBase < 0) {
                 sampledValue = sampledValueBase - 0.5;
@@ -1517,17 +1527,17 @@ bool FMidiAutomationMainWindow::on_idle()
     //    }//if
 
         int curFrame = jackSingleton.getTransportFrame();
-        if (graphState.curPointerTick != curFrame) {
-            graphState.setOffsetCenteredOnTick(curFrame, drawingAreaWidth);
-            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-            graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+        if (getGraphState().curPointerTick != curFrame) {
+            getGraphState().setOffsetCenteredOnTick(curFrame, drawingAreaWidth);
+            getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+            getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
             updateCursorTick(curFrame, false);
 
 //            cursorTickEntryBox->set_text(boost::lexical_cast<std::string>(curFrame));
 
-//            graphState.curPointerTick = curFrame;
+//            getGraphState().curPointerTick = curFrame;
 //            updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
-//            graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+//            getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
 //            graphDrawingArea->queue_draw();
         }//if
     }//if
@@ -1558,11 +1568,11 @@ void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
 {
     std::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     if (selectedEntry != NULL) {
-        if (selectedEntry->getEntryBlock(graphState.curPointerTick) != NULL) {
+        if (selectedEntry->getEntryBlock(getGraphState().curPointerTick) != NULL) {
             return;
         }//if
 
-        std::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(selectedEntry, graphState.curPointerTick, std::shared_ptr<SequencerEntryBlock>()));
+        std::shared_ptr<SequencerEntryBlock> entryBlock(new SequencerEntryBlock(selectedEntry, getGraphState().curPointerTick, std::shared_ptr<SequencerEntryBlock>()));
 
         std::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
@@ -1574,8 +1584,8 @@ void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
 void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
 {
     //std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    if (graphState.entryBlockSelectionState.HasSelected() == true) {
-        std::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(graphState.entryBlockSelectionState.GetEntryBlocksMapCopy()));
+    if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
+        std::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(getGraphState().entryBlockSelectionState.GetEntryBlocksMapCopy()));
         CommandManager::Instance().setNewCommand(deleteSequencerEntryBlocksCommand, true);
 
         graphDrawingArea->queue_draw();
@@ -1584,12 +1594,12 @@ void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
 
 void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock()
 {
-    if (graphState.entryBlockSelectionState.HasSelected() == true) {
+    if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
         return;
     }//if
 
     //std::shared_ptr<SequencerEntryBlock> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    std::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(graphState.entryBlockSelectionState.GetFirstEntryBlock()));
+    std::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(getGraphState().entryBlockSelectionState.GetFirstEntryBlock()));
     CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
 
     graphDrawingArea->queue_draw();
@@ -1656,21 +1666,21 @@ void FMidiAutomationMainWindow::doTestInit()
 
     assert(entryBlock == entryBlock2);
     
-    graphState.selectedEntity = SequencerEntrySelection;
-    graphState.currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
-    graphState.currentlySelectedEntryBlock = entryBlock;
+    getGraphState().selectedEntity = SequencerEntrySelection;
+    getGraphState().currentlySelectedEntryOriginalStartTick = entryBlock->getStartTick();
+    getGraphState().currentlySelectedEntryBlock = entryBlock;
 
-    graphState.displayMode = DisplayMode::Curve;
-    graphState.lastSequencerPointerTick = entryBlock->getStartTick(); //graphState.curPointerTick;
-    graphState.curPointerTick = entryBlock->getStartTick();
+    getGraphState().displayMode = DisplayMode::Curve;
+    getGraphState().lastSequencerPointerTick = entryBlock->getStartTick(); //getGraphState().curPointerTick;
+    getGraphState().curPointerTick = entryBlock->getStartTick();
 
     sequencerButton->set_sensitive(true);
     curveButton->set_sensitive(false);
 
-    graphState.setOffsetCenteredOnTick(graphState.curPointerTick, drawingAreaWidth);
-    graphState.refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    graphState.refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    updateCursorTick(graphState.curPointerTick, false);
+    getGraphState().setOffsetCenteredOnTick(getGraphState().curPointerTick, drawingAreaWidth);
+    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    updateCursorTick(getGraphState().curPointerTick, false);
 
     handleCurveButtonPressed();
     */

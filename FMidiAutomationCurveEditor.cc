@@ -15,15 +15,19 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/foreach.hpp>
+#include "Globals.h"
+#include "GraphState.h"
 
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *event)
 {
+    Globals &globals = Globals::Instance();
+
     if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
         return false;
     }//if
 
-    if (mainWindow->getGraphState().keyframeSelectionState.GetNumSelected() != 1) {
+    if (globals.graphState->keyframeSelectionState.GetNumSelected() != 1) {
         return false;
     }//if
 
@@ -34,8 +38,8 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *even
         std::string entryText = entry->get_text();
         int tick = boost::lexical_cast<int>(entryText);
 
-        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
-        std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
+        std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
 
         if ( ((tick - currentlySelectedEntryBlock->getStartTick()) == selectedKey->tick) || 
              (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(tick) != NULL) ) {
@@ -47,7 +51,7 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *even
         currentlySelectedEntryBlock->getCurve()->addKey(selectedKey);
         setKeyUIValues(uiXml, selectedKey);
 
-        mainWindow->queue_draw();
+        queue_draw();
 
         return true;
     } catch(...) {
@@ -57,11 +61,13 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *even
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyValueEntryEntryBox(GdkEventKey *event)
 {
+    Globals &globals = Globals::Instance();
+
     if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
         return false;
     }//if
 
-    if (mainWindow->getGraphState().keyframeSelectionState.GetNumSelected() != 1) {
+    if (globals.graphState->keyframeSelectionState.GetNumSelected() != 1) {
         return false;
     }//if
 
@@ -72,11 +78,11 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyValueEntryEntryBox(GdkEventKey *eve
         std::string entryText = entry->get_text();
         int value = boost::lexical_cast<int>(entryText);
 
-        std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+        std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
         selectedKey->value = value;
         setKeyUIValues(uiXml, selectedKey);
 
-        mainWindow->queue_draw();
+        queue_draw();
 
         return true;
     } catch(...) {
@@ -86,11 +92,13 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyValueEntryEntryBox(GdkEventKey *eve
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyInTanXEntryEntryBox(GdkEventKey *event)
 {
+    Globals &globals = Globals::Instance();
+
     if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
         return false;
     }//if
 
-    if (mainWindow->getGraphState().keyframeSelectionState.GetNumSelected() != 1) {
+    if (globals.graphState->keyframeSelectionState.GetNumSelected() != 1) {
         return false;
     }//if
 
@@ -101,11 +109,11 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyInTanXEntryEntryBox(GdkEventKey *ev
         std::string entryText = entry->get_text();
         double value = boost::lexical_cast<double>(entryText);
 
-        std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+        std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
         selectedKey->inTangent[0] = value;
         setKeyUIValues(uiXml, selectedKey);
 
-        mainWindow->queue_draw();
+        queue_draw();
 
         return true;
     } catch(...) {
@@ -115,11 +123,13 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyInTanXEntryEntryBox(GdkEventKey *ev
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyInTanYEntryEntryBox(GdkEventKey *event)
 {
+    Globals &globals = Globals::Instance();
+
     if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
         return false;
     }//if
 
-    if (mainWindow->getGraphState().keyframeSelectionState.GetNumSelected() != 1) {
+    if (globals.graphState->keyframeSelectionState.GetNumSelected() != 1) {
         return false;
     }//if
 
@@ -130,11 +140,11 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyInTanYEntryEntryBox(GdkEventKey *ev
         std::string entryText = entry->get_text();
         double value = boost::lexical_cast<double>(entryText);
 
-        std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+        std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
         selectedKey->inTangent[1] = value;
         setKeyUIValues(uiXml, selectedKey);
 
-        mainWindow->queue_draw();
+        queue_draw();
 
         return true;
     } catch(...) {
@@ -144,11 +154,13 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyInTanYEntryEntryBox(GdkEventKey *ev
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyOutTanXEntryEntryBox(GdkEventKey *event)
 {
+    Globals &globals = Globals::Instance();
+
     if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
         return false;
     }//if
 
-    if (mainWindow->getGraphState().keyframeSelectionState.GetNumSelected() != 1) {
+    if (globals.graphState->keyframeSelectionState.GetNumSelected() != 1) {
         return false;
     }//if
 
@@ -159,11 +171,11 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyOutTanXEntryEntryBox(GdkEventKey *e
         std::string entryText = entry->get_text();
         double value = boost::lexical_cast<double>(entryText);
 
-        std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+        std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
         selectedKey->outTangent[0] = value;
         setKeyUIValues(uiXml, selectedKey);
 
-        mainWindow->queue_draw();
+        queue_draw();
 
         return true;
     } catch(...) {
@@ -173,11 +185,13 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyOutTanXEntryEntryBox(GdkEventKey *e
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyOutTanYEntryEntryBox(GdkEventKey *event)
 {
+    Globals &globals = Globals::Instance();
+
     if ((event->keyval != GDK_Return) && (event->keyval != GDK_KP_Enter) && (event->keyval != GDK_ISO_Enter) && (event->keyval != GDK_3270_Enter)) {
         return false;
     }//if
 
-    if (mainWindow->getGraphState().keyframeSelectionState.GetNumSelected() != 1) {
+    if (globals.graphState->keyframeSelectionState.GetNumSelected() != 1) {
         return false;
     }//if
 
@@ -188,11 +202,11 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyOutTanYEntryEntryBox(GdkEventKey *e
         std::string entryText = entry->get_text();
         double value = boost::lexical_cast<double>(entryText);
 
-        std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+        std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
         selectedKey->outTangent[1] = value;
         setKeyUIValues(uiXml, selectedKey);
 
-        mainWindow->queue_draw();
+        queue_draw();
 
         return true;
     } catch(...) {
@@ -202,6 +216,8 @@ bool CurveEditor::handleKeyEntryOnSelectedKeyOutTanYEntryEntryBox(GdkEventKey *e
 
 void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
 {
+    Globals &globals = Globals::Instance();
+
     Gtk::ComboBox *comboBox;
     uiXml->get_widget("selectedKeyTypeComboBox", comboBox);
 
@@ -219,15 +235,15 @@ void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
             break;
     }//switch
 
-    if (mainWindow->getGraphState().keyframeSelectionState.HasSelected() == false) {
+    if (globals.graphState->keyframeSelectionState.HasSelected() == false) {
         return;
     }//if
 
-    std::shared_ptr<Keyframe> selectedKey = mainWindow->getGraphState().keyframeSelectionState.GetFirstKeyframe();
+    std::shared_ptr<Keyframe> selectedKey = globals.graphState->keyframeSelectionState.GetFirstKeyframe();
     selectedKey->curveType = curveType;
 
     if (CurveType::Bezier == curveType) {
-        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
         std::shared_ptr<Keyframe> afterSelectedKey = currentlySelectedEntryBlock->getNextKeyframe(selectedKey);
 
         if (afterSelectedKey != NULL) {
@@ -251,7 +267,7 @@ void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
     }//if
 
     setKeyUIValues(uiXml, selectedKey);
-    mainWindow->queue_draw();
+    queue_draw();
 }//handleSelectionChangeOnSelectedKeyTypeComboBox
 
 
@@ -305,7 +321,9 @@ void CurveEditor::setUnderMouseTickValue(int tick, int value)
 
 void CurveEditor::handleAddKeyframe()
 {
-    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    Globals &globals = Globals::Instance();
+
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
     if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(curMouseUnderTick) != NULL) {
         return;
     }//if
@@ -317,27 +335,31 @@ void CurveEditor::handleAddKeyframe()
 
 void CurveEditor::handleDeleteKeyframes()
 {
-    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    Globals &globals = Globals::Instance();
 
-    if (mainWindow->getGraphState().keyframeSelectionState.HasSelected() == false) {
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
+
+    if (globals.graphState->keyframeSelectionState.HasSelected() == false) {
         return;
     }//if
 
-    std::shared_ptr<Command> deleteKeyframesCommand(new DeleteKeyframesCommand(currentlySelectedEntryBlock, mainWindow->getGraphState().keyframeSelectionState.GetSelectedKeyframesCopy()));
+    std::shared_ptr<Command> deleteKeyframesCommand(new DeleteKeyframesCommand(currentlySelectedEntryBlock, globals.graphState->keyframeSelectionState.GetSelectedKeyframesCopy()));
     CommandManager::Instance().setNewCommand(deleteKeyframesCommand, true);
 }//handleDeletedKeyframe
 
 void CurveEditor::handleResetTangents()
 {
+    Globals &globals = Globals::Instance();
+
 std::cout << "handleResetTangents" << std::endl;
 
-    if (mainWindow->getGraphState().keyframeSelectionState.HasSelected() == false) {
+    if (globals.graphState->keyframeSelectionState.HasSelected() == false) {
         return;
     }//if
 
-    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
     std::shared_ptr<Animation> curve = currentlySelectedEntryBlock->getCurve();
-    BOOST_FOREACH (auto selectedKey, mainWindow->getGraphState().keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+    BOOST_FOREACH (auto selectedKey, globals.graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
         auto prevKey = curve->getPrevKeyframe(selectedKey.second);
         auto nextKey = curve->getNextKeyframe(selectedKey.second);
 
@@ -375,16 +397,17 @@ std::cout << "handleResetTangents" << std::endl;
         selectedKey.second->outTangent[0] = nextThird;
     }//for
 
-    Globals &globals = Globals::Instance();
-    globals.graphDrawingArea->queue_draw();
+    queue_draw();
 }//handleResetTangents
 
 std::shared_ptr<Keyframe> CurveEditor::getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed)
 {
-    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    Globals &globals = Globals::Instance();
+
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
 
     assert(currentlySelectedEntryBlock != NULL);
-    if ((currentlySelectedEntryBlock == NULL) || (mainWindow->getGraphState().displayMode != DisplayMode::Curve)) {
+    if ((currentlySelectedEntryBlock == NULL) || (globals.graphState->displayMode != DisplayMode::Curve)) {
         return std::shared_ptr<Keyframe>();
     }//if
 
@@ -427,19 +450,19 @@ std::cout << "getKeySelection: " << numKeys << std::endl;
 
         if (true == ctrlPressed) {
             //If we find the selected key...
-            if (mainWindow->getGraphState().keyframeSelectionState.IsSelected(selectedKey) == true) {
-                mainWindow->getGraphState().keyframeSelectionState.RemoveKeyframe(selectedKey);
+            if (globals.graphState->keyframeSelectionState.IsSelected(selectedKey) == true) {
+                globals.graphState->keyframeSelectionState.RemoveKeyframe(selectedKey);
                 selectedKey->setSelectedState(KeySelectedType::NotSelected);
                 std::cout << "NotSelected1" << std::endl;
             } else {
-                mainWindow->getGraphState().keyframeSelectionState.AddKeyframe(selectedKey);
+                globals.graphState->keyframeSelectionState.AddKeyframe(selectedKey);
             }//if
         } else {
             //If we can't find the selected key...
-            if (mainWindow->getGraphState().keyframeSelectionState.IsSelected(selectedKey) == false) {
+            if (globals.graphState->keyframeSelectionState.IsSelected(selectedKey) == false) {
 std::cout << "clear1" << std::endl;                
-                mainWindow->getGraphState().keyframeSelectionState.ClearSelectedKeyframes();
-                mainWindow->getGraphState().keyframeSelectionState.AddKeyframe(selectedKey);
+                globals.graphState->keyframeSelectionState.ClearSelectedKeyframes();
+                globals.graphState->keyframeSelectionState.AddKeyframe(selectedKey);
             }//if
         }//if
     } else {
@@ -447,7 +470,7 @@ std::cout << "clear1" << std::endl;
             //Nothing
         } else {
 std::cout << "clear2" << std::endl;            
-            mainWindow->getGraphState().keyframeSelectionState.ClearSelectedKeyframes();
+            globals.graphState->keyframeSelectionState.ClearSelectedKeyframes();
         }//if
 //std::cout << "no found key: " << mousePressDownX << " - " << mousePressDownY << std::endl;
     }//if
@@ -461,6 +484,8 @@ void CurveEditor::updateSelectedKeyframesInRange(KeyframeSelectionState &keyfram
                                                     gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY,
                                                     int areaWidth, int areaHeight)
 {
+    Globals &globals = Globals::Instance();
+
     mousePressDownX = std::max<gdouble>(mousePressDownX, 0);
     mousePressDownX = std::min<gdouble>(mousePressDownX, areaWidth);
 
@@ -481,10 +506,10 @@ void CurveEditor::updateSelectedKeyframesInRange(KeyframeSelectionState &keyfram
         std::swap(mousePosY, mousePressDownY);
     }//if
 
-    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
 
     assert(currentlySelectedEntryBlock != NULL);
-    if ((currentlySelectedEntryBlock == NULL) || (mainWindow->getGraphState().displayMode != DisplayMode::Curve)) {
+    if ((currentlySelectedEntryBlock == NULL) || (globals.graphState->displayMode != DisplayMode::Curve)) {
         return;
     }//if
 
@@ -514,6 +539,8 @@ void CurveEditor::updateSelectedKeyframesInRange(KeyframeSelectionState &keyfram
 
 void CurveEditor::setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<Keyframe> currentlySelectedKeyframe)
 {
+    Globals &globals = Globals::Instance();
+
     Gtk::ComboBox *comboBox;
     uiXml->get_widget("selectedKeyTypeComboBox", comboBox);
     if (currentlySelectedKeyframe != NULL) {
@@ -538,7 +565,7 @@ void CurveEditor::setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_p
 
     uiXml->get_widget("selectedKeyTickEntry", entry);
     if (currentlySelectedKeyframe != NULL) {
-        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = mainWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+        std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
         entry->set_text(boost::lexical_cast<std::string>(currentlySelectedKeyframe->tick + currentlySelectedEntryBlock->getStartTick()));
     } else {
         entry->set_text("");

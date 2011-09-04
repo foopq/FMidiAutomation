@@ -14,6 +14,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/weak_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
+#include "GraphState.h"
+#include "SerializationHelper.h"
 
 namespace
 {
