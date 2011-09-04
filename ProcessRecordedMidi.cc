@@ -262,7 +262,7 @@ void FMidiAutomationMainWindow::processRecordedMidi()
 */
     queuedUIThreadOperation = UIThreadOperation::finishProcessRecordedMidiOp;
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
 
 ////!!!! Unset selected entry block
 ////!!!! Switch select selected entry

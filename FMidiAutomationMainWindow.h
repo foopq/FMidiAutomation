@@ -266,6 +266,7 @@ class FMidiAutomationMainWindow
 public:    
     FMidiAutomationMainWindow();
     ~FMidiAutomationMainWindow();
+    void init(); //Note: We split the constructor so that ::mainWindow is always valid
     
     Gtk::Window *MainWindow();
     GraphState &getGraphState();

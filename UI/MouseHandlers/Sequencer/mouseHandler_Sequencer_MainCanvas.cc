@@ -171,7 +171,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
             "  </popup>"
             "</ui>";
 
-        graphDrawingArea->queue_draw();
+        queue_draw();
     } else {
         if (sequencer->getSelectedEntry() != NULL) {
             //Context menu to add entry

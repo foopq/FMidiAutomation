@@ -36,6 +36,8 @@ int main(int argc, char** argv)
 //    gdk_threads_leave();
 
     mainWindow = new FMidiAutomationMainWindow();
+    mainWindow->init();
+
     JackSingleton &jackSingleton = JackSingleton::Instance();
 
     kit.run(*mainWindow->MainWindow());

@@ -80,6 +80,16 @@ Globals &Globals::Instance()
 
 FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
+    //Nothing
+}//constructor
+
+FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
+{
+    //Nothing
+}//destructor
+ 
+void FMidiAutomationMainWindow::init()
+{
     Globals &globals = Globals::Instance();
 
     graphState = std::make_shared<GraphState>();
@@ -328,13 +338,8 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     radioButton->set_active(true);
     radioButton->signal_toggled().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleInsertModeChanged) );
     
-}//constructor
+}//init
 
-FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
-{
-    //Nothing
-}//destructor
- 
 void FMidiAutomationMainWindow::queue_draw()
 {
     graphDrawingArea->queue_draw();
@@ -507,7 +512,7 @@ GraphState &FMidiAutomationMainWindow::getGraphState()
 bool FMidiAutomationMainWindow::handleEntryWindowScroll(Gtk::ScrollType scrollType, double pos)
 {
     sequencer->notifyOnScroll(pos);
-    graphDrawingArea->queue_draw();
+    queue_draw();
     return true;
 }//handleEntryWindowScroll
 
@@ -557,7 +562,7 @@ void FMidiAutomationMainWindow::handleRewPressed()
     getGraphState().setOffsetCenteredOnTick(0, drawingAreaWidth);
     getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//handleRewPressed
 
 void FMidiAutomationMainWindow::handlePlayPressed()
@@ -723,7 +728,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
                 }//if
             }//if
 
-            graphDrawingArea->queue_draw();
+            queue_draw();
         } catch (...) {
             //Nothing
         }//try/catch
@@ -744,7 +749,7 @@ void FMidiAutomationMainWindow::handleDeletePressed()
                 std::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(getGraphState().curPointerTick, datas, callback));
                 CommandManager::Instance().setNewCommand(deleteTempoChangeCommand, true);
 
-                graphDrawingArea->queue_draw();
+                queue_draw();
                 break;
             }//if
         }//for
@@ -839,7 +844,7 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     updateCursorTick(getGraphState().curPointerTick, false);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//handleSequencerButtonPressed
 
 void FMidiAutomationMainWindow::handleCurveButtonPressed()
@@ -902,7 +907,7 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     updateCursorTick(getGraphState().curPointerTick, false);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//handleCurveButtonPressed
 
 void FMidiAutomationMainWindow::unsetAllCurveFrames()
@@ -955,7 +960,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnLeftTickEntryBox(GdkEventKey *ev
         int pos = boost::lexical_cast<int>(entryText);
         if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((getGraphState().rightMarkerTick == -1) || (getGraphState().rightMarkerTick > pos)))) {
             getGraphState().leftMarkerTick = pos;
-            graphDrawingArea->queue_draw();
+            queue_draw();
             return true;
         } else {
             return false;
@@ -976,7 +981,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnRightTickEntryBox(GdkEventKey *e
         int pos = boost::lexical_cast<int>(rightTickEntryBox->get_text());
         if ((pos == -1) || ((entryText.empty() == false) && (pos >= 0) && ((getGraphState().leftMarkerTick == -1) || (getGraphState().leftMarkerTick < pos)))) {
             getGraphState().rightMarkerTick = pos;
-            graphDrawingArea->queue_draw();
+            queue_draw();
             return true;
         } else {
             return false;
@@ -997,7 +1002,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnCursorTickEntryBox(GdkEventKey *
         if (pos >= 0) {
             getGraphState().curPointerTick = pos;
             updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
-            graphDrawingArea->queue_draw();
+            queue_draw();
             return true;
         } else {
             return false;
@@ -1019,7 +1024,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnPositionTickEntryBox(GdkEventKey
             curTick = std::max(0, curTick);
             getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->moveBlock(curTick);
             setTitleChanged();
-            graphDrawingArea->queue_draw();
+            queue_draw();
             return true;
         } else {
             return false;
@@ -1041,7 +1046,7 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnSelectedEntryBlockNameEntryBox(G
     if (entry->get_text().empty() == false) {
         getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->setTitle(entry->get_text());
         setTitleChanged();
-        graphDrawingArea->queue_draw();
+        queue_draw();
     }//if
 
     return true;
@@ -1113,27 +1118,27 @@ void FMidiAutomationMainWindow::on_handleDelete()
 void FMidiAutomationMainWindow::on_menuPaste()
 {
     PasteManager::Instance().doPaste(std::shared_ptr<SequencerEntry>());
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuPaste
 
 void FMidiAutomationMainWindow::on_menuPasteInstance()
 {
     PasteManager::Instance().doPasteInstance(std::shared_ptr<SequencerEntry>());
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuPasteInstance
 
 void FMidiAutomationMainWindow::on_menupasteSEBToSelectedEntry()
 {
     std::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     PasteManager::Instance().doPaste(selectedEntry);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menupasteSEBToSelectedEntry
 
 void FMidiAutomationMainWindow::on_menupasteSEBInstancesToSelectedEntry()
 {
     std::shared_ptr<SequencerEntry> selectedEntry = sequencer->getSelectedEntry();
     PasteManager::Instance().doPasteInstance(selectedEntry);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menupasteSEBInstancesToSelectedEntry
 
 void FMidiAutomationMainWindow::on_menuPorts()
@@ -1176,7 +1181,7 @@ void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
     std::shared_ptr<Command> splitSequencerEntryBlocksCommand(new SplitSequencerEntryBlocksCommand(origEntryBlocks, newEntryBlocks));
     CommandManager::Instance().setNewCommand(splitSequencerEntryBlocksCommand, true);
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuSplitEntryBlocks
 
 void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
@@ -1222,7 +1227,7 @@ void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
         std::shared_ptr<Command> mergeSequencerEntryBlocksCommand(new MergeSequencerEntryBlocksCommand(origEntryBlocks, newEntryBlocks));
         CommandManager::Instance().setNewCommand(mergeSequencerEntryBlocksCommand, true);
 
-        graphDrawingArea->queue_draw();
+        queue_draw();
     }//if
 }//on_menuJoinEntryBlocks
 
@@ -1247,7 +1252,7 @@ void FMidiAutomationMainWindow::on_menuNew()
     getGraphState().entryBlockSelectionState.ClearSelected();
     getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()
@@ -1282,7 +1287,7 @@ void FMidiAutomationMainWindow::on_menuSave()
         on_menuSaveAs();
     }//if
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuSave
 
 void FMidiAutomationMainWindow::on_menuSaveAs()
@@ -1374,7 +1379,7 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
     getGraphState().entryBlockSelectionState.ClearSelected();
     getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//actuallyLoadFile
 
 void FMidiAutomationMainWindow::on_menuOpen()
@@ -1412,13 +1417,13 @@ void FMidiAutomationMainWindow::on_menuOpen()
 void FMidiAutomationMainWindow::on_menuUndo()
 {
     CommandManager::Instance().doUndo();
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuUndo
 
 void FMidiAutomationMainWindow::on_menuRedo()
 {
     CommandManager::Instance().doRedo();
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//on_menuRedo
 
 void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
@@ -1459,7 +1464,7 @@ void FMidiAutomationMainWindow::updateCursorTick(int tick, bool updateJack)
         }//if
     }//if
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//updateCursorTick
 
 bool FMidiAutomationMainWindow::key_pressed(GdkEventKey *event)
@@ -1538,7 +1543,7 @@ bool FMidiAutomationMainWindow::on_idle()
 //            getGraphState().curPointerTick = curFrame;
 //            updateTempoBox(graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
 //            getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-//            graphDrawingArea->queue_draw();
+//            queue_draw();
         }//if
     }//if
 
@@ -1577,7 +1582,7 @@ void FMidiAutomationMainWindow::handleAddSequencerEntryBlock()
         std::shared_ptr<Command> addSequencerEntryBlockCommand(new AddSequencerEntryBlockCommand(selectedEntry, entryBlock));
         CommandManager::Instance().setNewCommand(addSequencerEntryBlockCommand, true);
 
-        graphDrawingArea->queue_draw();
+        queue_draw();
     }//if
 }//handleAddSequencerEntryBlock
 
@@ -1588,7 +1593,7 @@ void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks()
         std::shared_ptr<Command> deleteSequencerEntryBlocksCommand(new DeleteSequencerEntryBlocksCommand(getGraphState().entryBlockSelectionState.GetEntryBlocksMapCopy()));
         CommandManager::Instance().setNewCommand(deleteSequencerEntryBlocksCommand, true);
 
-        graphDrawingArea->queue_draw();
+        queue_draw();
     }//if
 }//handleDeleteSequencerEntryBlock
 
@@ -1602,7 +1607,7 @@ void FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock()
     std::shared_ptr<Command> deleteSequencerEntryBlockCommand(new DeleteSequencerEntryBlockCommand(getGraphState().entryBlockSelectionState.GetFirstEntryBlock()));
     CommandManager::Instance().setNewCommand(deleteSequencerEntryBlockCommand, true);
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
 }//handleDeleteSequencerEntryBlock
 
 void FMidiAutomationMainWindow::handleSequencerEntryProperties()
@@ -1618,7 +1623,7 @@ void FMidiAutomationMainWindow::handleSequencerEntryProperties()
         std::shared_ptr<Command> changeSequencerEntryBlockTitleCommand(new ChangeSequencerEntryBlockPropertiesCommand(selectedEntryBlock, entryBlockProperties.newTitle));
         CommandManager::Instance().setNewCommand(changeSequencerEntryBlockTitleCommand, true);
 
-        graphDrawingArea->queue_draw();
+        queue_draw();
     }//if
 }//handleSequencerEntryProperties
 
@@ -1638,7 +1643,7 @@ std::cout << "editSequencerEntryProperties 1" << std::endl;
             std::shared_ptr<Command> changeSequencerEntryPropertiesCommand(new ChangeSequencerEntryPropertiesCommand(entry, entryProperties.origImpl, entryProperties.newImpl));
             CommandManager::Instance().setNewCommand(changeSequencerEntryPropertiesCommand, true);
 
-            graphDrawingArea->queue_draw();
+            queue_draw();
         } else {
             //Here is we added a new entry
             entry->setNewDataImpl(entryProperties.newImpl);

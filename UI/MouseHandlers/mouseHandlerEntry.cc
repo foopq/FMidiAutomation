@@ -316,7 +316,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
             break;
     }//switch
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
     return retVal;
 }//mouseButtonPressed/*}}}*/
 
@@ -421,7 +421,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
             break;
     }//switch
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
     return true;
 }//mouseButtonReleased/*}}}*/
 
@@ -495,7 +495,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
                 graphState->leftMarkerTick = graphState->verticalPixelTickValues[event->x];
                 graphState->leftMarkerTick = std::max(graphState->leftMarkerTick, 0);
                 leftTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState->leftMarkerTick));
-                graphDrawingArea->queue_draw();
+                queue_draw();
             }//if
         }//if
 
@@ -504,12 +504,12 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
                 graphState->rightMarkerTick = graphState->verticalPixelTickValues[event->x];
                 graphState->rightMarkerTick = std::max(graphState->rightMarkerTick, 0);
                 rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState->rightMarkerTick));
-                graphDrawingArea->queue_draw();
+                queue_draw();
             }//if
         }//if
     }//if
 
-    graphDrawingArea->queue_draw();
+    queue_draw();
     return true;
 }//mouseMoved/*}}}*/
 

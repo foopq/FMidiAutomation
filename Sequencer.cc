@@ -804,8 +804,7 @@ void SequencerEntry::handleSwitchPressed()
         sequencer->doSwapEntryBox(smallWindow, mainWindow);
     }//if
 
-    Globals &globals = Globals::Instance();
-    globals.graphDrawingArea->queue_draw();
+    queue_draw();
     */
 }//handleSwitchPressed
 
@@ -1275,8 +1274,7 @@ void Sequencer::notifyOnScroll(double pos)
     std::cout << std::endl;
 */
 
-    Globals &globals = Globals::Instance();
-    globals.graphDrawingArea->queue_draw();
+    queue_draw();
 }//notifyOnScroll
 
 unsigned int Sequencer::getNumEntries() const
