@@ -162,7 +162,6 @@ void FMidiAutomationMainWindow::init()
     menuPaste->set_sensitive(false);
     menuPasteInstance->set_sensitive(false);
 
-    Gtk::MenuItem *menu_pasteSEBToSelectedEntry;
     uiXml->get_widget("menu_pasteSEBToSelectedEntry", menu_pasteSEBToSelectedEntry);
     menu_pasteSEBToSelectedEntry->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menupasteSEBToSelectedEntry));
     menu_pasteSEBToSelectedEntry->set_sensitive(false);

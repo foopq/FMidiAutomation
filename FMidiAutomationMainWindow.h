@@ -76,6 +76,8 @@ class FMidiAutomationMainWindow
     Gtk::Label *positionValueLabel;
     Gtk::Entry *currentSampledValue;
     Gtk::CheckButton *bpmFrameCheckButton;
+    Gtk::MenuItem *menu_pasteSEBToSelectedEntry;
+
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;

@@ -194,6 +194,16 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
                 ui_info += "<menuitem action='ContextJoinSEB'/>";
             }//if
 
+            if (menu_pasteSEBToSelectedEntry->get_sensitive() == true) {
+                ui_info += "<separator/>";
+
+                m_refActionGroup->add(Gtk::Action::create("ContextPasteSEBToSelectedEntry", "Paste Blocks to Entry"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menupasteSEBToSelectedEntry));
+                m_refActionGroup->add(Gtk::Action::create("ContextPasteSEBInstancesToSelectedEntry", "Paste Instances of Blocks to Entry"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menupasteSEBInstancesToSelectedEntry));
+
+                ui_info += "<menuitem action='ContextPasteSEBToSelectedEntry'/>"
+                           "<menuitem action='ContextPasteSEBInstancesToSelectedEntry'/>";
+            }//if
+
             ui_info +=
                 "  </popup>"
                 "</ui>";
