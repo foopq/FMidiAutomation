@@ -157,6 +157,13 @@ void FMidiAutomationMainWindow::init()
     uiXml->get_widget("menu_resetTangents", menuItem);
     menuItem->signal_activate().connect(sigc::mem_fun(*curveEditor, &CurveEditor::handleResetTangents));
 
+    uiXml->get_widget("menuitem_align_main", menuItem);
+    menuItem->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuAlignMainCursor));
+    uiXml->get_widget("menuitem_align_left", menuItem);
+    menuItem->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuAlignLeftCursor));
+    uiXml->get_widget("menuitem_align_right", menuItem);
+    menuItem->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuAlignRightCursor));
+
     menuCopy->set_sensitive(false);
     menuCut->set_sensitive(false);
     menuPaste->set_sensitive(false);
@@ -1229,6 +1236,83 @@ void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
         queue_draw();
     }//if
 }//on_menuJoinEntryBlocks
+
+namespace
+{
+
+int on_menuAlign_CursorHelper(std::shared_ptr<GraphState> graphState)
+{
+    int tick = 0;
+
+    switch (graphState->displayMode) {        
+        case DisplayMode::Curve:
+            {
+            std::shared_ptr<SequencerEntryBlock> firstBlock = graphState->entryBlockSelectionState.GetFirstEntryBlock();
+            if (firstBlock == NULL) {
+                return -1;
+            }//if
+
+            std::shared_ptr<Keyframe> firstKeyframe = graphState->keyframeSelectionState.GetFirstKeyframe();
+            if (firstKeyframe == NULL) {
+                return -1;
+            }//if
+
+            tick = firstKeyframe->tick + firstBlock->getStartTick();
+            }
+            break;
+
+        case DisplayMode::Sequencer:
+            {
+            std::shared_ptr<SequencerEntryBlock> firstBlock = graphState->entryBlockSelectionState.GetFirstEntryBlock();
+            if (firstBlock == NULL) {
+                return -1;
+            }//if
+
+            tick = firstBlock->getStartTick();
+            }
+            break;
+    }//switch
+
+    return tick;
+}//on_menuAlign_CursorHelper
+
+}//anonymous namespace
+
+void FMidiAutomationMainWindow::on_menuAlignMainCursor()
+{
+    int tick = on_menuAlign_CursorHelper(graphState);
+    if (tick < 0) {
+        return;
+    }//if
+
+    graphState->curPointerTick = tick;
+    updateCursorTick(getGraphState().curPointerTick, true);
+    queue_draw();
+}//on_menuAlignMainCursor
+
+void FMidiAutomationMainWindow::on_menuAlignLeftCursor()
+{
+    int tick = on_menuAlign_CursorHelper(graphState);
+    if (tick < 0) {
+        return;
+    }//if
+
+    graphState->leftMarkerTick = tick;
+    leftTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState->leftMarkerTick));
+    queue_draw();
+}//on_menuAlignLeftCursor
+
+void FMidiAutomationMainWindow::on_menuAlignRightCursor()
+{
+    int tick = on_menuAlign_CursorHelper(graphState);
+    if (tick < 0) {
+        return;
+    }//if
+
+    graphState->rightMarkerTick = tick;
+    rightTickEntryBox->set_text(boost::lexical_cast<std::string>(graphState->rightMarkerTick));
+    queue_draw();
+}//on_menuAlignRightCursor
 
 void FMidiAutomationMainWindow::on_menuNew()
 {

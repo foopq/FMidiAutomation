@@ -142,6 +142,9 @@ class FMidiAutomationMainWindow
     void on_menuJoinEntryBlocks();
     void on_menupasteSEBToSelectedEntry();
     void on_menupasteSEBInstancesToSelectedEntry();
+    void on_menuAlignMainCursor();
+    void on_menuAlignLeftCursor();
+    void on_menuAlignRightCursor();
 
     void on_handleDelete();
 

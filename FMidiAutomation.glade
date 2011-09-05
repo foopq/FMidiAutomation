@@ -184,6 +184,27 @@
                                 <property name="use_underline">True</property>
                               </object>
                             </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menuitem_align_main">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Align Main Cursor To First Selected</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menuitem_align_left">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Align Left Cursor To First Selected</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkMenuItem" id="menuitem_align_right">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Align Right Cursor To First Selected</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
