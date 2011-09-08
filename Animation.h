@@ -19,31 +19,32 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-#include "OrphanedEnums.h"
 
 class SequencerEntryBlock;
 class SequencerEntry;
 struct GraphState;
 
-namespace CurveType {
-enum CurveType
+enum class InsertMode : char
+{
+    Merge,
+    Replace
+};//InsertMode
+
+enum class CurveType : char
 {
     Init,
     Step,
     Linear,
     Bezier
 };//CurveType
-}//namespace CurveType
 
-namespace KeySelectedType {
-enum KeySelectedType
+enum class KeySelectedType : char
 {
     NotSelected,
     Key,
     InTangent,
     OutTangent
 };//KeySelectedType
-}//namespace KeySelectedType
 
 struct Keyframe
 {
@@ -53,7 +54,7 @@ struct Keyframe
     double value;
     double inTangent[2];
     double outTangent[2];
-    CurveType::CurveType curveType;
+    CurveType curveType;
 
     int drawnStartX;
     int drawnStartY;
@@ -63,13 +64,13 @@ struct Keyframe
     int drawnInY;
 
     //bool isSelected;
-    KeySelectedType::KeySelectedType getSelectedState();
-    void setSelectedState(KeySelectedType::KeySelectedType state);
+    KeySelectedType getSelectedState();
+    void setSelectedState(KeySelectedType state);
 
     std::shared_ptr<Keyframe> deepClone();
 
 private:
-    KeySelectedType::KeySelectedType selectedState;
+    KeySelectedType selectedState;
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;

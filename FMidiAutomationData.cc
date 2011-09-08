@@ -60,6 +60,18 @@ void GraphState::serialize(Archive &ar, const unsigned int version)
     //ar & BOOST_SERIALIZATION_NVP(currentlySelectedEntryOriginalStartTicks); -- not serialized
     //ar & BOOST_SERIALIZATION_NVP(currentlySelectedEntryBlocks); -- not serialized
     ar & BOOST_SERIALIZATION_NVP(lastSequencerPointerTick);
+
+    ar & BOOST_SERIALIZATION_NVP(didMoveKey);
+    ar & BOOST_SERIALIZATION_NVP(didMoveKeyOutTangent);
+    ar & BOOST_SERIALIZATION_NVP(didMoveKeyInTangent);
+
+    ar & BOOST_SERIALIZATION_NVP(displayMode);
+    ar & BOOST_SERIALIZATION_NVP(lastSequencerPointerTick);
+    ar & BOOST_SERIALIZATION_NVP(lastSequencerLeftPointerTick);
+    ar & BOOST_SERIALIZATION_NVP(lastSequencerRightPointerTick);
+
+    ar & BOOST_SERIALIZATION_NVP(doingRubberBanding);
+    ar & BOOST_SERIALIZATION_NVP(insertMode);
 }//serialize
 
 template void FMidiAutomationData::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);

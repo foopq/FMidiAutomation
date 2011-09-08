@@ -15,11 +15,20 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <flowcanvas/Port.hpp>
 #include "jack.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include <boost/foreach.hpp>
 #include <set>
 #include <limits>
 #include <math.h>
 #include "Globals.h"
+
+//FIXME: This is a horrible hack!
+void FlowCanvas::Canvas::arrange(bool) 
+{
+    //Nothing
+}//arrange
+    
+
 
 namespace
 {
@@ -55,7 +64,7 @@ class JackPortFlowCanvas : public virtual FlowCanvas::Canvas
 {
 public:    
     JackPortFlowCanvas();
-    ~JackPortFlowCanvas();
+    virtual ~JackPortFlowCanvas();
 
     void addModule(boost::shared_ptr<FlowCanvas::Module> module);
     void clearModules();

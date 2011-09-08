@@ -9,6 +9,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "PasteManager.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include "Command.h"
 #include "Animation.h"
 #include <boost/foreach.hpp>

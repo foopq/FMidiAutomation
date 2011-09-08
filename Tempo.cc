@@ -53,7 +53,7 @@ void actuallyDrawTempoBars(unsigned int drawingAreaWidth, unsigned int drawingAr
 
     typedef std::pair<unsigned int, LineType> VLPT;
     BOOST_FOREACH(VLPT verticalLinePair, verticalLines) {
-        if (BarStart == verticalLinePair.second) {
+        if (LineType::BarStart == verticalLinePair.second) {
             context->move_to(verticalLinePair.first, 61);
             context->line_to(verticalLinePair.first, drawingAreaHeight);
         }//if
@@ -63,7 +63,7 @@ void actuallyDrawTempoBars(unsigned int drawingAreaWidth, unsigned int drawingAr
 
     context->set_source_rgba(0.7, 0.7, 0.7, 0.7);
     BOOST_FOREACH(VLPT verticalLinePair, verticalLines) {
-        if (SubdivisionLine == verticalLinePair.second) {
+        if (LineType::SubdivisionLine == verticalLinePair.second) {
             context->move_to(verticalLinePair.first, 61);
             context->line_to(verticalLinePair.first, 50);
         }//if
@@ -149,7 +149,7 @@ void drawTimeSignatureTicks(int firstPixelTick, int lastPixelTick, std::map<int,
             int subTicks = (curTick - curTempoMarkerStartTick) % (ticksPerBar / barSubDivisions);
             if (subTicks <= ticksPerPixel) {
                 if ((dist - 20) > lastAddedBarSubdivisionPixel) {
-                    verticalLines.push_back(std::make_pair(dist, SubdivisionLine));
+                    verticalLines.push_back(std::make_pair(dist, LineType::SubdivisionLine));
 
                     lastAddedBarSubdivisionPixel = dist;
                 }//if
@@ -162,7 +162,7 @@ void drawTimeSignatureTicks(int firstPixelTick, int lastPixelTick, std::map<int,
                     std::ostringstream tmpSS;
                     tmpSS << (barCount + 1);
 
-                    verticalLines.push_back(std::make_pair(dist, BarStart));
+                    verticalLines.push_back(std::make_pair(dist, LineType::BarStart));
                     lowerLineText.push_back(std::make_pair(dist, tmpSS.str()));
 
                     lastAddedBarPixel = dist;
@@ -276,6 +276,7 @@ bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &te
         }//if
     }//foreach
 
+    /*
     bool tmp = false;
     typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
     BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, tempoChanges) {
@@ -283,6 +284,7 @@ bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &te
             tmp = true;
         }//if
     }//foreach
+    */
 
     return foundIt;
 }//checkForTempoSelection

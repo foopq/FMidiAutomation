@@ -9,6 +9,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include "FMidiAutomationCurveEditor.h"
 #include "Animation.h"
 #include "Command.h"
@@ -18,7 +19,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 namespace
 {
 
-enum MouseRegion
+enum class MouseRegion : char
 {
     FrameRegion,
     MainCanvas,
@@ -26,34 +27,34 @@ enum MouseRegion
     LeftValueRegion
 };//MouseRegion
 
-enum MouseButton
+enum class MouseButton : char
 {
     LeftButton = 1,
     MiddleButton = 2,
     RightButton = 3
 };//MouseButton
 
-MouseRegion determineMouseRegion(int x, int y, DisplayMode::DisplayMode displayMode)
+MouseRegion determineMouseRegion(int x, int y, DisplayMode displayMode)
 {
     if (y <= 30) {
-        return FrameRegion;
+        return MouseRegion::FrameRegion;
     }//if
 
     if (y <= 60) {
-        return TickMarkerRegion;
+        return MouseRegion::TickMarkerRegion;
     }//if
 
     if (x > 60) {
-        return MainCanvas;
+        return MouseRegion::MainCanvas;
     }//if
 
     switch (displayMode) {        
         case DisplayMode::Curve:
-            return LeftValueRegion;
+            return MouseRegion::LeftValueRegion;
 
         case DisplayMode::Sequencer:
         default:
-            return MainCanvas;
+            return MouseRegion::MainCanvas;
     }//switch
 }//determineMouseRegion
 
@@ -122,6 +123,21 @@ void handleGraphTimeZoom(GdkScrollDirection direction, GraphState &graphState, i
     }//if
 }//handleGraphTimeZoom
 
+MouseButton getMouseButton(guint button)
+{
+    switch (button) {
+        default:
+        case 1:
+            return MouseButton::LeftButton;
+
+        case 2:
+            return MouseButton::MiddleButton;
+
+        case 3:
+            return MouseButton::RightButton;
+    }//switch
+}//getMouseButton
+
 }//anonymous namespace
 
 bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
@@ -181,6 +197,7 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
 bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
 {
     bool retVal = true;
+    MouseButton eventButton = getMouseButton(event->button);
 
     //Good idea to sync up the bucky bits
     if (event->state & GDK_CONTROL_MASK) {
@@ -202,8 +219,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
     }//if
 
     if (event->type == GDK_BUTTON_PRESS) {
-        if (LeftButton == event->button) {
-            graphState->selectedEntity = Nobody;
+        if (MouseButton::LeftButton == eventButton) {
+            graphState->selectedEntity = SelectedEntity::Nobody;
             leftMouseCurrentlyPressed = true;
         }//if
 
@@ -216,17 +233,17 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
     switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
-                case FrameRegion:
-                    switch (event->button) {
-                        case LeftButton: handleCurveEditorFrameRegionLMBPress(); break;
-                        case MiddleButton: handleCurveEditorFrameRegionMMBPress(); break;
-                        case RightButton: handleCurveEditorFrameRegionRMBPress(); break;
+                case MouseRegion::FrameRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleCurveEditorFrameRegionLMBPress(); break;
+                        case MouseButton::MiddleButton: handleCurveEditorFrameRegionMMBPress(); break;
+                        case MouseButton::RightButton: handleCurveEditorFrameRegionRMBPress(); break;
                     }//switch
                     break;
 
-                case MainCanvas:
-                    switch (event->button) {
-                        case LeftButton: 
+                case MouseRegion::MainCanvas:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: 
                             switch (event->type) {
                                 case GDK_BUTTON_PRESS:
                                     graphState->inMotion = true;
@@ -240,24 +257,24 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
                             }//switch
                             break;
                             
-                        case MiddleButton: handleCurveEditorMainCanvasMMBPress(); break;
-                        case RightButton: retVal = handleCurveEditorMainCanvasRMBPress(event->x, event->button, event->time); break;
+                        case MouseButton::MiddleButton: handleCurveEditorMainCanvasMMBPress(); break;
+                        case MouseButton::RightButton: retVal = handleCurveEditorMainCanvasRMBPress(event->x, event->button, event->time); break;
                     }//switch
                     break;
 
-                case TickMarkerRegion:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerTickMarkerRegionLMBPress(event->x); break; //Same case as for sequencer
-                        case MiddleButton: handleCurveEditorTickMarkerRegionMMBPress(); break;
-                        case RightButton: handleCurveEditorTickMarkerRegionRMBPress(); break;
+                case MouseRegion::TickMarkerRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerTickMarkerRegionLMBPress(event->x); break; //Same case as for sequencer
+                        case MouseButton::MiddleButton: handleCurveEditorTickMarkerRegionMMBPress(); break;
+                        case MouseButton::RightButton: handleCurveEditorTickMarkerRegionRMBPress(); break;
                     }//switch
                     break;
 
-                case LeftValueRegion:
-                    switch (event->button) {
-                        case LeftButton: handleCurveEditorLeftValueRegionLMBPress(); break;
-                        case MiddleButton: handleCurveEditorLeftValueRegionMMBPress(); break;
-                        case RightButton: handleCurveEditorLeftValueRegionRMBPress(); break; 
+                case MouseRegion::LeftValueRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleCurveEditorLeftValueRegionLMBPress(); break;
+                        case MouseButton::MiddleButton: handleCurveEditorLeftValueRegionMMBPress(); break;
+                        case MouseButton::RightButton: handleCurveEditorLeftValueRegionRMBPress(); break; 
                     }//switch
                     break;
             }//switch
@@ -267,17 +284,17 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
             sequencer->updateEntryFocus(event->y);
 
             switch (mouseRegion) {
-                case FrameRegion:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerFrameRegionLMBPress(); break;
-                        case MiddleButton: handleSequencerFrameRegionMMBPress(); break;
-                        case RightButton: handleSequencerFrameRegionRMBPress(); break;
+                case MouseRegion::FrameRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerFrameRegionLMBPress(); break;
+                        case MouseButton::MiddleButton: handleSequencerFrameRegionMMBPress(); break;
+                        case MouseButton::RightButton: handleSequencerFrameRegionRMBPress(); break;
                     }//switch
                     break;
 
-                case MainCanvas:
-                    switch (event->button) {
-                        case LeftButton: 
+                case MouseRegion::MainCanvas:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: 
                             switch (event->type) {
                                 case GDK_BUTTON_PRESS:
                                     graphState->inMotion = true;
@@ -288,7 +305,7 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
                                     break;
 
                                 case GDK_2BUTTON_PRESS:
-                                    if (SequencerEntrySelection == graphState->selectedEntity) {
+                                    if (SelectedEntity::SequencerEntrySelection == graphState->selectedEntity) {
                                         //Double click on a sequencer entry block means we open up the curve editor for it
                                         handleCurveButtonPressed();
                                     }//if
@@ -298,21 +315,21 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
                             }//switch
                             break;
 
-                        case MiddleButton: handleSequencerMainCanvasMMBPress(); break;
-                        case RightButton: handleSequencerMainCanvasRMBPress(event->button, event->time); break;
+                        case MouseButton::MiddleButton: handleSequencerMainCanvasMMBPress(); break;
+                        case MouseButton::RightButton: handleSequencerMainCanvasRMBPress(event->button, event->time); break;
                     }//switch
                     break;
 
-                case TickMarkerRegion:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerTickMarkerRegionLMBPress(event->x); break;
-                        case MiddleButton: handleSequencerTickMarkerRegionMMBPress(); break;
-                        case RightButton: handleSequencerTickMarkerRegionRMBPress(); break;
+                case MouseRegion::TickMarkerRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerTickMarkerRegionLMBPress(event->x); break;
+                        case MouseButton::MiddleButton: handleSequencerTickMarkerRegionMMBPress(); break;
+                        case MouseButton::RightButton: handleSequencerTickMarkerRegionRMBPress(); break;
                     }//switch
                     break;
 
-                case LeftValueRegion:
-                    assert(mouseRegion != LeftValueRegion);
+                case MouseRegion::LeftValueRegion:
+                    assert(mouseRegion != MouseRegion::LeftValueRegion);
                     break;
             }//switch
             break;
@@ -324,6 +341,8 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
 
 bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*/
 {
+    MouseButton eventButton = getMouseButton(event->button);
+
     mousePressReleaseX = event->x;
     mousePressReleaseY = event->y;
 
@@ -346,7 +365,7 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
         altCurrentlyPressed = false;
     }//if
 
-    if (LeftButton == event->button) {
+    if (MouseButton::LeftButton == eventButton) {
         leftMouseCurrentlyPressed = false;
         graphState->inMotion = false;
     }//if
@@ -356,35 +375,35 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
     switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
-                case FrameRegion:
-                    switch (event->button) {
-                        case LeftButton: handleCurveEditorFrameRegionLMBRelease(); break;
-                        case MiddleButton: handleCurveEditorFrameRegionMMBRelease(); break;
-                        case RightButton: handleCurveEditorFrameRegionRMBRelease(); break;
+                case MouseRegion::FrameRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleCurveEditorFrameRegionLMBRelease(); break;
+                        case MouseButton::MiddleButton: handleCurveEditorFrameRegionMMBRelease(); break;
+                        case MouseButton::RightButton: handleCurveEditorFrameRegionRMBRelease(); break;
                     }//switch
                     break;
 
-                case MainCanvas:
-                    switch (event->button) {
-                        case LeftButton: handleCurveEditorMainCanvasLMBRelease(); break;
-                        case MiddleButton: handleCurveEditorMainCanvasMMBRelease(); break;
-                        case RightButton: handleCurveEditorMainCanvasRMBRelease(); break;
+                case MouseRegion::MainCanvas:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleCurveEditorMainCanvasLMBRelease(); break;
+                        case MouseButton::MiddleButton: handleCurveEditorMainCanvasMMBRelease(); break;
+                        case MouseButton::RightButton: handleCurveEditorMainCanvasRMBRelease(); break;
                     }//switch
                     break;
 
-                case TickMarkerRegion:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerTickMarkerRegionLMBRelease(event->x, event->y); break; //Same as sequencer path
-                        case MiddleButton: handleCurveEditorTickMarkerRegionMMBRelease(); break;
-                        case RightButton: handleSequencerTickMarkerRegionRMBRelease(event->x, event->y); break; //Same as sequencer path
+                case MouseRegion::TickMarkerRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerTickMarkerRegionLMBRelease(event->x, event->y); break; //Same as sequencer path
+                        case MouseButton::MiddleButton: handleCurveEditorTickMarkerRegionMMBRelease(); break;
+                        case MouseButton::RightButton: handleSequencerTickMarkerRegionRMBRelease(event->x, event->y); break; //Same as sequencer path
                     }//switch
                     break;
 
-                case LeftValueRegion:
-                    switch (event->button) {
-                        case LeftButton: handleCurveEditorLeftValueRegionLMBRelease(); break;
-                        case MiddleButton: handleCurveEditorLeftValueRegionMMBRelease(); break;
-                        case RightButton: handleCurveEditorLeftValueRegionRMBRelease(); break; 
+                case MouseRegion::LeftValueRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleCurveEditorLeftValueRegionLMBRelease(); break;
+                        case MouseButton::MiddleButton: handleCurveEditorLeftValueRegionMMBRelease(); break;
+                        case MouseButton::RightButton: handleCurveEditorLeftValueRegionRMBRelease(); break; 
                     }//switch
                     break;
             }//switch
@@ -392,32 +411,32 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
 
         case DisplayMode::Sequencer:
             switch (mouseRegion) {
-                case FrameRegion:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerFrameRegionLMBRelease(); break;
-                        case MiddleButton: handleSequencerFrameRegionMMBRelease(); break;
-                        case RightButton: handleSequencerFrameRegionRMBRelease(); break;
+                case MouseRegion::FrameRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerFrameRegionLMBRelease(); break;
+                        case MouseButton::MiddleButton: handleSequencerFrameRegionMMBRelease(); break;
+                        case MouseButton::RightButton: handleSequencerFrameRegionRMBRelease(); break;
                     }//switch
                     break;
 
-                case MainCanvas:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerMainCanvasLMBRelease(event->x); break;
-                        case MiddleButton: handleSequencerMainCanvasMMBRelease(); break;
-                        case RightButton: handleSequencerMainCanvasRMBRelease(); break;
+                case MouseRegion::MainCanvas:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerMainCanvasLMBRelease(event->x); break;
+                        case MouseButton::MiddleButton: handleSequencerMainCanvasMMBRelease(); break;
+                        case MouseButton::RightButton: handleSequencerMainCanvasRMBRelease(); break;
                     }//switch
                     break;
 
-                case TickMarkerRegion:
-                    switch (event->button) {
-                        case LeftButton: handleSequencerTickMarkerRegionLMBRelease(event->x, event->y); break;
-                        case MiddleButton: handleSequencerTickMarkerRegionMMBRelease(); break;
-                        case RightButton: handleSequencerTickMarkerRegionRMBRelease(event->x, event->y); break;
+                case MouseRegion::TickMarkerRegion:
+                    switch (eventButton) {
+                        case MouseButton::LeftButton: handleSequencerTickMarkerRegionLMBRelease(event->x, event->y); break;
+                        case MouseButton::MiddleButton: handleSequencerTickMarkerRegionMMBRelease(); break;
+                        case MouseButton::RightButton: handleSequencerTickMarkerRegionRMBRelease(event->x, event->y); break;
                     }//switch
                     break;
 
-                case LeftValueRegion:
-                    assert(mouseRegion != LeftValueRegion);
+                case MouseRegion::LeftValueRegion:
+                    assert(mouseRegion != MouseRegion::LeftValueRegion);
                     break;
             }//switch
             break;
@@ -443,7 +462,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
             int tick = 0;
             int value = 0;
 
-            if (MainCanvas == mouseRegion) {
+            if (MouseRegion::MainCanvas == mouseRegion) {
                 tick = graphState->verticalPixelTickValues[graphState->curMousePosX];
                 positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(tick));
                 value = (int)(graphState->horizontalPixelValues[graphState->curMousePosY - MainCanvasOffsetY] + 0.5);
@@ -466,33 +485,33 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
     switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
-                case FrameRegion: handleCurveEditorFrameRegionMouseMove(); break;
-                case MainCanvas: handleCurveEditorMainCanvasMouseMove(event->x, event->y); break;
-                case TickMarkerRegion: handleCurveEditorTickMarkerRegionMouseMove(); break;
-                case LeftValueRegion: handleCurveEditorLeftValueRegionMouseMove(); break;
+                case MouseRegion::FrameRegion: handleCurveEditorFrameRegionMouseMove(); break;
+                case MouseRegion::MainCanvas: handleCurveEditorMainCanvasMouseMove(event->x, event->y); break;
+                case MouseRegion::TickMarkerRegion: handleCurveEditorTickMarkerRegionMouseMove(); break;
+                case MouseRegion::LeftValueRegion: handleCurveEditorLeftValueRegionMouseMove(); break;
                 break;
             }//switch
             break;
 
         case DisplayMode::Sequencer:
             switch (mouseRegion) {
-                case FrameRegion: handleSequencerFrameRegionMouseMove(); break;
-                case MainCanvas: handleSequencerMainCanvasMouseMove(event->x, event->y); break;
-                case TickMarkerRegion: handleSequencerTickMarkerRegionMouseMove(); break;
-                case LeftValueRegion: assert(mouseRegion != LeftValueRegion); break;
+                case MouseRegion::FrameRegion: handleSequencerFrameRegionMouseMove(); break;
+                case MouseRegion::MainCanvas: handleSequencerMainCanvasMouseMove(event->x, event->y); break;
+                case MouseRegion::TickMarkerRegion: handleSequencerTickMarkerRegionMouseMove(); break;
+                case MouseRegion::LeftValueRegion: assert(mouseRegion != MouseRegion::LeftValueRegion); break;
             }//switch
             break;
     }//switch
 
     //We want to be a little more flexible with the tick bars, so we don't consider what region the mouse is in when they're selected
     if (false == ctrlCurrentlyPressed) {
-        if (graphState->selectedEntity == PointerTickBar) {
+        if (graphState->selectedEntity == SelectedEntity::PointerTickBar) {
             if ((event->x >= 0) && (event->x < drawingAreaWidth)) {
                 updateCursorTick(graphState->verticalPixelTickValues[event->x], true);
             }//if
         }//if
 
-        else if (graphState->selectedEntity == LeftTickBar) {
+        else if (graphState->selectedEntity == SelectedEntity::LeftTickBar) {
             if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState->rightMarkerTick == -1) || (graphState->verticalPixelTickValues[event->x] < graphState->rightMarkerTick))) {
                 graphState->leftMarkerTick = graphState->verticalPixelTickValues[event->x];
                 graphState->leftMarkerTick = std::max(graphState->leftMarkerTick, 0);
@@ -501,7 +520,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
             }//if
         }//if
 
-        else if (graphState->selectedEntity == RightTickBar) {
+        else if (graphState->selectedEntity == SelectedEntity::RightTickBar) {
             if ((event->x >= 0) && (event->x < drawingAreaWidth) && ((graphState->leftMarkerTick == -1) || (graphState->verticalPixelTickValues[event->x] > graphState->leftMarkerTick))) {
                 graphState->rightMarkerTick = graphState->verticalPixelTickValues[event->x];
                 graphState->rightMarkerTick = std::max(graphState->rightMarkerTick, 0);

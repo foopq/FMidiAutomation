@@ -450,12 +450,12 @@ double Animation::sample(int tick)
     return 0;
 }//sample
 
-KeySelectedType::KeySelectedType Keyframe::getSelectedState()
+KeySelectedType Keyframe::getSelectedState()
 {
     return selectedState;
 }//getSelectedState
 
-void Keyframe::setSelectedState(KeySelectedType::KeySelectedType state)
+void Keyframe::setSelectedState(KeySelectedType state)
 {
     selectedState = state;
 }//setSelectedState

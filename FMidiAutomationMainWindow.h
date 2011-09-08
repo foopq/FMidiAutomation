@@ -28,14 +28,11 @@ class SequencerEntry;
 struct GraphState;
 struct CurveEditor;
 
-namespace UIThreadOperation
-{
-enum UIThreadOperation
+enum class UIThreadOperation : char
 {
     Nothing,
     finishProcessRecordedMidiOp,
 };//UIThreadOperation
-}//UIThreadOperation
 
 
 class FMidiAutomationMainWindow
@@ -117,7 +114,7 @@ class FMidiAutomationMainWindow
     void setStatusText(Glib::ustring text);
     boost::mutex statusTextMutex;
 
-    UIThreadOperation::UIThreadOperation queuedUIThreadOperation;
+    UIThreadOperation queuedUIThreadOperation;
 
     bool recordMidi;
     

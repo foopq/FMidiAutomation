@@ -9,6 +9,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "FMidiAutomationMainWindow.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include "FMidiAutomationCurveEditor.h"
 #include "Animation.h"
 #include "Command.h"
@@ -180,7 +181,7 @@ void handleKeyTangentScroll(gdouble xPos, gdouble yPos, GraphState &graphState, 
 
     std::shared_ptr<Keyframe> curKeyframe = graphState.keyframeSelectionState.GetFirstKeyframe();
 
-    if (InTangent == graphState.selectedEntity) {
+    if (SelectedEntity::InTangent == graphState.selectedEntity) {
         graphState.didMoveKeyInTangent = true;
 
         curKeyframe->inTangent[0] = curKeyframe->tick - newTick;
@@ -257,7 +258,7 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
     curveEditor->setKeyUIValues(uiXml, firstKeyframe);
 
     if (firstKeyframe == NULL) {
-        graphState->selectedEntity = Nobody;
+        graphState->selectedEntity = SelectedEntity::Nobody;
 
         std::string menuStr = "Add Keyframe";
         std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState->entryBlockSelectionState.GetFirstEntryBlock();
@@ -280,7 +281,7 @@ bool FMidiAutomationMainWindow::handleCurveEditorMainCanvasRMBPress(gdouble xPos
             return false;
         }//if
     } else {
-        graphState->selectedEntity = KeyValue;
+        graphState->selectedEntity = SelectedEntity::KeyValue;
 
         m_refActionGroup->add(Gtk::Action::create("ContextDeleteKeyframe", "Delete Keyframes"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleDeleteKeyframes));
         m_refActionGroup->add(Gtk::Action::create("ContextResetTangents", "Reset Tangents"), sigc::mem_fun(curveEditor.get(), &CurveEditor::handleResetTangents));
@@ -328,7 +329,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
 {
     graphState->doingRubberBanding = false;
 
-    if (graphState->selectedEntity == KeyValue) {
+    if (graphState->selectedEntity == SelectedEntity::KeyValue) {
         if (true == graphState->didMoveKey) {                        
             std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = graphState->entryBlockSelectionState.GetFirstEntryBlock();
 
@@ -394,12 +395,12 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasMouseMove(gdouble xPo
             firstKeyframe = graphState->keyframeSelectionState.GetFirstKeyframe();
         }//if
 
-        if (graphState->selectedEntity == KeyValue) {
+        if (graphState->selectedEntity == SelectedEntity::KeyValue) {
             handleKeyScroll(xPos, yPos, *graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
             curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if
 
-        else if ((graphState->selectedEntity == InTangent) || (graphState->selectedEntity == OutTangent)) {
+        else if ((graphState->selectedEntity == SelectedEntity::InTangent) || (graphState->selectedEntity == SelectedEntity::OutTangent)) {
             handleKeyTangentScroll(xPos, yPos, *graphState, mousePressDownX, mousePressDownY, drawingAreaWidth, drawingAreaHeight);
             curveEditor->setKeyUIValues(uiXml, firstKeyframe);
         }//if

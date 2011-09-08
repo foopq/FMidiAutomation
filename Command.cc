@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Tempo.h"
 #include "FMidiAutomationData.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include "Animation.h"
 #include <boost/foreach.hpp>
 #include "Globals.h"

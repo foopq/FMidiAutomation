@@ -25,6 +25,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/thread.hpp>
 #include "jack.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include "EntryBlockProperties.h"
 #include "PasteManager.h"
 #include "EntryProperties.h"
@@ -110,7 +111,8 @@ void FMidiAutomationMainWindow::init()
     origBackingImage.reset(new Gtk::Image());
     origBackingTexture.reset(new Gtk::Image());
     
-    Glib::RefPtr<Gdk::Pixbuf> pixbuf = Gdk::Pixbuf::create_from_file("pics/background.tga");
+    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
+    pixbuf = Gdk::Pixbuf::create_from_file("pics/background.png");
     origBackingTexture->set(pixbuf);
     pixbuf = Gdk::Pixbuf::create_from_file("pics/fractal.tga");
     origBackingImage->set(pixbuf);
@@ -319,10 +321,6 @@ void FMidiAutomationMainWindow::init()
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new Sequencer(datas->entryGlade, entryVBox, this));
     globals.sequencer = sequencer;
-
-    Gtk::ScrolledWindow *entryScrollWindow;
-    uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
-    entryScrollWindow->get_vscrollbar()->signal_change_value().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEntryWindowScroll) );
 
     boost::function<void (void)> titleStarFunc = boost::lambda::bind(boost::mem_fn(&FMidiAutomationMainWindow::setTitleChanged), this);
     CommandManager::Instance().setTitleStar(titleStarFunc);
@@ -739,6 +737,12 @@ void FMidiAutomationMainWindow::handleAddPressed()
             //Nothing
         }//try/catch
     }//if
+
+    Gtk::ScrolledWindow *entryScrollWindow;
+    uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
+    if (entryScrollWindow->get_vscrollbar() != NULL) {
+        entryScrollWindow->get_vscrollbar()->signal_change_value().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEntryWindowScroll) );
+    }//if
 }//handleAddPressed
 
 void FMidiAutomationMainWindow::handleDeletePressed()
@@ -812,7 +816,12 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     selectedEntryBlock->setOffsetY(getGraphState().offsetY);
 
     getGraphState().displayMode = DisplayMode::Sequencer;
+
+    selectedEntryBlock->setUITickPositions(getGraphState().curPointerTick, getGraphState().leftMarkerTick, 
+                                            getGraphState().rightMarkerTick );
     getGraphState().curPointerTick = getGraphState().lastSequencerPointerTick;
+    getGraphState().leftMarkerTick = getGraphState().lastSequencerLeftPointerTick;
+    getGraphState().rightMarkerTick = getGraphState().lastSequencerRightPointerTick;
 
     sequencerButton->set_sensitive(false);
     curveButton->set_sensitive(true);
@@ -874,8 +883,10 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     getGraphState().offsetY = selectedEntryBlock->getOffsetY();
 
     getGraphState().displayMode = DisplayMode::Curve;
-    getGraphState().lastSequencerPointerTick = selectedEntryBlock->getStartTick(); //getGraphState().curPointerTick;
-    getGraphState().curPointerTick = selectedEntryBlock->getStartTick();
+    getGraphState().lastSequencerPointerTick = getGraphState().curPointerTick;
+    getGraphState().lastSequencerLeftPointerTick = getGraphState().leftMarkerTick;
+    getGraphState().lastSequencerRightPointerTick = getGraphState().rightMarkerTick;
+    std::tie(getGraphState().curPointerTick, getGraphState().leftMarkerTick, getGraphState().rightMarkerTick) = selectedEntryBlock->getUITickPositions();
 
     sequencerButton->set_sensitive(true);
     curveButton->set_sensitive(false);
@@ -1445,7 +1456,7 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
     sequencer->doLoad(inputArchive);
 
     getGraphState().displayMode = DisplayMode::Sequencer;
-    getGraphState().selectedEntity = Nobody;
+    getGraphState().selectedEntity = SelectedEntity::Nobody;
 
     datas->entryGlade = readEntryGlade();
 
@@ -1458,11 +1469,16 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
     globals.graphState = graphState;
     globals.sequencer = sequencer;
 
-
     getGraphState().entryBlockSelectionState.ClearSelected();
     getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     queue_draw();
+
+    Gtk::ScrolledWindow *entryScrollWindow;
+    uiXml->get_widget("entryScrolledWindow", entryScrollWindow);
+    if (entryScrollWindow->get_vscrollbar() != NULL) {
+        entryScrollWindow->get_vscrollbar()->signal_change_value().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEntryWindowScroll) );
+    }//if
 }//actuallyLoadFile
 
 void FMidiAutomationMainWindow::on_menuOpen()

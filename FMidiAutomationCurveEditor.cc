@@ -221,7 +221,7 @@ void CurveEditor::handleSelectionChangeOnSelectedKeyTypeComboBox()
     Gtk::ComboBox *comboBox;
     uiXml->get_widget("selectedKeyTypeComboBox", comboBox);
 
-    CurveType::CurveType curveType;
+    CurveType curveType;
     int activeIndex = comboBox->property_active();
     switch (activeIndex) {
         case 0:
@@ -417,25 +417,25 @@ std::shared_ptr<Keyframe> CurveEditor::getKeySelection(GraphState &graphState, i
 
 std::cout << "getKeySelection: " << numKeys << std::endl;
 
-    SelectedEntity selectedEntity = Nobody;
+    SelectedEntity selectedEntity = SelectedEntity::Nobody;
     for (int index = 0; index < numKeys; ++index) {
         std::shared_ptr<Keyframe> curKey = curve->getKeyframe(index);
         if ( (curKey->drawnStartX <= mousePressDownX) && (curKey->drawnStartX + 9 >= mousePressDownX) &&
              (curKey->drawnStartY <= mousePressDownY) && (curKey->drawnStartY + 9 >= mousePressDownY) ) {
             selectedKey = curKey;
-            selectedEntity = KeyValue;
+            selectedEntity = SelectedEntity::KeyValue;
         }//if
 
         if ( (curKey->drawnOutX <= mousePressDownX) && (curKey->drawnOutX + 9 >= mousePressDownX) &&
              (curKey->drawnOutY <= mousePressDownY) && (curKey->drawnOutY + 9 >= mousePressDownY) ) {
             selectedKey = curKey;
-            selectedEntity = OutTangent;
+            selectedEntity = SelectedEntity::OutTangent;
         }//if
 
         if ( (curKey->drawnInX <= mousePressDownX) && (curKey->drawnInX + 9 >= mousePressDownX) &&
              (curKey->drawnInY <= mousePressDownY) && (curKey->drawnInY + 9 >= mousePressDownY) ) {
             selectedKey = curKey;
-            selectedEntity = InTangent;
+            selectedEntity = SelectedEntity::InTangent;
         }//if
     }//for
 

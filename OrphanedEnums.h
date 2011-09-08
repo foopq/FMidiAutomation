@@ -12,12 +12,22 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #ifndef __ORPHANEDENUMS_H
 #define __ORPHANEDENUMS_H
 
+/*
 enum class InsertMode : char
 {
     Merge,
     Replace
 };//InsertMode
 
+namespace ControlType
+{
+enum ControlType : char
+{
+    CC,
+    RPN,
+};//ControlType
+}//namespace ControlType
+*/
 
 #endif
 

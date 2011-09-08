@@ -10,6 +10,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "ProcessRecordedMidi.h"
 #include "jack.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include "Animation.h"
 #include "Command.h"
 #include <jack/jack.h>
@@ -31,9 +32,10 @@ namespace
 
 PortStreamTokenizer::PortStreamTokenizer()
 {
-    curToken.type = None;
+    curToken = std::make_shared<MidiToken>();
+    curToken->type = MidiTokenType::None;
     readHeadPosition = 0;
-    state = Idle;
+    state = PortStreamTokenizerState::Idle;
 }//constructor
 
 void PortStreamTokenizer::addDataToStream(unsigned char *start, unsigned int length)
@@ -53,12 +55,12 @@ bool PortStreamTokenizer::processNextToken()
     readHeadPosition++;
 
     switch (state) {
-        case Idle:
+        case PortStreamTokenizerState::Idle:
             {
                 if ((nextByte & 0xf0) == 0xf0) {
                     switch (nextByte) {
                         case 0xf0:
-                            state = Sysex;
+                            state = PortStreamTokenizerState::Sysex;
                             return true;
                             break;
 
@@ -79,12 +81,12 @@ bool PortStreamTokenizer::processNextToken()
                             break;
 
                         case 0xf2: //song position pointer
-                            state = IgnoredTwoData;
+                            state = PortStreamTokenizerState::IgnoredTwoData;
                             return true;
                             break;
 
                         case 0xf3: //song select
-                            state = IgnoredOneData;
+                            state = PortStreamTokenizerState::IgnoredOneData;
                             return true;
                             break;
                     }//nextByte
@@ -96,51 +98,51 @@ bool PortStreamTokenizer::processNextToken()
                     case 0x09: //note on +2
                     case 0x0a: //aftertouch +2
                     case 0x0e: //pitch wheel +2
-                        state = IgnoredTwoData;
+                        state = PortStreamTokenizerState::IgnoredTwoData;
                         break;
                     case 0x0c: //prog change +1
                     case 0x0d: //aftertouch +1
-                        state = IgnoredOneData;
+                        state = PortStreamTokenizerState::IgnoredOneData;
                         break;
 
                     case 0x0b: //cc
-                        curToken.channel = nextByte & 0x0f;
-                        state = CC_Controller;
+                        curToken->channel = nextByte & 0x0f;
+                        state = PortStreamTokenizerState::CC_Controller;
                         break;
                 }//switch
             }//Idle
             break;
 
-        case TokenWaiting:
+        case PortStreamTokenizerState::TokenWaiting:
             return false;
             break;
 
-        case CC_Controller:
-            curToken.controller = nextByte;
-            state = CC_Value;
+        case PortStreamTokenizerState::CC_Controller:
+            curToken->controller = nextByte;
+            state = PortStreamTokenizerState::CC_Value;
             break;
 
-        case CC_Value:
-            curToken.type = CC;
-            curToken.value = nextByte;
-            state = TokenWaiting;
+        case PortStreamTokenizerState::CC_Value:
+            curToken->type = MidiTokenType::CC;
+            curToken->value = nextByte;
+            state = PortStreamTokenizerState::TokenWaiting;
             break;
 
-        case Sysex:
+        case PortStreamTokenizerState::Sysex:
             if (0xf7 == nextByte) {
-                state = Idle;
+                state = PortStreamTokenizerState::Idle;
             }//if
             break;
 
-        case IgnoredOneData:
-            state = Idle;
+        case PortStreamTokenizerState::IgnoredOneData:
+            state = PortStreamTokenizerState::Idle;
             break;
 
-        case IgnoredTwoData:
-            state = IgnoredOneData;
+        case PortStreamTokenizerState::IgnoredTwoData:
+            state = PortStreamTokenizerState::IgnoredOneData;
             break;
 
-        case UnknownTokenizerState:
+        case PortStreamTokenizerState::UnknownTokenizerState:
             std::cerr << "Invalid tokenizer state!" << std::endl;
             break;
     }//switch
@@ -154,24 +156,21 @@ bool PortStreamTokenizer::isTokenAvailable()
         //Nothing
     }//while
 
-    if (state == TokenWaiting) {
+    if (state == PortStreamTokenizerState::TokenWaiting) {
         return true;
     } else {
         return false;
     }//if
 }//isTokenAvailable
 
-MidiToken PortStreamTokenizer::getNextToken()
+std::shared_ptr<MidiToken> PortStreamTokenizer::getNextToken()
 {
-    MidiToken retToken = curToken;
-    curToken.type = None;
-    state = Idle;
+    std::shared_ptr<MidiToken> retToken = curToken;
+    curToken->type = MidiTokenType::None;
+    state = PortStreamTokenizerState::Idle;
 
     return retToken;
 }//getNextToken
-
-
-
 
 void FMidiAutomationMainWindow::processRecordedMidi()
 {
@@ -226,8 +225,8 @@ void FMidiAutomationMainWindow::processRecordedMidi()
             BOOST_FOREACH (StreamTokenizersPair curPair, streamTokenizers) {
                 if (curPair.second->isTokenAvailable() == true) {
                     hadToken = true;
-                    MidiToken token = curPair.second->getNextToken();
-                    token.curFrame = header.curFrame;
+                    std::shared_ptr<MidiToken> token = curPair.second->getNextToken();
+                    token->curFrame = header.curFrame;
 
                     BOOST_FOREACH (EntryMapPair entryMapPair, entryMap.equal_range(header.port)) {
                         entryMapPair.second->addRecordToken(token);
@@ -307,7 +306,7 @@ void SequencerEntry::commitRecordedTokens()
 
     static const int separationTickTime = 2000;
 
-    int startTick = recordTokenBuffer[0].curFrame;
+    int startTick = recordTokenBuffer[0]->curFrame;
     int lastTickTime = startTick;
 
     std::deque<std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
@@ -318,11 +317,11 @@ void SequencerEntry::commitRecordedTokens()
 
     std::shared_ptr<Animation> animCurve = entryBlock->getCurve();
 
-    BOOST_FOREACH (MidiToken &token, recordTokenBuffer) {
+    BOOST_FOREACH (std::shared_ptr<MidiToken> token, recordTokenBuffer) {
         std::shared_ptr<Keyframe> keyframe(new Keyframe);
 
-        keyframe->tick = token.curFrame - startTick;
-        keyframe->value = token.value;
+        keyframe->tick = token->curFrame - startTick;
+        keyframe->value = token->value;
         keyframe->curveType = CurveType::Step;
 
         if ((keyframe->tick - lastTickTime) > separationTickTime) {
@@ -335,12 +334,12 @@ void SequencerEntry::commitRecordedTokens()
         animCurve->addKey(keyframe);
     }//foreach
 
-    EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy = EntryBlockMergePolicy::Merge;
+    EntryBlockMergePolicy mergePolicy = EntryBlockMergePolicy::Merge;
     mergeEntryBlockLists(shared_from_this(), newEntryBlocks, mergePolicy);
 }//commitRecordedTokens
 
 void SequencerEntry::mergeEntryBlockLists(std::shared_ptr<SequencerEntry> entry, std::deque<std::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
-                                            EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy)
+                                            EntryBlockMergePolicy mergePolicy)
 {
     if (newEntryBlocks.empty() == true) {
         //Probably can't happen..
@@ -391,7 +390,7 @@ void SequencerEntry::mergeEntryBlockLists(std::shared_ptr<SequencerEntry> entry,
 }//void
 
 std::shared_ptr<SequencerEntryBlock> SequencerEntry::mergeEntryBlocks(std::shared_ptr<SequencerEntryBlock> oldEntryBlock, std::shared_ptr<SequencerEntryBlock> newEntryBlock,
-                                                                           EntryBlockMergePolicy::EntryBlockMergePolicy mergePolicy)
+                                                                           EntryBlockMergePolicy mergePolicy)
 {
     std::shared_ptr<Animation> oldCurve = oldEntryBlock->getCurve();
     std::shared_ptr<Animation> oldSecondaryCurve = oldEntryBlock->getSecondaryCurve();

@@ -9,6 +9,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "EntryProperties.h"
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include <iostream>
 #include <boost/lexical_cast.hpp>
 
@@ -54,10 +55,10 @@ EntryProperties::EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_
 
     uiXml->get_widget("controlComboBox", comboBox);
     switch (origImpl->controllerType) {
-        case SequencerEntryImpl::CC:
+        case ControlType::CC:
             comboBox->set_active(0);
             break;
-        case SequencerEntryImpl::RPN:
+        case ControlType::RPN:
             comboBox->set_active(1);
             break;
     }//switch
@@ -113,10 +114,10 @@ EntryProperties::EntryProperties(Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_
         uiXml->get_widget("controlComboBox", comboBox);
         switch (comboBox->get_active_row_number()) {
             case 0:
-                newImpl->controllerType = SequencerEntryImpl::CC;
+                newImpl->controllerType = ControlType::CC;
                 break;
             case 1:
-                newImpl->controllerType = SequencerEntryImpl::RPN;
+                newImpl->controllerType = ControlType::RPN;
                 break;
         }//switch
 

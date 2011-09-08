@@ -14,13 +14,12 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <map>
 #include <vector>
 
-#include "OrphanedEnums.h"
-
 class SequencerEntryBlock;
 struct Keyframe;
 
+enum class InsertMode : char;
 
-enum LineType
+enum class LineType : char
 {
     BarStart,
     BarBeat,
@@ -29,7 +28,7 @@ enum LineType
     ValueLine,
 };//LineType
 
-enum SelectedEntity
+enum class SelectedEntity : char
 {
     PointerTickBar,
     LeftTickBar,
@@ -42,14 +41,11 @@ enum SelectedEntity
     Nobody
 };//SelectedEntity
 
-namespace DisplayMode
-{
-enum DisplayMode
+enum class DisplayMode : char
 {
     Sequencer,
     Curve,
 };//DisplayMode
-}//DisplayMode
 
 class EntryBlockSelectionState
 {
@@ -157,8 +153,10 @@ struct GraphState
     bool didMoveKeyOutTangent;
     bool didMoveKeyInTangent;
 
-    DisplayMode::DisplayMode displayMode;
+    DisplayMode displayMode;
     int lastSequencerPointerTick; //for swaping back to the seqeucner
+    int lastSequencerLeftPointerTick;
+    int lastSequencerRightPointerTick;
 
     bool doingRubberBanding;
     InsertMode insertMode;

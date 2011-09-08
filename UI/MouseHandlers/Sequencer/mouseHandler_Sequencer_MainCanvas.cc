@@ -74,7 +74,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
 
             graphState->doingRubberBanding = true;
         } else {
-            graphState->selectedEntity = SequencerEntrySelection;
+            graphState->selectedEntity = SelectedEntity::SequencerEntrySelection;
 
             if (graphState->entryBlockSelectionState.IsSelected(entryBlock) == false) {
                 graphState->entryBlockSelectionState.ClearSelected();
@@ -244,7 +244,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
 {
     graphState->doingRubberBanding = false;
 
-    if ((graphState->selectedEntity == SequencerEntrySelection) && (mousePressDownX != xPos)) {
+    if ((graphState->selectedEntity == SelectedEntity::SequencerEntrySelection) && (mousePressDownX != xPos)) {
         /*  -- It almost makes sense to fix up the times on the start ticks within the maps.. but it seems the house of cards need it to be this way.
                The correct start tick value is on the entry block. One day I should refactor this to make more sense.
         graphState->currentlySelectedEntryBlocks.clear();
@@ -332,7 +332,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
             graphState->refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
         }//if       
     } else {
-        if (graphState->selectedEntity == SequencerEntrySelection) {
+        if (graphState->selectedEntity == SelectedEntity::SequencerEntrySelection) {
             int curX = xPos;
             curX = std::max(0, curX);
             curX = std::min(curX, drawingAreaWidth-1);

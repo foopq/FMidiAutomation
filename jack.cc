@@ -14,6 +14,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/foreach.hpp>
 #include <iostream>
 #include "Sequencer.h"
+#include "SequencerEntry.h"
 #include <boost/serialization/vector.hpp>
 #include "Globals.h"
 
@@ -268,9 +269,9 @@ std::vector<MidiInputInfoHeader> &JackSingleton::getMidiRecordBufferHeaders()
 }//getMidiRecordBufferHeaders
 
 bool JackSingleton::hasValueChanged(jack_port_t *port, unsigned int channel, unsigned int msb, unsigned int lsb, 
-                                    SequencerEntryImpl::ControlType controllerType, unsigned int sampledValue)
+                                    ControlType controllerType, unsigned int sampledValue)
 {
-    if (SequencerEntryImpl::CC == controllerType) {
+    if (ControlType::CC == controllerType) {
         std::map<unsigned int /*channel*/, std::map<unsigned int /*controller*/, unsigned char /*value*/> > &ccValueCache_ChannelControllerValueMap = ccValueCache[port];
 
         std::map<unsigned int /*controller*/, unsigned char /*value*/> &ccValueCache_ControllerValueMap = ccValueCache_ChannelControllerValueMap[channel];
@@ -383,7 +384,7 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
                 unsigned char msb = entry.first->getImpl()->msb;
                 unsigned char lsb = entry.first->getImpl()->lsb;
 
-                SequencerEntryImpl::ControlType controllerType = entry.first->getImpl()->controllerType;
+                ControlType controllerType = entry.first->getImpl()->controllerType;
 
                 std::set<jack_port_t *> ports = entry.first->getOutputPorts();
                 BOOST_FOREACH (jack_port_t *port, ports) {
@@ -397,13 +398,13 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
                         continue;
                     }//if
 
-                    if (SequencerEntryImpl::CC == controllerType) {
+                    if (ControlType::CC == controllerType) {
                         portVec.push_back(0xb0 | (channel & 0x0f));
                         portVec.push_back(msb);
                         portVec.push_back(sampledValue);
                     }//if
 
-                    if (SequencerEntryImpl::RPN == controllerType) {
+                    if (ControlType::RPN == controllerType) {
                         //Not impl yet...
                     }//if
                 }//foreach

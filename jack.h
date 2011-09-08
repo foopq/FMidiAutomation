@@ -23,6 +23,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/access.hpp>
 #include "Sequencer.h"
 
+enum class ControlType : char;
+
 struct MidiInputInfoHeader
 {
     jack_port_t *port;
@@ -60,7 +62,7 @@ class JackSingleton
     JackSingleton();
 
     bool hasValueChanged(jack_port_t *port, unsigned int channel, unsigned int msb, unsigned int lsb, 
-                            SequencerEntryImpl::ControlType controllerType, unsigned int sampledValue);
+                            ControlType controllerType, unsigned int sampledValue);
 
 public:
     ~JackSingleton();

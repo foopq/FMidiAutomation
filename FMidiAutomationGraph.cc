@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <cairomm/surface.h>
 #include <iostream>
 #include <sstream>
+#include "SequencerEntry.h"
 #include "Sequencer.h"
 #include "Animation.h"
 #include <boost/array.hpp>
@@ -23,6 +24,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Globals.h"
 #include "FMidiAutomationMainWindow.h"
 #include "Tempo.h"
+#include "ProcessRecordedMidi.h"
 
 namespace
 {/*{{{*/
@@ -37,14 +39,14 @@ Glib::RefPtr<Gdk::Pixbuf> scale_keeping_ratio(const Glib::RefPtr<Gdk::Pixbuf>& p
 	return pixbuf;
     }//if
 
-    enum enum_scale_mode
+    enum class ScaleMode : char
     {
-	SCALE_WIDTH,
-	SCALE_HEIGHT,
-	SCALE_NONE
-    };//enum_scale_mode
+        SCALE_WIDTH,
+        SCALE_HEIGHT,
+        SCALE_NONE
+    };//ScaleMode
 
-    enum_scale_mode scale_mode = SCALE_NONE; //Start with either the width or height, and scale the other according to the ratio.
+    ScaleMode scale_mode = ScaleMode::SCALE_NONE; //Start with either the width or height, and scale the other according to the ratio.
 
     const int pixbuf_height = pixbuf->get_height();
     const int pixbuf_width = pixbuf->get_width();
@@ -53,29 +55,29 @@ Glib::RefPtr<Gdk::Pixbuf> scale_keeping_ratio(const Glib::RefPtr<Gdk::Pixbuf>& p
 	if (pixbuf_width > target_width) {
 	    //Both are bigger than the target, so find the biggest one:
 	    if (pixbuf_width > pixbuf_height) {
-		scale_mode = SCALE_WIDTH;
+		scale_mode = ScaleMode::SCALE_WIDTH;
 	    } else {
-		scale_mode = SCALE_HEIGHT;
+		scale_mode = ScaleMode::SCALE_HEIGHT;
 	    }//if
 	} else {
 	    //Only the height is bigger:
-	    scale_mode = SCALE_HEIGHT;
+	    scale_mode = ScaleMode::SCALE_HEIGHT;
 	}//if
     } else {
 	if (pixbuf_width > target_width) {
 	    //Only the height is bigger:
-	    scale_mode = SCALE_WIDTH;
+	    scale_mode = ScaleMode::SCALE_WIDTH;
 	}//if
     }//if
 
-    if (scale_mode == SCALE_NONE) {
+    if (scale_mode == ScaleMode::SCALE_NONE) {
 	return pixbuf;
     } else {
-	if(scale_mode == SCALE_HEIGHT) {
+	if(scale_mode == ScaleMode::SCALE_HEIGHT) {
 	    const float ratio = (float)target_height / (float)pixbuf_height; 
 	    target_width = (int)((float)pixbuf_width * ratio);
 	} else {
-	    if (scale_mode == SCALE_WIDTH) {
+	    if (scale_mode == ScaleMode::SCALE_WIDTH) {
 		const float ratio = (float)target_width / (float) pixbuf_width;
 		target_height = (int)((float)pixbuf_height * ratio);
 	    }//if
@@ -618,7 +620,7 @@ void KeyframeSelectionState::ClearSelectedKeyframes()
     BOOST_FOREACH (auto keyIter, currentlySelectedKeyframes) {
         keyIter.second->setSelectedState(KeySelectedType::NotSelected);
     }//for
-    std::cout << "NotSelected2" << std::endl;
+//    std::cout << "NotSelected2" << std::endl;
 
     currentlySelectedKeyframes.clear();
     movingKeyOrigTicks.clear();
@@ -745,7 +747,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     std::vector<int> selectedRectX; // = std::numeric_limits<int>::min();
     std::vector<int> selectedRectY; // = std::numeric_limits<int>::min();
 
-    CurveType::CurveType lastCurveType = CurveType::Init;
+    CurveType lastCurveType = CurveType::Init;
     std::shared_ptr<Keyframe> lastDrawnKey;
 
     std::map<int, std::shared_ptr<Keyframe> >::const_iterator keyIter = curKeyframes->begin();
@@ -1024,7 +1026,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     //Darken negative areas, if any
     if (graphState->zeroithTickPixel != std::numeric_limits<int>::max()) {
         context->reset_clip();
-        context->rectangle(0, 61, graphState->zeroithTickPixel, drawingAreaHeight - 61);
+        context->rectangle(0, 60, graphState->zeroithTickPixel, drawingAreaHeight - 60);
         context->clip();
 
         context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
@@ -1150,13 +1152,13 @@ void GraphState::doInit()
     zeroithTickPixel = std::numeric_limits<int>::max();
     curPointerTick = 0;
     curPointerTickXPixel = 0;
-    selectedEntity = Nobody;
+    selectedEntity = SelectedEntity::Nobody;
     leftMarkerTick = -1;
     rightMarkerTick = -1;
     leftMarkerTickXPixel = -1;
     rightMarkerTickXPixel = -1;
     displayMode = DisplayMode::Sequencer;
-    selectedEntity = Nobody;
+    selectedEntity = SelectedEntity::Nobody;
     curMousePosX = -100;
     curMousePosY = -100;
     doingRubberBanding = false;
@@ -1226,13 +1228,13 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
         
         horizontalPixelValues[areaHeight-60-y-1] = value;
 
-//        std::cout << "y: " << areaHeight-60-y << ":  " << roundedValue << "    " << areaHeight-60 << std::endl;
+//std::cout << "y: " << areaHeight-60-y << ":  " << roundedValue << "    " << areaHeight-60 << std::endl;
 
         if (((y - lastYTick) > minPixelDist) && (roundedValue != lastLineValue)) {
             lastLineValue = roundedValue;
             lastYTick = y;
 
-            horizontalLines.push_back(std::make_pair(areaHeight-60-y-1, ValueLine));
+            horizontalLines.push_back(std::make_pair(areaHeight-60-y-1, LineType::ValueLine));
 
             std::ostringstream tmpSS;
             tmpSS << roundedValue;
@@ -1245,7 +1247,7 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
 
 void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
-std::cout << "refreshVerticalLines entry" << std::endl;
+//std::cout << "refreshVerticalLines entry" << std::endl;
 
     //Ugly kluge to handle the case where if we've already reached the half-way zeroith point and keep scrolling over too far, bad things happen
     static int lastOffsetX = std::numeric_limits<int>::max();
@@ -1256,7 +1258,7 @@ std::cout << "refreshVerticalLines entry" << std::endl;
 
         offsetX = lastOffsetX;
 
-        std::cout << "refreshVerticalLines exit 1" << std::endl;
+//        std::cout << "refreshVerticalLines exit 1" << std::endl;
         return;
     } else {
         lastOffsetX = std::numeric_limits<int>::max();
@@ -1305,7 +1307,7 @@ std::cout << "refreshVerticalLines entry" << std::endl;
         
                 lastRecordedTickCount = tickCount;
 
-                verticalLines.push_back(std::make_pair(x, SecondLine));
+                verticalLines.push_back(std::make_pair(x, LineType::SecondLine));
 
                 if ((0 == tickCount) && (x > 0)) {
                     realZeroithTickPixel = x - 1;
@@ -1344,7 +1346,7 @@ std::cout << "refreshVerticalLines entry" << std::endl;
         
                 lastRecordedTickCount = tickCount;
 
-                verticalLines.push_back(std::make_pair(x, SecondLine));
+                verticalLines.push_back(std::make_pair(x, LineType::SecondLine));
 
                 if ((1 != ticksPerPixel) && ((tickCountBase + 0.5f) < 0)) {
                     tickCount = -tickCount;
@@ -1378,7 +1380,7 @@ std::cout << "refreshVerticalLines entry" << std::endl;
 
     //Ugly kluge
     if (ticksPerPixel < 0) {
-        if ((verticalLines.empty() == false) && (verticalLines[0].first == 0) && (verticalLines[0].second == SecondLine)) {
+        if ((verticalLines.empty() == false) && (verticalLines[0].first == 0) && (verticalLines[0].second == LineType::SecondLine)) {
             verticalLines.erase(verticalLines.begin());
             upperLineText.erase(upperLineText.begin());
         }//if
@@ -1398,7 +1400,7 @@ std::cout << "refreshVerticalLines entry" << std::endl;
     std::cout << std::endl;
 */
 
-    std::cout << "zeroithTickPixel: " << zeroithTickPixel << std::endl;
+//    std::cout << "zeroithTickPixel: " << zeroithTickPixel << std::endl;
 }//refreshVerticalLines
 
 void GraphState::setOffsetCenteredOnValue(double value, int drawingAreaHeight)

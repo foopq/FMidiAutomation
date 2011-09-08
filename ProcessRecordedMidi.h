@@ -11,8 +11,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __PROCESSRECORDEDMIDI_H
 
 #include <vector>
+#include <memory>
 
-enum MidiTokenType
+enum class MidiTokenType : char
 {
     None,
     CC, 
@@ -30,7 +31,7 @@ struct MidiToken
     //std::vector<unsigned char> sysexData;
 };//MidiToken
 
-enum PortStreamTokenizerState
+enum class PortStreamTokenizerState : char
 {
     Idle,
     TokenWaiting,
@@ -45,7 +46,7 @@ enum PortStreamTokenizerState
 
 class PortStreamTokenizer
 {
-    MidiToken curToken;
+    std::shared_ptr<MidiToken> curToken;
     PortStreamTokenizerState state;
     std::vector<unsigned char> queuedData;
     unsigned int readHeadPosition;
@@ -57,7 +58,7 @@ public:
 
     void addDataToStream(unsigned char *start, unsigned int length);
     bool isTokenAvailable();
-    MidiToken getNextToken();
+    std::shared_ptr<MidiToken> getNextToken();
 };//PortStreamTokenizer
 
 

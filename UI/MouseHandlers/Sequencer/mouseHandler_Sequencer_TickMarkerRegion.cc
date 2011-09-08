@@ -22,16 +22,16 @@ void FMidiAutomationMainWindow::handleSequencerTickMarkerRegionLMBPress(gdouble 
 {
     if (false == ctrlCurrentlyPressed) {
         if ((graphState->leftMarkerTickXPixel >= 0) && (abs(xPos - graphState->leftMarkerTickXPixel) <= 5)) {
-            graphState->selectedEntity = LeftTickBar;
+            graphState->selectedEntity = SelectedEntity::LeftTickBar;
         }//if
         else if ((graphState->rightMarkerTickXPixel >= 0) && (abs(xPos - graphState->rightMarkerTickXPixel) <= 5)) {
-            graphState->selectedEntity = RightTickBar;
+            graphState->selectedEntity = SelectedEntity::RightTickBar;
         }//if
         else if (abs(xPos - graphState->curPointerTickXPixel) <= 5) {
-            graphState->selectedEntity = PointerTickBar;
+            graphState->selectedEntity = SelectedEntity::PointerTickBar;
         }//if
         else if (checkForTempoSelection(xPos, datas->tempoChanges) == true) {
-            graphState->selectedEntity = TempoChange;
+            graphState->selectedEntity = SelectedEntity::TempoChange;
             handleBPMFrameClickBase();
             updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
 
@@ -62,7 +62,7 @@ void FMidiAutomationMainWindow::handleSequencerTickMarkerRegionLMBRelease(gdoubl
 {
     if ((yPos == mousePressDownY) && (abs(xPos -mousePressDownX) <= 5)) {
         if (false == ctrlCurrentlyPressed) {
-            if (graphState->selectedEntity != TempoChange) {
+            if (graphState->selectedEntity != SelectedEntity::TempoChange) {
                 updateCursorTick(graphState->verticalPixelTickValues[xPos], true);
             }//if
         } else {
