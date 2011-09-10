@@ -16,7 +16,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "jack.h"
 #include "Sequencer.h"
 #include "SequencerEntry.h"
-#include <boost/foreach.hpp>
 #include <set>
 #include <limits>
 #include <math.h>
@@ -174,7 +173,7 @@ void JackPortFlowCanvas::addModule(boost::shared_ptr<FlowCanvas::Module> module)
 
 void JackPortFlowCanvas::clearModules()
 {
-    BOOST_FOREACH (boost::shared_ptr<FlowCanvas::Module> item, modules) {
+    for (boost::shared_ptr<FlowCanvas::Module> item : modules) {
         remove_item(item);
     }//foreach
 
@@ -203,8 +202,8 @@ void JackPortFlowCanvas::disconnect(boost::shared_ptr<FlowCanvas::Connectable> c
         return;
     }//if
 
-    BOOST_FOREACH (boost::shared_ptr<EntryModule> curEntryModule, entryModules) {
-        BOOST_FOREACH (boost::shared_ptr<FlowCanvas::Port> port, curEntryModule->ports()) {
+    for (boost::shared_ptr<EntryModule> curEntryModule : entryModules) {
+        for (boost::shared_ptr<FlowCanvas::Port> port : curEntryModule->ports()) {
             if (port == entryPort) {
                 entryModule = curEntryModule;
                 break;
@@ -250,8 +249,8 @@ void JackPortFlowCanvas::connect(boost::shared_ptr<FlowCanvas::Connectable> c1, 
         return;
     }//if
 
-    BOOST_FOREACH (boost::shared_ptr<EntryModule> curEntryModule, entryModules) {
-        BOOST_FOREACH (boost::shared_ptr<FlowCanvas::Port> port, curEntryModule->ports()) {
+    for (boost::shared_ptr<EntryModule> curEntryModule : entryModules) {
+        for (boost::shared_ptr<FlowCanvas::Port> port : curEntryModule->ports()) {
             if (port == entryPort) {
                 entryModule = curEntryModule;
                 break;
@@ -487,7 +486,7 @@ void readjustPosition(unsigned int &posx, unsigned int &posy)
         return;
     }//if
 
-    BOOST_FOREACH (auto entryIter, canvasPositions.entryPositions) {
+    for (auto entryIter : canvasPositions.entryPositions) {
         dist = sqrt( (posx - entryIter.second.first) * (posx - entryIter.second.first) + 
                      (posy - entryIter.second.second) * (posy - entryIter.second.second) );
 
@@ -707,13 +706,13 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
     std::map<std::string, boost::shared_ptr<JackPortPort> > inputPortNameMap;
     std::map<std::string, boost::shared_ptr<JackPortPort> > outputPortNameMap;
 
-    BOOST_FOREACH (std::string portName, inputPorts) {
+    for (std::string portName : inputPorts) {
         boost::shared_ptr<JackPortPort> port(new JackPortPort(jackInputModule, portName.c_str(), true, 0x953c02ff, uiXml));
         jackInputModule->add_port(port);
         inputPortNameMap[portName] = port;
     }//foreach
 
-    BOOST_FOREACH (std::string portName, outputPorts) {
+    for (std::string portName : outputPorts) {
         boost::shared_ptr<JackPortPort> port(new JackPortPort(jackOutputModule, portName.c_str(), false, 0x027055ff, uiXml));
         jackOutputModule->add_port(port);
         outputPortNameMap[portName] = port;
@@ -731,7 +730,7 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
     Globals &globals = Globals::Instance();
 
     entryModules.clear();
-    std::pair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> entryPair = globals.sequencer->getEntryPair();
+    fmaipair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> entryPair = globals.sequencer->getEntryPair();
     for (std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator entryMapIter = entryPair.first; entryMapIter != entryPair.second; ++entryMapIter) {
         boost::shared_ptr<EntryModule> entryModule(new EntryModule(::flowCanvas, entryMapIter->first->getTitle().c_str(), 0, 0, uiXml, entryMapIter->first));
 
@@ -751,7 +750,7 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
         std::set<jack_port_t *> jackInputMap = entryMapIter->first->getInputPorts();
         std::set<jack_port_t *> jackOutputMap = entryMapIter->first->getOutputPorts();
 
-        BOOST_FOREACH(jack_port_t *jackPort, jackInputMap) {
+        for (jack_port_t *jackPort : jackInputMap) {
             std::string portName = jackSingleton.getInputPortName(jackPort);
             assert(portName.empty() == false);
 
@@ -759,7 +758,7 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
             flowCanvas->connect(jackPort, inputPort);
         }//foreach
 
-        BOOST_FOREACH(jack_port_t *jackPort, jackOutputMap) {
+        for (jack_port_t *jackPort : jackOutputMap) {
             std::string portName = jackSingleton.getOutputPortName(jackPort);
             assert(portName.empty() == false);
 
@@ -794,7 +793,7 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
         std::map<boost::shared_ptr<EntryModule>, std::shared_ptr<std::set<jack_port_t *> > > entryInputMap;
         std::map<boost::shared_ptr<EntryModule>, std::shared_ptr<std::set<jack_port_t *> > > entryOutputMap;
 
-        BOOST_FOREACH (boost::shared_ptr<FlowCanvas::Connection> connection, flowCanvas->connections()) {
+        for (boost::shared_ptr<FlowCanvas::Connection> connection : flowCanvas->connections()) {
             boost::shared_ptr<FlowCanvas::Connectable> sourceConnection = connection->source().lock();
             boost::shared_ptr<FlowCanvas::Connectable> destConnection = connection->dest().lock();
 
@@ -841,11 +840,11 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
             }//if
         }//foreach
 
-        BOOST_FOREACH (auto inputMapIter, entryInputMap) {
+        for (auto inputMapIter : entryInputMap) {
             inputMapIter.first->getEntry()->setInputPorts(*inputMapIter.second);
         }//for
 
-        BOOST_FOREACH (auto outputMapIter, entryOutputMap) {
+        for (auto outputMapIter : entryOutputMap) {
             outputMapIter.first->getEntry()->setOutputPorts(*outputMapIter.second);
         }//for
     }//if

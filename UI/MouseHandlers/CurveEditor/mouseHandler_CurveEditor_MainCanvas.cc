@@ -17,7 +17,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "FMidiAutomationData.h"
 #include "Tempo.h"
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 
 namespace
 {
@@ -121,7 +120,7 @@ void handleKeyScroll(gdouble xPos, gdouble yPos, GraphState &graphState, gdouble
     }//if
 
     std::map<int, std::shared_ptr<Keyframe> > updatedCurrentlySelectedKeyframes;
-    BOOST_FOREACH (auto keyIter, graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+    for (auto keyIter : graphState.keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
         std::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
         int newTick = graphState.keyframeSelectionState.GetOrigTick(curKeyframe) + diffTick;
@@ -216,7 +215,7 @@ std::cout << "num selected keys: " << graphState->keyframeSelectionState.GetNumS
     if (selectedKey != NULL) {
         graphState->didMoveKey = false;
 
-        BOOST_FOREACH (auto keyIter, graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+        for (auto keyIter : graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
             graphState->keyframeSelectionState.AddOrigKeyframe(keyIter.second);
         }//for
 
@@ -337,7 +336,7 @@ void FMidiAutomationMainWindow::handleCurveEditorMainCanvasLMBRelease()
             std::vector<std::shared_ptr<MoveKeyframesCommand::KeyInfo> > keyInfos;
             keyInfos.reserve(graphState->keyframeSelectionState.GetNumSelected());
 
-            BOOST_FOREACH (auto keyIter, graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+            for (auto keyIter : graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
                 std::shared_ptr<Keyframe> curKeyframe = keyIter.second;
 
                 std::shared_ptr<MoveKeyframesCommand::KeyInfo> keyInfo(new MoveKeyframesCommand::KeyInfo);

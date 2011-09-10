@@ -9,7 +9,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include <list>
 #include "SerializationHelper.h"
-#include <boost/foreach.hpp>
 #include <boost/any.hpp>
 
 std::map<void *, boost::any> sharedPtrMapSingletonList;
@@ -27,7 +26,7 @@ void RegisterSharedPtrMapSingletonBase(SharedPtrMapSingletonBase *base)
 
 void ResetSharedPtrMapSingletonMaps()
 {
-    BOOST_FOREACH (auto mapIter, registeredSharedPtrMapSingletonBases) {
+    for (auto mapIter : registeredSharedPtrMapSingletonBases) {
         mapIter->ResetSharedPtrMapSingleton();
     }//foreach
 }//ResetSharedPtrMapSingletonMaps

@@ -13,7 +13,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <iostream>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/weak_ptr.hpp>
@@ -103,7 +102,7 @@ void setThemeColours(Gtk::Widget *widget)
 
         /*
         Gtk::TreeModel::Children children = comboBox->get_model()->children();
-        BOOST_FOREACH (Gtk::TreeRow row, children) {
+        for (Gtk::TreeRow row : children) {
 
         }//foreach
         */
@@ -127,7 +126,7 @@ void setThemeColours(Gtk::Widget *widget)
     Gtk::Container *container = dynamic_cast<Gtk::Container *>(widget);
     if (container != NULL) {
         Glib::ListHandle<Gtk::Widget *> children = container->get_children();
-        BOOST_FOREACH (Gtk::Widget *childWidget, children) {
+        for (Gtk::Widget *childWidget : children) {
             ::setThemeColours(childWidget);
         }//forach
     }//if
@@ -719,7 +718,7 @@ void SequencerEntry::serialize(Archive &ar, const unsigned int version)
 
     JackSingleton &jackSingleton = JackSingleton::Instance();
 
-    BOOST_FOREACH (jack_port_t *port, inputPorts) {
+    for (jack_port_t *port : inputPorts) {
         std::string portName = jackSingleton.getInputPortName(port);
 //        std::cout << "IN1: " << portName << std::endl;
 
@@ -727,7 +726,7 @@ void SequencerEntry::serialize(Archive &ar, const unsigned int version)
         inputPortsStr.push_back(portName);
     }//foreach
 
-    BOOST_FOREACH (jack_port_t *port, outputPorts) {
+    for (jack_port_t *port : outputPorts) {
         std::string portName = jackSingleton.getOutputPortName(port);
 //        std::cout << "OUT1: " << portName << std::endl;
 
@@ -741,14 +740,14 @@ void SequencerEntry::serialize(Archive &ar, const unsigned int version)
     inputPorts.clear();
     outputPorts.clear();
 
-    BOOST_FOREACH (std::string portStr, inputPortsStr) {
+    for (std::string portStr : inputPortsStr) {
         jack_port_t *port = jackSingleton.getInputPort(portStr);
         inputPorts.insert(port);
 
 //        std::cout << "IN2: " << portStr << " - " << port << std::endl;
     }//foreach
 
-    BOOST_FOREACH (std::string portStr, outputPortsStr) {
+    for (std::string portStr : outputPortsStr) {
         jack_port_t *port = jackSingleton.getOutputPort(portStr);
         outputPorts.insert(port);
 

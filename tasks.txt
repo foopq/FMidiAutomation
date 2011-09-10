@@ -1,6 +1,3 @@
-- for some reason, somtimes entry blocks don't appear in the same order as saved
-
-- sequencer should show entry block properties directly in ui.. hiding/replacing "Selected Keyframe" bits
 
 - cut/copy/paste have context in menu?
     -> don't use set_sensitive directly, but have a function that takes a string for true
@@ -14,27 +11,19 @@
 - add unit testing
     -> some sort of macro ui recording?
 
-- multiselect keys in curve window + entry blocks --> multi move, delete, etc
-
 - namespace everything
 
 - ensure next / prev tangents are adjusted correctly when adding keyframe (regardless of curve type on any of three)
 
-- ability to reset key tangents (context menu, regular menu? main ui+?)
 - ability to lock tangents (context menu, regular menu? main ui+?)
 
 - faint row coloured background per entry block in sequencer
 - entry block colour selection
 - icon for app (and all dialogs?)
 
-
-- paste all blocks into selected entry block (ie: to copy to another entry) -- no instance for this
-
-- split / merge entry blocks
-    -> entry block multi-select?
-
-
 - middle mouse click + key command to zoom extents on curve / sequencer
+
+- numeric methods to simplify / approximate curves
 
 --------------
 

@@ -15,7 +15,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Sequencer.h"
 #include "SequencerEntry.h"
 #include "Animation.h"
-#include <boost/foreach.hpp>
 #include "Globals.h"
 
 extern FMidiAutomationMainWindow *mainWindow;
@@ -350,14 +349,14 @@ AddSequencerEntryBlocksCommand::~AddSequencerEntryBlocksCommand()
 
 void AddSequencerEntryBlocksCommand::doAction()
 {
-    BOOST_FOREACH (auto entryBlockIter, entryBlocks) {
+    for (auto entryBlockIter : entryBlocks) {
         entryBlockIter.first->addEntryBlock(entryBlockIter.second->getStartTick(), entryBlockIter.second);
     }//foreach
 }//doAction
 
 void AddSequencerEntryBlocksCommand::undoAction()
 {
-    BOOST_FOREACH (auto entryBlockIter, entryBlocks) {
+    for (auto entryBlockIter : entryBlocks) {
         entryBlockIter.first->removeEntryBlock(entryBlockIter.second);
     }//foreach
 }//undoAction/*}}}*/
@@ -631,7 +630,7 @@ MoveKeyframesCommand::~MoveKeyframesCommand()
 
 void MoveKeyframesCommand::doAction()
 {
-    BOOST_FOREACH (std::shared_ptr<KeyInfo> keyframe, keyframes) {
+    for (std::shared_ptr<KeyInfo> keyframe : keyframes) {
         entryBlock->getCurve()->deleteKey(keyframe->keyframe);
 
         std::swap(keyframe->keyframe->tick, keyframe->movingKeyOrigTick);
@@ -687,22 +686,22 @@ MergeSequencerEntryBlocksCommand::~MergeSequencerEntryBlocksCommand()
 
 void MergeSequencerEntryBlocksCommand::doAction()
 {
-    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+    for (auto blockIter : origEntryBlocks) {
         blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
     }//foreach
 
-    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+    for (auto blockIter : replacementEntryBlocks) {
         blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
     }//foreach
 }//doAction
 
 void MergeSequencerEntryBlocksCommand::undoAction()
 {
-    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+    for (auto blockIter : replacementEntryBlocks) {
         blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
     }//foreach
 
-    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+    for (auto blockIter : origEntryBlocks) {
         blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
     }//foreach
 }//undoAction
@@ -723,22 +722,22 @@ SplitSequencerEntryBlocksCommand::~SplitSequencerEntryBlocksCommand()
 
 void SplitSequencerEntryBlocksCommand::doAction()
 {
-    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+    for (auto blockIter : origEntryBlocks) {
         blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
     }//foreach
 
-    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+    for (auto blockIter : replacementEntryBlocks) {
         blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
     }//foreach
 }//doAction
 
 void SplitSequencerEntryBlocksCommand::undoAction()
 {
-    BOOST_FOREACH (auto blockIter, replacementEntryBlocks) {
+    for (auto blockIter : replacementEntryBlocks) {
         blockIter.second->getOwningEntry()->removeEntryBlock(blockIter.second);
     }//foreach
 
-    BOOST_FOREACH (auto blockIter, origEntryBlocks) {
+    for (auto blockIter : origEntryBlocks) {
         blockIter.second->getOwningEntry()->addEntryBlock(blockIter.second->getStartTick(), blockIter.second);
     }//foreach
 }//undoAction

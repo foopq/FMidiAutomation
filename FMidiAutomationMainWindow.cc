@@ -17,7 +17,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Command.h"
 #include <boost/array.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -702,7 +701,7 @@ void FMidiAutomationMainWindow::handleAddPressed()
 
             bool foundSelected = false;
             typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-            BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, datas->tempoChanges) {
+            for (TempoMarkerPair tempoMarkerPair : datas->tempoChanges) {
                 if (true == tempoMarkerPair.second->currentlySelected) {
                     std::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
 
@@ -1177,7 +1176,7 @@ void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks;
     auto entryBlockPair = getGraphState().entryBlockSelectionState.GetCurrentlySelectedEntryBlocks();
 
-    BOOST_FOREACH (auto entryBlock, entryBlockPair) {
+    for (auto entryBlock : entryBlockPair) {
         if ( (entryBlock.second->getStartTick() < getGraphState().curPointerTick) && 
              (getGraphState().curPointerTick < entryBlock.second->getStartTick() + entryBlock.second->getDuration()) ) {
             origEntryBlocks.insert(std::make_pair(entryBlock.first, entryBlock.second));
@@ -1189,7 +1188,7 @@ void FMidiAutomationMainWindow::on_menuSplitEntryBlocks()
     }//if
 
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
-    BOOST_FOREACH (auto entryBlock, entryBlockPair) {
+    for (auto entryBlock : entryBlockPair) {
         auto splitPair = entryBlock.second->deepCloneSplit(getGraphState().curPointerTick);
         newEntryBlocks.insert(std::make_pair(splitPair.first->getStartTick(), splitPair.first));
         newEntryBlocks.insert(std::make_pair(splitPair.second->getStartTick(), splitPair.second));
@@ -1208,7 +1207,7 @@ void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
 
     std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<std::deque<std::shared_ptr<SequencerEntryBlock> > > > entryBlockMap;
 
-    BOOST_FOREACH (auto entryBlock, entryBlockPair) {
+    for (auto entryBlock : entryBlockPair) {
         if (entryBlockMap[entryBlock.second->getOwningEntry()] == NULL) {
             entryBlockMap[entryBlock.second->getOwningEntry()] = std::make_shared<std::deque<std::shared_ptr<SequencerEntryBlock> > >();
         }//if
@@ -1218,7 +1217,7 @@ void FMidiAutomationMainWindow::on_menuJoinEntryBlocks()
 
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > origEntryBlocks = getGraphState().entryBlockSelectionState.GetEntryBlocksMapCopy();
     std::multimap<int, std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
-    BOOST_FOREACH (auto entryQueuePair, entryBlockMap) {        
+    for (auto entryQueuePair : entryBlockMap) {        
         std::deque<std::shared_ptr<SequencerEntryBlock> > &curDeque = *entryQueuePair.second;
         if (curDeque.size() > 1) {
             workToBeDone = true;

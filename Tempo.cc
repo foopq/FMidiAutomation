@@ -9,7 +9,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "Tempo.h"
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 #include "FMidiAutomationData.h"
 #include "GraphState.h"
 #include "Globals.h"
@@ -20,7 +19,7 @@ namespace
 bool updateTempoBoxWithSelected(std::map<int, std::shared_ptr<Tempo> > &tempoChanges, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry)
 {
     typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-    BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, tempoChanges) {
+    for (TempoMarkerPair tempoMarkerPair : tempoChanges) {
         if (true == tempoMarkerPair.second->currentlySelected) {
             unsigned int bpmNumerator = tempoMarkerPair.second->bpm / 100;
             unsigned int bpmDenominator = tempoMarkerPair.second->bpm - (bpmNumerator * 100);
@@ -52,7 +51,7 @@ void actuallyDrawTempoBars(unsigned int drawingAreaWidth, unsigned int drawingAr
     context->set_line_width(1.0);
 
     typedef std::pair<unsigned int, LineType> VLPT;
-    BOOST_FOREACH(VLPT verticalLinePair, verticalLines) {
+    for (VLPT verticalLinePair : verticalLines) {
         if (LineType::BarStart == verticalLinePair.second) {
             context->move_to(verticalLinePair.first, 61);
             context->line_to(verticalLinePair.first, drawingAreaHeight);
@@ -62,7 +61,7 @@ void actuallyDrawTempoBars(unsigned int drawingAreaWidth, unsigned int drawingAr
     context->stroke();
 
     context->set_source_rgba(0.7, 0.7, 0.7, 0.7);
-    BOOST_FOREACH(VLPT verticalLinePair, verticalLines) {
+    for (VLPT verticalLinePair : verticalLines) {
         if (LineType::SubdivisionLine == verticalLinePair.second) {
             context->move_to(verticalLinePair.first, 61);
             context->line_to(verticalLinePair.first, 50);
@@ -86,7 +85,7 @@ void actuallyDrawTempoBars(unsigned int drawingAreaWidth, unsigned int drawingAr
     }
 
     typedef std::pair<unsigned int, std::string> TLPT;
-    BOOST_FOREACH(TLPT textLinePair, lowerLineText) {
+    for (TLPT textLinePair : lowerLineText) {
         context->move_to(textLinePair.first, 60 - ((30 - globals.bottomBarFontSize) / 2 + globals.bottomBarFontSize));
 
         Glib::RefPtr<Pango::Layout> pangoLayout = Pango::Layout::create(context);
@@ -135,7 +134,7 @@ void drawTimeSignatureTicks(int firstPixelTick, int lastPixelTick, std::map<int,
         int dist = -1;
         int lastAddedBarPixel = std::numeric_limits<int>::min();
         int lastAddedBarSubdivisionPixel = std::numeric_limits<int>::min(); 
-        BOOST_FOREACH(int curTick, verticalPixelTickValues) {
+        for (int curTick : verticalPixelTickValues) {
             dist++;
 
             if ((curTick >= nextStartTick) || (dist > ((int)drawingAreaWidth))) {
@@ -199,7 +198,7 @@ void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState,
     int lastPixelTick = graphState.verticalPixelTickValues[graphState.verticalPixelTickValues.size()-1];
 
     typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-    BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, datas->tempoChanges) {
+    for (TempoMarkerPair tempoMarkerPair : datas->tempoChanges) {
         tempoMarkerPair.second->xPixelPos = -1;
     }//foreach
 
@@ -267,7 +266,7 @@ bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &te
     bool foundIt = false;
 
     typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-    BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, tempoChanges) {
+    for (TempoMarkerPair tempoMarkerPair : tempoChanges) {
         if ((tempoMarkerPair.second->xPixelPos != -1) && (abs(xPos - tempoMarkerPair.second->xPixelPos) <= 5)) {
             tempoMarkerPair.second->currentlySelected = true;
             foundIt = true;
@@ -279,7 +278,7 @@ bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &te
     /*
     bool tmp = false;
     typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-    BOOST_FOREACH(TempoMarkerPair tempoMarkerPair, tempoChanges) {
+    for (TempoMarkerPair tempoMarkerPair : tempoChanges) {
         if (tempoMarkerPair.second->currentlySelected == true) {
             tmp = true;
         }//if

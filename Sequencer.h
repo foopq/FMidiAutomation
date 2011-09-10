@@ -21,6 +21,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/access.hpp>
 #include <tuple>
 #include "SequencerEntryBlock.h"
+#include "fmaipair.h"
 //#include "ProcessRecordedMidi.h"
 //#include "VectorStreambuf.h"
 
@@ -71,7 +72,7 @@ public:
 
     unsigned int getEntryIndex(std::shared_ptr<SequencerEntry> entry);
     std::shared_ptr<SequencerEntry> getSelectedEntry();
-    std::pair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> getEntryPair() const;
+    fmaipair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> getEntryPair() const;
     unsigned int getNumEntries() const;
  
     void doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next);

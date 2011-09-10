@@ -11,7 +11,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/foreach.hpp>
 #include <iostream>
 #include "Sequencer.h"
 #include "SequencerEntry.h"
@@ -174,13 +173,13 @@ void JackSingleton::setInputPorts(std::vector<std::string> ports)
     std::set_difference(ports.begin(), ports.end(), inputPortsVec.begin(), inputPortsVec.end(), std::back_inserter(newPorts));
     std::set_difference(inputPortsVec.begin(), inputPortsVec.end(), ports.begin(), ports.end(), std::back_inserter(removedPorts));
 
-    BOOST_FOREACH (std::string portName, removedPorts) {
+    for (std::string portName : removedPorts) {
         jack_port_t *port = inputPorts[portName];
         jack_port_unregister(jackClient, port);
         inputPorts.erase(inputPorts.find(portName));
     }//foreach
 
-    BOOST_FOREACH (std::string portName, newPorts) {
+    for (std::string portName : newPorts) {
         jack_port_t *newInputPort = jack_port_register(jackClient, portName.c_str(), JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
         inputPorts[portName] = newInputPort;
     }//foreach
@@ -215,13 +214,13 @@ void JackSingleton::setOutputPorts(std::vector<std::string> ports)
     std::set_difference(ports.begin(), ports.end(), outputPortsVec.begin(), outputPortsVec.end(), std::back_inserter(newPorts));
     std::set_difference(outputPortsVec.begin(), outputPortsVec.end(), ports.begin(), ports.end(), std::back_inserter(removedPorts));
 
-    BOOST_FOREACH (std::string portName, removedPorts) {
+    for (std::string portName : removedPorts) {
         jack_port_t *port = outputPorts[portName];
         jack_port_unregister(jackClient, port);
         outputPorts.erase(outputPorts.find(portName));
     }//foreach
 
-    BOOST_FOREACH (std::string portName, newPorts) {
+    for (std::string portName : newPorts) {
         jack_port_t *newOutputPort = jack_port_register(jackClient, portName.c_str(), JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
         outputPorts[portName] = newOutputPort;
     }//foreach
@@ -376,7 +375,7 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
             }//for
 
             typedef std::pair<std::shared_ptr<SequencerEntry>, int> EntryPairType;
-            BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
+            for (EntryPairType entry : globals.sequencer->getEntryPair()) {
 ////////// CHECK TO SEE IF WE SHOULD SAMPLE THIS ENTRY                
                 unsigned char sampledValue = entry.first->sampleChar(curFrame);
 
@@ -387,7 +386,7 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
                 ControlType controllerType = entry.first->getImpl()->controllerType;
 
                 std::set<jack_port_t *> ports = entry.first->getOutputPorts();
-                BOOST_FOREACH (jack_port_t *port, ports) {
+                for (jack_port_t *port : ports) {
                     if (hasValueChanged(port, channel, msb, lsb, controllerType, sampledValue) == false) {                        
                         continue;
                     }//if

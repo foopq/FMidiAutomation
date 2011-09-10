@@ -18,7 +18,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <jack/midiport.h>
 #include <vector>
 #include <deque>
-#include <boost/foreach.hpp>
 #include "Globals.h"
 #include "FMidiAutomationMainWindow.h"
 
@@ -186,9 +185,9 @@ void FMidiAutomationMainWindow::processRecordedMidi()
     Globals &globals = Globals::Instance();
 
     typedef std::pair<std::shared_ptr<SequencerEntry>, int> EntryPairType;
-    BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
+    for (EntryPairType entry : globals.sequencer->getEntryPair()) {
         std::set<jack_port_t *> ports = entry.first->getInputPorts();
-        BOOST_FOREACH (jack_port_t *port, ports) {
+        for (jack_port_t *port : ports) {
             entryMap.insert(std::make_pair(port, entry.first));
         }//foreach
 
@@ -197,7 +196,7 @@ void FMidiAutomationMainWindow::processRecordedMidi()
 
     std::vector<std::string> inputPorts = jackSingleton.getInputPorts();
 
-    BOOST_FOREACH (std::string inputPort, inputPorts) {
+    for (std::string inputPort : inputPorts) {
         jack_port_t *jackPort = jackSingleton.getInputPort(inputPort);
 
         std::shared_ptr<PortStreamTokenizer> tokenizer(new PortStreamTokenizer);
@@ -215,20 +214,20 @@ void FMidiAutomationMainWindow::processRecordedMidi()
     std::cout << "recordBuffer: " << recordBuffer.size() << std::endl;
     std::cout << "recordBufferHeaders: " << bufferHeaders.size() << std::endl;
 
-    BOOST_FOREACH (MidiInputInfoHeader header, bufferHeaders) {
+    for (MidiInputInfoHeader header : bufferHeaders) {
         std::shared_ptr<PortStreamTokenizer> tokenizer = streamTokenizers[header.port];
         tokenizer->addDataToStream(&recordBuffer[header.bufferPos], header.length);
 
         bool hadToken = false;
         do {
             hadToken = false;
-            BOOST_FOREACH (StreamTokenizersPair curPair, streamTokenizers) {
+            for (StreamTokenizersPair curPair : streamTokenizers) {
                 if (curPair.second->isTokenAvailable() == true) {
                     hadToken = true;
                     std::shared_ptr<MidiToken> token = curPair.second->getNextToken();
                     token->curFrame = header.curFrame;
 
-                    BOOST_FOREACH (EntryMapPair entryMapPair, entryMap.equal_range(header.port)) {
+                    for (EntryMapPair entryMapPair : fmaipair<decltype(entryMap.begin()), decltype(entryMap.end())>(entryMap.equal_range(header.port))) {
                         entryMapPair.second->addRecordToken(token);
                     }//foreach
                 }//if
@@ -246,7 +245,7 @@ void FMidiAutomationMainWindow::processRecordedMidi()
 
     std::cout << "2.5" << std::endl;
 
-    BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
+    for (EntryPairType entry : globals.sequencer->getEntryPair()) {
         entry.first->commitRecordedTokens();
     }//foreach
 
@@ -279,7 +278,7 @@ void FMidiAutomationMainWindow::finishProcessRecordedMidi()
 
     std::cout << "2.5" << std::endl;
 
-    BOOST_FOREACH (EntryPairType entry, globals.sequencer->getEntryPair()) {
+    for (EntryPairType entry : globals.sequencer->getEntryPair()) {
         entry.first->commitRecordedTokens();
     }//foreach
 
@@ -317,7 +316,7 @@ void SequencerEntry::commitRecordedTokens()
 
     std::shared_ptr<Animation> animCurve = entryBlock->getCurve();
 
-    BOOST_FOREACH (std::shared_ptr<MidiToken> token, recordTokenBuffer) {
+    for (std::shared_ptr<MidiToken> token : recordTokenBuffer) {
         std::shared_ptr<Keyframe> keyframe(new Keyframe);
 
         keyframe->tick = token->curFrame - startTick;
@@ -347,7 +346,7 @@ void SequencerEntry::mergeEntryBlockLists(std::shared_ptr<SequencerEntry> entry,
     }//if
 
     std::set<std::shared_ptr<SequencerEntryBlock> > newEntryBlocksSet;
-    BOOST_FOREACH (std::shared_ptr<SequencerEntryBlock> entryBlock, newEntryBlocks) {
+    for (std::shared_ptr<SequencerEntryBlock> entryBlock : newEntryBlocks) {
         newEntryBlocksSet.insert(entryBlock);
     }//foreach
 

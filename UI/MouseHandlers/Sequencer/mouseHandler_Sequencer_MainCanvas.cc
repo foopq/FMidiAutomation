@@ -13,7 +13,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Animation.h"
 #include "Command.h"
 #include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
 #include "GraphState.h"
 #include "FMidiAutomationData.h"
 #include "Tempo.h"
@@ -111,7 +110,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
     }//if
 
     std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
-    BOOST_FOREACH (auto blockIter, graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
+    for (auto blockIter : graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
         std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second;
 
         entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
@@ -267,7 +266,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
         //for (std::multimap<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState->currentlySelectedEntryBlocks.begin(); 
         //            blockIter != graphState->currentlySelectedEntryBlocks.end(); ++blockIter) {
         
-        BOOST_FOREACH (auto blockIter, graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
+        for (auto blockIter : graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
             std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second;
 
             entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
@@ -340,7 +339,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
 
             int firstCurTick = std::numeric_limits<int>::min();
             //for (std::multimap<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState->currentlySelectedEntryBlocks.begin(); blockIter != graphState->currentlySelectedEntryBlocks.end(); ++blockIter) {
-            BOOST_FOREACH (auto blockIter, graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
+            for (auto blockIter : graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
                 int curTick = graphState->entryBlockSelectionState.GetOriginalStartTick(blockIter.second) + diffTick;
 
 //            std::cout << "x: " << curX << std::endl;

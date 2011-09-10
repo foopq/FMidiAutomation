@@ -14,7 +14,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/lexical_cast.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
-#include <boost/foreach.hpp>
 #include "Globals.h"
 #include "GraphState.h"
 
@@ -359,7 +358,7 @@ std::cout << "handleResetTangents" << std::endl;
 
     std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
     std::shared_ptr<Animation> curve = currentlySelectedEntryBlock->getCurve();
-    BOOST_FOREACH (auto selectedKey, globals.graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
+    for (auto selectedKey : globals.graphState->keyframeSelectionState.GetCurrentlySelectedKeyframes()) {
         auto prevKey = curve->getPrevKeyframe(selectedKey.second);
         auto nextKey = curve->getNextKeyframe(selectedKey.second);
 
@@ -395,7 +394,7 @@ std::cout << "handleResetTangents" << std::endl;
 
         selectedKey.second->inTangent[0] = prevThird;
         selectedKey.second->outTangent[0] = nextThird;
-    }//for
+    }//foreach
 
     queue_draw();
 }//handleResetTangents

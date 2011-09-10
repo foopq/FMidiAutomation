@@ -17,7 +17,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Sequencer.h"
 #include "Animation.h"
 #include <boost/array.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include "GraphState.h"
@@ -516,9 +515,9 @@ std::map<std::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::Ge
     return currentlySelectedEntryOriginalStartTicks;
 }//GetEntryOriginalStartTicksCopy/*}}}*/
 
-std::pair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()/*{{{*/
+fmaipair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()/*{{{*/
 {
-    return std::make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
+    return fmai_make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
 }//GetCurrentlySelectedEntryBlocks/*}}}*/
 
 void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlock>, int> &origStartTicks)/*{{{*/
@@ -582,7 +581,7 @@ bool KeyframeSelectionState::IsOrigSelected(std::shared_ptr<Keyframe> keyframe)
 
 bool KeyframeSelectionState::IsSelected(std::shared_ptr<Keyframe> keyframe)
 {
-    BOOST_FOREACH (auto selectedKeyIter, currentlySelectedKeyframes) {
+    for (auto selectedKeyIter : currentlySelectedKeyframes) {
         if (selectedKeyIter.second == keyframe) {
             return true;
         }//if
@@ -607,7 +606,7 @@ void KeyframeSelectionState::RemoveKeyframe(std::shared_ptr<Keyframe> keyframe)
                 movingKeyOrigValues.erase(valueIter);
             }//if
         }//if
-    }//foreach
+    }//for
 }//RemoveKeyframe
 
 void KeyframeSelectionState::AddKeyframe(std::shared_ptr<Keyframe> keyframe)
@@ -617,7 +616,7 @@ void KeyframeSelectionState::AddKeyframe(std::shared_ptr<Keyframe> keyframe)
 
 void KeyframeSelectionState::ClearSelectedKeyframes()
 {
-    BOOST_FOREACH (auto keyIter, currentlySelectedKeyframes) {
+    for (auto keyIter : currentlySelectedKeyframes) {
         keyIter.second->setSelectedState(KeySelectedType::NotSelected);
     }//for
 //    std::cout << "NotSelected2" << std::endl;
@@ -645,9 +644,9 @@ double KeyframeSelectionState::GetOrigValue(std::shared_ptr<Keyframe> keyframe)
     }//if
 }//GetOrigValue
 
-std::pair<decltype(KeyframeSelectionState::currentlySelectedKeyframes.begin()), decltype(KeyframeSelectionState::currentlySelectedKeyframes.end())> KeyframeSelectionState::GetCurrentlySelectedKeyframes()
+fmaipair<decltype(KeyframeSelectionState::currentlySelectedKeyframes.begin()), decltype(KeyframeSelectionState::currentlySelectedKeyframes.end())> KeyframeSelectionState::GetCurrentlySelectedKeyframes()
 {
-    return std::make_pair(currentlySelectedKeyframes.begin(), currentlySelectedKeyframes.end());
+    return fmai_make_pair(currentlySelectedKeyframes.begin(), currentlySelectedKeyframes.end());
 }//GetCurrentlySelectedEntryBlocks
 
 void KeyframeSelectionState::AddOrigKeyframe(std::shared_ptr<Keyframe> keyframe)
@@ -659,7 +658,7 @@ void KeyframeSelectionState::AddOrigKeyframe(std::shared_ptr<Keyframe> keyframe)
 void KeyframeSelectionState::ResetRubberbandingSelection()
 {
     origSelectedKeyframes.clear();
-    BOOST_FOREACH (auto keyIter, currentlySelectedKeyframes) {
+    for (auto keyIter : currentlySelectedKeyframes) {
         origSelectedKeyframes.insert(keyIter.second);
     }//for
 }//ResetRubberbandingSelection
@@ -756,7 +755,6 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         ++nextKeyIter;
     }//if
 
-    //BOOST_FOREACH (KeyframeMapType keyPair, *curKeyframes) {
     for (/*nothing*/; keyIter != curKeyframes->end(); ++keyIter) {
         KeyframeMapType keyPair;
         keyPair.first = keyIter->first;
@@ -1035,7 +1033,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 
     graphState->roundedHorizontalValues.clear();
     graphState->roundedHorizontalValues.reserve(graphState->horizontalPixelValues.size());
-    BOOST_FOREACH (double val, graphState->horizontalPixelValues) {
+    for (double val : graphState->horizontalPixelValues) {
         if (val >=0) {
             graphState->roundedHorizontalValues.push_back(val+0.5);
         } else {

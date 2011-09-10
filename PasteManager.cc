@@ -12,7 +12,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "SequencerEntry.h"
 #include "Command.h"
 #include "Animation.h"
-#include <boost/foreach.hpp>
 #include "Globals.h"
 #include "GraphState.h"
 
@@ -110,7 +109,7 @@ void PasteSequencerEntryBlocksCommand::doPaste(boost::any contextData)
 
 std::cout << "PasteSequencerEntryBlocksCommand::doPaste " << entryBlocks.size() << std::endl;
 
-    BOOST_FOREACH (auto entryIter, entryBlocks) {
+    for (auto entryIter : entryBlocks) {
         std::shared_ptr<SequencerEntry> selectedEntry = entryIter.second->getOwningEntry();
 
 std::cout << "PasteSequencerEntryBlocksCommand 1" << std::endl;

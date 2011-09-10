@@ -13,6 +13,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <set>
 #include <map>
 #include <vector>
+#include "fmaipair.h"
 
 class SequencerEntryBlock;
 struct Keyframe;
@@ -71,7 +72,8 @@ public:
     std::map<std::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
     std::set<std::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
 
-    std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
+    //std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
+    fmaipair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
 
     void SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlock>, int> &origStartTicks); //FIXME: This feels very questionable
 
@@ -101,7 +103,8 @@ public:
     int GetOrigTick(std::shared_ptr<Keyframe> keyframe);
     double GetOrigValue(std::shared_ptr<Keyframe> keyframe);    
 
-    std::pair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedKeyframes();
+    //std::pair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedKeyframes();
+    fmaipair<decltype(currentlySelectedKeyframes.begin()), decltype(currentlySelectedKeyframes.end())> GetCurrentlySelectedKeyframes();
 
     std::map<int, std::shared_ptr<Keyframe> > GetSelectedKeyframesCopy();
 

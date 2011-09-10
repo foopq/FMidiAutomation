@@ -14,7 +14,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <iostream>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/weak_ptr.hpp>
@@ -61,7 +60,7 @@ void Sequencer::updateEntryFocus(unsigned int y)
 {
     std::cout << "updateEntryFocus: " << y << std::endl;
 
-    BOOST_FOREACH (auto entryIter, entries) {
+    for (auto entryIter : entries) {
         auto regionPair = entryIter.first->getUIBounds();
 
         if ((regionPair.first <= y) && (y <= regionPair.second)) {
@@ -199,9 +198,9 @@ std::shared_ptr<SequencerEntry> Sequencer::getSelectedEntry()
     return std::shared_ptr<SequencerEntry>();
 }//getSelectedEntry
 
-std::pair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> Sequencer::getEntryPair() const
+fmaipair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> Sequencer::getEntryPair() const
 {
-    return std::make_pair(entries.begin(), entries.end());
+    return fmai_make_pair(entries.begin(), entries.end());
 }//getEntryPair
 
 void Sequencer::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
@@ -257,7 +256,7 @@ if (selectedEntryBlock == NULL) {
         return selectedEntryBlock;
     }//if
 
-    BOOST_FOREACH (SequencerEntryBlockSelectionInfo selectionInfo, selectionInfos) {
+    for (SequencerEntryBlockSelectionInfo selectionInfo : selectionInfos) {
 
 //        std::cout << "getSelectedEntryBlock entry: " << selectionInfo.entryBlock.get() << std::endl;
 
@@ -304,7 +303,7 @@ void Sequencer::updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entry
         std::swap(mousePosY, mousePressDownY);
     }//if
 
-    BOOST_FOREACH (SequencerEntryBlockSelectionInfo selectionInfo, selectionInfos) {
+    for (SequencerEntryBlockSelectionInfo selectionInfo : selectionInfos) {
         if (selectionInfo.drawnArea.get_x() < mousePosX &&
             selectionInfo.drawnArea.get_x() + selectionInfo.drawnArea.get_width() > mousePressDownX &&
             selectionInfo.drawnArea.get_y() < mousePosY &&
@@ -349,7 +348,7 @@ void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
     int entryNum = 0;
 
     std::vector<std::shared_ptr<SequencerEntry>> orderedEntries;
-    BOOST_FOREACH (auto entryPair, entries) {
+    for (auto entryPair : entries) {
         orderedEntries.push_back(entryPair.first);
     }//foreach
 
@@ -360,7 +359,7 @@ void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
                     }
             );
 
-    BOOST_FOREACH (auto entry, orderedEntries) {
+    for (auto entry : orderedEntries) {
         std::string entryTitle = entry->getTitle();
         entry->doInit(entryGlade, shared_from_this(), entryNum);
         entry->setTitle(entryTitle);

@@ -3,7 +3,6 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <fstream>
-#include <boost/foreach.hpp>
 
 MRUFileLoadHelper::MRUFileLoadHelper(Glib::ustring &filename_, boost::function<void (const Glib::ustring &)> &loadCallback_)
 {
@@ -69,7 +68,7 @@ void MRUList::updateRecentMenu()
     mruMenuItems.clear();
     mruFileLoadHelpers.clear();
 
-    BOOST_FOREACH (auto file, fileList) {
+    for (auto file : fileList) {
         std::shared_ptr<Gtk::MenuItem> item(new Gtk::MenuItem(file));
         mruMenuItems.push_back(item);
         mruSubmenu->append(*item);
@@ -136,7 +135,7 @@ void MRUList::saveFileList()
     unsigned int listSize = fileList.size();
     outputArchive & BOOST_SERIALIZATION_NVP(listSize);
 
-    BOOST_FOREACH (Glib::ustring fileStr, fileList) {
+    for (Glib::ustring fileStr : fileList) {
         std::string fileStrNarrow = Glib::locale_from_utf8(fileStr);
         outputArchive & BOOST_SERIALIZATION_NVP(fileStrNarrow);
     }//foreach

@@ -9,7 +9,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "Animation.h"
 #include "Sequencer.h"
-#include <boost/foreach.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/weak_ptr.hpp>
 #include <boost/serialization/vector.hpp>
@@ -200,7 +199,7 @@ void Animation::mergeOtherAnimation(std::shared_ptr<Animation> otherAnim, Insert
         }//while                
     }//if
 
-    BOOST_FOREACH (auto keyframeIter, otherAnim->keyframes) {
+    for (auto keyframeIter : otherAnim->keyframes) {
         std::shared_ptr<Keyframe> newKeyframe = keyframeIter.second->deepClone();
         newKeyframe->tick += offset;
 
