@@ -19,7 +19,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <jack/transport.h>
 #include <thread>
 
@@ -290,7 +290,7 @@ public:
     std::shared_ptr<SequencerUI> getSequencer();
     void unsetAllCurveFrames();
     void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
-    boost::function<void (const std::string &)> getLoadCallback();
+    std::function<void (const std::string &)> getLoadCallback();
     void queue_draw();
 
     //For serialization

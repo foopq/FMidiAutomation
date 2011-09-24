@@ -11,7 +11,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __COMMAND_OTHER_H
 
 #include <memory>
-#include <boost/function.hpp>
+#include <functional>
 #include <stack>
 #include "Data/Sequencer.h"
 
@@ -36,12 +36,12 @@ class CommandManager
     std::stack<std::shared_ptr<Command> > redoStack;
     Gtk::ImageMenuItem *menuUndo;
     Gtk::ImageMenuItem *menuRedo;
-    boost::function<void (void)> titleStarFunc;
+    std::function<void (void)> titleStarFunc;
 
 public:
     static CommandManager &Instance();
 
-    void setTitleStar(boost::function<void (void)> titleStarFunc);
+    void setTitleStar(std::function<void (void)> titleStarFunc);
 
     void setMenuItems(Gtk::ImageMenuItem *menuUndo, Gtk::ImageMenuItem *menuRedo);
 
@@ -52,7 +52,7 @@ public:
 
 struct AddTempoChangeCommand : public Command
 {
-    AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_, boost::function<void (void)> updateTempoChangesUIData,
+    AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_, std::function<void (void)> updateTempoChangesUIData,
                             FMidiAutomationMainWindow *window);
     virtual ~AddTempoChangeCommand();
 
@@ -62,12 +62,12 @@ struct AddTempoChangeCommand : public Command
 private:
     std::shared_ptr<Tempo> tempo;
     unsigned int tick;
-    boost::function<void (void)> updateTempoChangesUIData;
+    std::function<void (void)> updateTempoChangesUIData;
 };//AddTempoChangeCommand
 
 struct DeleteTempoChangeCommand : public Command
 {
-    DeleteTempoChangeCommand(unsigned int tick_, boost::function<void (void)> updateTempoChangesUIData, FMidiAutomationMainWindow *window);
+    DeleteTempoChangeCommand(unsigned int tick_, std::function<void (void)> updateTempoChangesUIData, FMidiAutomationMainWindow *window);
     virtual ~DeleteTempoChangeCommand();
 
     void doAction();
@@ -76,13 +76,13 @@ struct DeleteTempoChangeCommand : public Command
 private:
     std::shared_ptr<Tempo> tempo;
     unsigned int tick;
-    boost::function<void (void)> updateTempoChangesUIData;
+    std::function<void (void)> updateTempoChangesUIData;
 };//DeleteTempoChangeCommand
 
 struct UpdateTempoChangeCommand : public Command
 {
     UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar, 
-                                unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData, FMidiAutomationMainWindow *window);
+                                unsigned int new_barSubDivisions, std::function<void (void)> updateTempoChangesUIData, FMidiAutomationMainWindow *window);
     virtual ~UpdateTempoChangeCommand();
 
     void doAction();
@@ -90,7 +90,7 @@ struct UpdateTempoChangeCommand : public Command
 
 private:
     std::shared_ptr<Tempo> tempo;
-    boost::function<void (void)> updateTempoChangesUIData;
+    std::function<void (void)> updateTempoChangesUIData;
     
     unsigned int old_bpm; //times 100
     unsigned int old_beatsPerBar;

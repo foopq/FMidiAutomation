@@ -4,7 +4,7 @@
 #include <pwd.h>
 #include <fstream>
 
-MRUFileLoadHelper::MRUFileLoadHelper(Glib::ustring &filename_, boost::function<void (const Glib::ustring &)> &loadCallback_)
+MRUFileLoadHelper::MRUFileLoadHelper(Glib::ustring &filename_, std::function<void (const Glib::ustring &)> &loadCallback_)
 {
     filename = filename_;
     loadCallback = loadCallback_;
@@ -54,11 +54,11 @@ void MRUList::unregisterTopMenu(FMidiAutomationMainWindow *window)
     }//if
 }//unregisterTopMenu
 
-void MRUList::setLoadCallback(boost::function<void (const Glib::ustring &)> loadCallback_)
+void MRUList::setLoadCallback(std::function<void (const Glib::ustring &)> loadCallback_)
 {
     std::cout << "%%%% setLoadCallback" << std::endl;
     loadCallback = loadCallback_;
-    assert(loadCallback.empty() == false);
+    assert(loadCallback);
 
     for (auto helperIter : mruFileLoadHelpers) {
         helperIter->loadCallback = loadCallback;

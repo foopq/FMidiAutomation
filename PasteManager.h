@@ -12,7 +12,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __PASTEMANAGER_H
 
 #include <memory>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/any.hpp>
 #include <stack>
 #include <gtkmm.h>

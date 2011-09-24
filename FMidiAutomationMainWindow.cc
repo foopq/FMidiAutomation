@@ -249,7 +249,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     statusTextAlpha = 1.0;
     needsStatusTextUpdate = false;
     setStatusText(Glib::ustring("Welcome to FMidiAutomation"));
-    boost::function<void (void)> statusThreadFunc = [=]() { statusTextThreadFunc(); };
+    std::function<void (void)> statusThreadFunc = [=]() { statusTextThreadFunc(); };
     statusTextThread = std::thread(statusThreadFunc);
 
     setThemeColours();
@@ -370,11 +370,11 @@ void FMidiAutomationMainWindow::init(bool curveEditorOnlyMode_, std::shared_ptr<
     CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
     PasteManager::Instance().setMenuItems(menuPaste, menuPasteInstance, menu_pasteSEBToSelectedEntry, menu_pasteSEBInstancesToSelectedEntry);
 
-    boost::function<void (void)> titleStarFunc = [=]() { setTitleChanged(); };
+    std::function<void (void)> titleStarFunc = [=]() { setTitleChanged(); };
     CommandManager::Instance().setTitleStar(titleStarFunc);
 
     //Globals &globals = Globals::Instance();
-    //boost::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
+    //std::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
     //globals.config.getMRUList().setLoadCallback(loadCallback);
     MRUList &mruList = MRUList::Instance();
     mruList.registerTopMenu(this, menuOpenRecent);
@@ -413,9 +413,9 @@ void FMidiAutomationMainWindow::queue_draw()
     graphDrawingArea->queue_draw();
 }//queue_draw
 
-boost::function<void (const std::string &)> FMidiAutomationMainWindow::getLoadCallback()
+std::function<void (const std::string &)> FMidiAutomationMainWindow::getLoadCallback()
 {
-    boost::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
+    std::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
     return loadCallback;
 }//getLoadCallback
 
@@ -728,7 +728,7 @@ void FMidiAutomationMainWindow::handleRecordPressed()
         return;
     }//if
 
-    boost::function<void (void)> startRecordFunc = [=]() { startRecordThread(); };
+    std::function<void (void)> startRecordFunc = [=]() { startRecordThread(); };
 
     //FIXME: We probably have some issues when destroying the class and this thread..
     if (recordThread != nullptr) {
@@ -839,8 +839,8 @@ void FMidiAutomationMainWindow::handleAddPressed()
                 if (true == tempoMarkerPair.second->currentlySelected) {
                     std::shared_ptr<Tempo> tempo = tempoMarkerPair.second;
 
-                    //boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->getTempoChanges()));
-                    boost::function<void (void)> callback = [&]() { updateTempoChangesUIData(globals.projectData.getTempoChanges()); };
+                    //std::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->getTempoChanges()));
+                    std::function<void (void)> callback = [&]() { updateTempoChangesUIData(globals.projectData.getTempoChanges()); };
                     std::shared_ptr<Command> updateTempoChangeCommand(new UpdateTempoChangeCommand(tempo, (unsigned int)bpm, beatsPerBar, barSubDivisions, callback, this));
                     CommandManager::Instance().setNewCommand(updateTempoChangeCommand, true);
 
@@ -871,8 +871,8 @@ void FMidiAutomationMainWindow::handleAddPressed()
                     tempo->barSubDivisions = barSubDivisions;
                     tempo->currentlySelected = true;
 
-                    //boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->getTempoChanges()));
-                    boost::function<void (void)> callback = [&]() { updateTempoChangesUIData(globals.projectData.getTempoChanges()); };
+                    //std::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->getTempoChanges()));
+                    std::function<void (void)> callback = [&]() { updateTempoChangesUIData(globals.projectData.getTempoChanges()); };
                     std::shared_ptr<Command> addTempoChangeCommand(new AddTempoChangeCommand(tempo, getGraphState().curPointerTick, callback, this));
                     CommandManager::Instance().setNewCommand(addTempoChangeCommand, true);
                 }//if
@@ -903,8 +903,8 @@ void FMidiAutomationMainWindow::handleDeletePressed()
 
         for (/*nothing*/; mapIter != tempoChanges.second; ++mapIter) {
             if (true == mapIter->second->currentlySelected) {
-                //boost::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->getTempoChanges()));
-                boost::function<void (void)> callback = [&]() { updateTempoChangesUIData(globals.projectData.getTempoChanges()); };
+                //std::function<void (void)> callback = boost::lambda::bind(&updateTempoChangesUIData, boost::lambda::var(datas->getTempoChanges()));
+                std::function<void (void)> callback = [&]() { updateTempoChangesUIData(globals.projectData.getTempoChanges()); };
                 std::shared_ptr<Command> deleteTempoChangeCommand(new DeleteTempoChangeCommand(getGraphState().curPointerTick, callback, this));
                 CommandManager::Instance().setNewCommand(deleteTempoChangeCommand, true);
 

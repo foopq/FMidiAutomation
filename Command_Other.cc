@@ -31,7 +31,7 @@ CommandManager &CommandManager::Instance()/*{{{*/
     return manager;
 }//Instance/*}}}*/
 
-void CommandManager::setTitleStar(boost::function<void (void)> titleStarFunc_)/*{{{*/
+void CommandManager::setTitleStar(std::function<void (void)> titleStarFunc_)/*{{{*/
 {
     titleStarFunc = titleStarFunc_;
 }//setTitleStar/*}}}*/
@@ -122,7 +122,7 @@ void CommandManager::setNewCommand(std::shared_ptr<Command> command, bool applyC
 
 //UpdateTempoChangeCommand
 UpdateTempoChangeCommand::UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,/*{{{*/
-                                                    unsigned int new_barSubDivisions, boost::function<void (void)> updateTempoChangesUIData_,
+                                                    unsigned int new_barSubDivisions, std::function<void (void)> updateTempoChangesUIData_,
                                                     FMidiAutomationMainWindow *window) : Command("Update Tempo Change", window)
 {
     old_bpm = new_bpm;
@@ -153,7 +153,7 @@ void UpdateTempoChangeCommand::undoAction()
 
 //AddTempoChangeCommand
 AddTempoChangeCommand::AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_,/*{{{*/
-                                                boost::function<void (void)> updateTempoChangesUIData_, FMidiAutomationMainWindow *window) 
+                                                std::function<void (void)> updateTempoChangesUIData_, FMidiAutomationMainWindow *window) 
                                                 : Command("Add Tempo Change", window)
 {
     tempo = tempo_;
@@ -188,7 +188,7 @@ void AddTempoChangeCommand::undoAction()
 
 //DeleteTempoChangeCommand
 DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,/*{{{*/
-                                                    boost::function<void (void)> updateTempoChangesUIData_, FMidiAutomationMainWindow *window) 
+                                                    std::function<void (void)> updateTempoChangesUIData_, FMidiAutomationMainWindow *window) 
                                                     : Command("Delete Tempo Change", window)
 {
     tick = tick_;

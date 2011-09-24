@@ -14,7 +14,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <vector>
 #include <map>
 #include <memory>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>

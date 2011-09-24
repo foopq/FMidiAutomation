@@ -71,7 +71,7 @@ void jack_shutdown_impl(void *arg)
 
 JackSingleton::JackSingleton()
 {
-//    boost::function<void (void)> threadFunc = boost::lambda::bind(&notifyJackUpdate, boost::lambda::var(condition));
+//    std::function<void (void)> threadFunc = boost::lambda::bind(&notifyJackUpdate, boost::lambda::var(condition));
 //    thread.reset(new boost::thread(threadFunc));
 
     jackClient = jack_client_open("FMidiAutomation", JackNullOption, nullptr);

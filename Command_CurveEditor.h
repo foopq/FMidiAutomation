@@ -11,7 +11,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __COMMAND_CURVEEDITOR_H
 
 #include <memory>
-#include <boost/function.hpp>
+#include <functional>
 #include <stack>
 #include "Data/Sequencer.h"
 #include "Command_Other.h"
