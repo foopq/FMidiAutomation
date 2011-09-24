@@ -21,9 +21,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include "SerializationHelper.h"
-#include "Globals.h"
-#include "GraphState.h"
-#include "FMidiAutomationMainWindow.h"
 
 
 SequencerEntryBlock::SequencerEntryBlock(std::shared_ptr<SequencerEntry> owningEntry_, int startTick_, std::shared_ptr<SequencerEntryBlock> instanceOf_)
@@ -36,38 +33,35 @@ SequencerEntryBlock::SequencerEntryBlock(std::shared_ptr<SequencerEntry> owningE
 
     owningEntry = owningEntry_;
 
-    valuesPerPixel = std::numeric_limits<double>::max();
-    offsetY = 0;
-
-    if (instanceOf == NULL) {
+    if (instanceOf == nullptr) {
         curve.reset(new Animation(this, std::shared_ptr<Animation>()));
         secondaryCurve.reset(new Animation(this, std::shared_ptr<Animation>()));
     } else {
         curve.reset(new Animation(this, instanceOf->curve));
         secondaryCurve.reset(new Animation(this, instanceOf->secondaryCurve));
     }//if
-
-    curPointerTick = startTick;
-    leftMarkerTick = -1;
-    rightMarkerTick = -1;
 }//constructor
 
-std::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone()
+std::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::deepClone(std::shared_ptr<SequencerEntry> owningEntry_, int startTick_)
 {
+std::cout << "deepClone: " << startTick_ << " - " << startTick << std::endl;
+
     std::shared_ptr<SequencerEntryBlock> clone(new SequencerEntryBlock);
 
-    clone->owningEntry = owningEntry;
+    if (owningEntry_ != nullptr) {
+        clone->owningEntry = owningEntry_;
+    } else {
+        clone->owningEntry = this->owningEntry;
+    }//if
+
     clone->title = title;
-    clone->startTick = startTick;
+    clone->startTick = startTick_;
 
     //clone->std::shared_ptr<SequencerEntryBlock> instanceOf;
-    //int duration; //in ticks, or unused if instanceOf isn't NULL
+    //int duration; //in ticks, or unused if instanceOf isn't nullptr
     
-    clone->curve = curve->deepClone();
-    clone->secondaryCurve = secondaryCurve->deepClone();
-
-    clone->valuesPerPixel = valuesPerPixel;
-    clone->offsetY = offsetY;
+    clone->curve = curve->deepClone(clone->getRawStartTick());
+    clone->secondaryCurve = secondaryCurve->deepClone(clone->getRawStartTick());
 
     return clone;
 }//deepClone
@@ -82,14 +76,10 @@ std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBl
     clone1->owningEntry = owningEntry;
     clone1->title = title + " Split";
     clone1->startTick = startTick;
-    clone1->valuesPerPixel = valuesPerPixel;
-    clone1->offsetY = offsetY;
 
     clone2->owningEntry = owningEntry;
     clone2->title = title + " Split";
     clone2->startTick = tick;
-    clone2->valuesPerPixel = valuesPerPixel;
-    clone2->offsetY = offsetY;
 
     auto animationClonePair = curve->deepCloneSplit(animOffset, clone1.get(), clone2.get());
     std::shared_ptr<Animation> animationClone1A = animationClonePair.first;
@@ -116,34 +106,14 @@ void SequencerEntryBlock::setInstanceOf(std::shared_ptr<SequencerEntryBlock> ins
     secondaryCurve.reset(new Animation(this, instanceOf->secondaryCurve));
 }//setInstanceOf
 
-double SequencerEntryBlock::getValuesPerPixel()
-{
-    return valuesPerPixel;
-}//getValuesPerPixel
-
-double SequencerEntryBlock::getOffsetY()
-{
-    return offsetY;
-}//getOffsetY
-
-void SequencerEntryBlock::setValuesPerPixel(double valuesPerPixel_)
-{
-    valuesPerPixel = valuesPerPixel_;
-}//setValuesPerPixel
-
-void SequencerEntryBlock::setOffsetY(double offsetY_)
-{
-    offsetY = offsetY_;
-}//setOffsetY
-
 void SequencerEntryBlock::moveBlock(int startTick_)
 {
     std::shared_ptr<SequencerEntry> owningEntry_ = owningEntry.lock();
-    if (owningEntry_ == NULL) {
+    if (owningEntry_ == nullptr) {
         return;
     }//if
 
-    if (owningEntry_->getEntryBlock(startTick_) != NULL) {
+    if (owningEntry_->getEntryBlock(startTick_) != nullptr) {
         return;
     }//if
 
@@ -153,8 +123,10 @@ void SequencerEntryBlock::moveBlock(int startTick_)
     std::cout << "move block from: " << startTick << " to " << startTick_ << std::endl;
 
     startTick = startTick_;
-    owningEntry_->addEntryBlock(startTick, shared_from_this());
+    owningEntry_->addEntryBlock(shared_from_this());
 
+    //FIXME: This needs to be propagated to UI counterpart(s)
+    /*
     if (curPointerTick < startTick) {
         curPointerTick = startTick;
     }//if
@@ -166,29 +138,25 @@ void SequencerEntryBlock::moveBlock(int startTick_)
     if (rightMarkerTick < startTick) {
         rightMarkerTick = -1;
     }//if
+    */
 }//moveBlock
 
 std::shared_ptr<Keyframe> SequencerEntryBlock::getNextKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
     std::shared_ptr<Keyframe> afterFirst = curve->getNextKeyframe(keyframe);
 
-    if (afterFirst != NULL) {
+    if (afterFirst != nullptr) {
         return afterFirst;
     }//if
 
     std::shared_ptr<Keyframe> afterSecond = secondaryCurve->getNextKeyframe(keyframe);
 
-    if (afterSecond != NULL) {
+    if (afterSecond != nullptr) {
         return afterSecond;
     }//if
 
     return std::shared_ptr<Keyframe>();
 }//getNextKeyframe
-
-//void SequencerEntryBlock::setDuration(int duration_)
-//{
-//    duration = duration_;
-//}//setDuration
 
 void SequencerEntryBlock::cloneCurves(std::shared_ptr<SequencerEntryBlock> entryBlock)
 {
@@ -213,10 +181,10 @@ int *SequencerEntryBlock::getRawStartTick()
 
 int SequencerEntryBlock::getDuration() const
 {
-    if (instanceOf == NULL) {
+    if (instanceOf == nullptr) {
         int duration = 0;
 
-        if (curve != NULL) {
+        if (curve != nullptr) {
             int numKeys = curve->getNumKeyframes();
             if (numKeys > 0) {
                 std::shared_ptr<Keyframe> lastKey = curve->getKeyframe(numKeys-1);
@@ -225,7 +193,7 @@ int SequencerEntryBlock::getDuration() const
             }//if
         }//if
 
-        if (secondaryCurve != NULL) {
+        if (secondaryCurve != nullptr) {
             int numKeys = secondaryCurve->getNumKeyframes();
             if (numKeys > 0) {
                 std::shared_ptr<Keyframe> lastKey = secondaryCurve->getKeyframe(numKeys-1);
@@ -244,18 +212,6 @@ Glib::ustring SequencerEntryBlock::getTitle() const
 {
     return title;
 }//getTitle
-
-void SequencerEntryBlock::setUITickPositions(int main, int left, int right)
-{
-    curPointerTick = main;
-    leftMarkerTick = left;
-    rightMarkerTick = right;
-}//setUITickPositions
-
-std::tuple<int, int, int> SequencerEntryBlock::getUITickPositions()
-{
-    return std::make_tuple(curPointerTick, leftMarkerTick, rightMarkerTick);
-}//getUITickPositions
 
 std::shared_ptr<SequencerEntryBlock> SequencerEntryBlock::getInstanceOf() const
 {
@@ -277,12 +233,6 @@ std::shared_ptr<Animation> SequencerEntryBlock::getSecondaryCurve()
     return secondaryCurve;
 }//getSecondaryCurve
 
-void SequencerEntryBlock::renderCurves(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
-{
-    curve->render(context, graphState, areaWidth, areaHeight);
-    secondaryCurve->render(context, graphState, areaWidth, areaHeight);
-}//renderCurves
-
 template<class Archive>
 void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
 {
@@ -290,11 +240,6 @@ void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(startTick);
     ar & BOOST_SERIALIZATION_NVP(instanceOf);
 //    ar & BOOST_SERIALIZATION_NVP(duration);
-    ar & BOOST_SERIALIZATION_NVP(valuesPerPixel);
-    ar & BOOST_SERIALIZATION_NVP(offsetY);
-    ar & BOOST_SERIALIZATION_NVP(curPointerTick);
-    ar & BOOST_SERIALIZATION_NVP(leftMarkerTick);
-    ar & BOOST_SERIALIZATION_NVP(rightMarkerTick);
 
     std::string titleStr = Glib::locale_from_utf8(title);
     ar & BOOST_SERIALIZATION_NVP(titleStr);
@@ -307,32 +252,8 @@ void SequencerEntryBlock::serialize(Archive &ar, const unsigned int version)
     secondaryCurve->startTick = &startTick;
 }//serialize
 
-template<class Archive>
-void SequencerEntryBlockSelectionInfo::serialize(Archive &ar, const unsigned int version)
-{
-    ar & BOOST_SERIALIZATION_NVP(entry);
-    ar & BOOST_SERIALIZATION_NVP(entryBlock);
-
-    int x = drawnArea.get_x();
-    int y = drawnArea.get_y();
-    int width = drawnArea.get_width();
-    int height = drawnArea.get_height();
-
-    ar & BOOST_SERIALIZATION_NVP(x);
-    ar & BOOST_SERIALIZATION_NVP(y);
-    ar & BOOST_SERIALIZATION_NVP(width);
-    ar & BOOST_SERIALIZATION_NVP(height);
-
-    drawnArea.set_x(x);
-    drawnArea.set_y(y);
-    drawnArea.set_width(width);
-    drawnArea.set_height(height);
-}//serialize
-
 
 template void SequencerEntryBlock::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
-template void SequencerEntryBlockSelectionInfo::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
 
 template void SequencerEntryBlock::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
-template void SequencerEntryBlockSelectionInfo::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
 

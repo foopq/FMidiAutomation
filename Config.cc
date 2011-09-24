@@ -15,12 +15,12 @@ void MRUFileLoadHelper::doLoadFile()
     loadCallback(filename);
 }//doLoadFile
 
-MRUList::MRUList(unsigned int depth_, const Glib::ustring &&fileName_)
+MRUList::MRUList(unsigned int depth_)
 {
     depth = depth_;
-    fileName = fileName_;
-    menuOpenRecent = NULL;
     m_refUIManager = Gtk::UIManager::create();
+
+    configFileName = Glib::ustring(getpwuid(getuid())->pw_dir) + Glib::ustring("/.fmidiautomation/mrulist");
 
     loadFileList();
 }//constructor
@@ -30,15 +30,39 @@ MRUList::~MRUList()
     //Nothing
 }//destructor
 
-void MRUList::setTopMenu(Gtk::MenuItem *menuOpenRecent_)
+MRUList &MRUList::Instance()
 {
-    menuOpenRecent = menuOpenRecent_;
+    static MRUList mruList(10);
+    return mruList;
+}//Instance
+
+void MRUList::registerTopMenu(FMidiAutomationMainWindow *window, Gtk::MenuItem *menuOpenRecent_)
+{
+    std::cout << "%%%% registerTopMenu: " << window << std::endl;
+
+    menuOpenRecentList[window] = menuOpenRecent_;
     updateRecentMenu();
-}//setTopMenu
+}//registerTopMenu
+
+void MRUList::unregisterTopMenu(FMidiAutomationMainWindow *window)
+{
+    std::cout << "%%%% unregisterTopMenu: " << window << std::endl;
+
+    auto mapIter = menuOpenRecentList.find(window);
+    if (mapIter != menuOpenRecentList.end()) {
+        menuOpenRecentList.erase(mapIter);
+    }//if
+}//unregisterTopMenu
 
 void MRUList::setLoadCallback(boost::function<void (const Glib::ustring &)> loadCallback_)
 {
+    std::cout << "%%%% setLoadCallback" << std::endl;
     loadCallback = loadCallback_;
+    assert(loadCallback.empty() == false);
+
+    for (auto helperIter : mruFileLoadHelpers) {
+        helperIter->loadCallback = loadCallback;
+    }//for
 }//setLoadCallback
 
 void MRUList::addFile(const Glib::ustring &fileName)
@@ -60,7 +84,9 @@ void MRUList::addFile(const Glib::ustring &fileName)
 
 void MRUList::updateRecentMenu()
 {
-    if (NULL == menuOpenRecent) {
+    std::cout << "%%%%% updateRecentMenu: " << menuOpenRecentList.empty() << " - " << this << std::endl;
+
+    if (menuOpenRecentList.empty() == true) {
         return;
     }//if
 
@@ -79,10 +105,11 @@ void MRUList::updateRecentMenu()
         item->signal_activate().connect(sigc::mem_fun(*helper, &MRUFileLoadHelper::doLoadFile));
     }//foreach
 
-    menuOpenRecent->set_submenu(*mruSubmenu);
-    menuOpenRecent->show_all();
+    for (auto menu : menuOpenRecentList) {
+        menu.second->set_submenu(*mruSubmenu);
+        menu.second->show_all();
+    }//for
 }//updateRecentMenu
-
 
 std::pair<decltype(MRUList::fileList.begin()), decltype(MRUList::fileList.end())> MRUList::getFileList()
 {
@@ -91,7 +118,7 @@ std::pair<decltype(MRUList::fileList.begin()), decltype(MRUList::fileList.end())
 
 void MRUList::loadFileList()
 {
-    std::string filename = Glib::locale_from_utf8(fileName);
+    std::string filename = Glib::locale_from_utf8(configFileName);
 
     std::ifstream inputStream(filename.c_str());
     if (false == inputStream.good()) {
@@ -118,7 +145,7 @@ void MRUList::loadFileList()
 
 void MRUList::saveFileList()
 {
-    std::string filename = Glib::locale_from_utf8(fileName);
+    std::string filename = Glib::locale_from_utf8(configFileName);
 
     std::ofstream outputStream(filename.c_str());
     assert(outputStream.good());
@@ -142,13 +169,13 @@ void MRUList::saveFileList()
 }//saveFileList
 
 
-FMidiAutomationConfig::FMidiAutomationConfig() : mruList(5, Glib::ustring(getpwuid(getuid())->pw_dir) + Glib::ustring("/.fmidiautomation/mrulist"))
+FMidiAutomationConfig::FMidiAutomationConfig()
 {
     Glib::ustring baseDir = Glib::ustring(getpwuid(getuid())->pw_dir) + Glib::ustring("/.fmidiautomation");
     std::string baseDirNarrow = Glib::locale_from_utf8(baseDir);
 
     DIR *pDir = opendir(baseDirNarrow.c_str());
-    if (pDir != NULL) {
+    if (pDir != nullptr) {
         (void)closedir(pDir);
     } else {
         mkdir(baseDirNarrow.c_str(), 0755);
@@ -169,10 +196,5 @@ void FMidiAutomationConfig::saveConfig()
 {
     //Nothing yet
 }//saveConfig
-
-MRUList &FMidiAutomationConfig::getMRUList()
-{
-    return mruList;
-}//getMRUList
 
 

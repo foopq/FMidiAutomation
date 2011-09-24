@@ -24,6 +24,7 @@ class FMidiAutomationMainWindow;
 struct Keyframe;
 class GraphState;
 class KeyframeSelectionState;
+class SequencerEntryBlockUI;
 
 class CurveEditor
 {
@@ -50,12 +51,13 @@ public:
     void handleResetTangents();
 
     void setUnderMouseTickValue(int tick, int value);
-    std::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed);
+    std::shared_ptr<Keyframe> getKeySelection(GraphState &graphState, int mousePressDownX, int mousePressDownY, bool ctrlPressed, std::shared_ptr<SequencerEntryBlockUI> entryBlock);
     void setKeyUIValues(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<Keyframe> currentlySelectedKeyframe);
 
     void updateSelectedKeyframesInRange(KeyframeSelectionState &keyframeSelectionState,
                                             gdouble mousePressDownX, gdouble mousePressDownY, gdouble xPos, gdouble yPos,
-                                            int areaWidth, int areaHeight);
+                                            int areaWidth, int areaHeight,
+                                            std::shared_ptr<SequencerEntryBlockUI> entryBlock);
 };//CurveEditor
 
 #endif

@@ -21,6 +21,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/access.hpp>
 
 class SequencerEntryBlock;
+class SequencerEntryBlockUI;
 class SequencerEntry;
 struct GraphState;
 
@@ -64,13 +65,13 @@ struct Keyframe
     int drawnInY;
 
     //bool isSelected;
-    KeySelectedType getSelectedState();
-    void setSelectedState(KeySelectedType state);
+//    KeySelectedType getSelectedState();
+//    void setSelectedState(KeySelectedType state);
 
     std::shared_ptr<Keyframe> deepClone();
 
 private:
-    KeySelectedType selectedState;
+//    KeySelectedType selectedState;
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
@@ -90,7 +91,7 @@ public:
     Animation(SequencerEntryBlock *owningEntryBlock, std::shared_ptr<Animation> instanceOf);
     ~Animation();
 
-    std::shared_ptr<Animation> deepClone();
+    std::shared_ptr<Animation> deepClone(int *startTick);
     std::pair<std::shared_ptr<Animation>, std::shared_ptr<Animation> > deepCloneSplit(int offset, SequencerEntryBlock *owningEntryBlock1, 
                                                                                         SequencerEntryBlock *owningEntryBlock2);
 
@@ -108,7 +109,7 @@ public:
 
     double sample(int tick);
 
-    void render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight);
+    void render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::shared_ptr<SequencerEntryBlockUI> entryBlock);
 //    std::pair<int, SelectedEntity> getSelection(int tick, double value);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);

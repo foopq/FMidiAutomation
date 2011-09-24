@@ -14,8 +14,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <flowcanvas/Module.hpp>
 #include <flowcanvas/Port.hpp>
 #include "jack.h"
-#include "Sequencer.h"
-#include "SequencerEntry.h"
+#include "Data/Sequencer.h"
+#include "Data/SequencerEntry.h"
 #include <set>
 #include <limits>
 #include <math.h>
@@ -37,7 +37,7 @@ class EntryModule;
 class EntryPort;
 
 boost::shared_ptr<JackPortFlowCanvas> flowCanvas;
-std::vector<std::string> *curNamingPorts = NULL;
+std::vector<std::string> *curNamingPorts = nullptr;
 boost::shared_ptr<JackPortModule> jackInputModule;
 boost::shared_ptr<JackPortModule> jackOutputModule;
 std::vector<boost::shared_ptr<EntryModule> > entryModules;
@@ -190,15 +190,15 @@ void JackPortFlowCanvas::disconnect(boost::shared_ptr<FlowCanvas::Connectable> c
 
     jackPort = boost::dynamic_pointer_cast<JackPortPort>(c1);
     entryPort = boost::dynamic_pointer_cast<EntryPort>(c2);
-    if (jackPort == NULL) {
+    if (jackPort == nullptr) {
         jackPort = boost::dynamic_pointer_cast<JackPortPort>(c2);
-        if (jackPort == NULL) {
+        if (jackPort == nullptr) {
             return;
         }//if
         entryPort = boost::dynamic_pointer_cast<EntryPort>(c1);
     }//if
 
-    if (entryPort == NULL) {
+    if (entryPort == nullptr) {
         return;
     }//if
 
@@ -210,12 +210,12 @@ void JackPortFlowCanvas::disconnect(boost::shared_ptr<FlowCanvas::Connectable> c
             }//if
         }//foreach
 
-        if (entryModule != NULL) {
+        if (entryModule != nullptr) {
             break;
         }//if
     }//forach
 
-    if (entryModule == NULL) {
+    if (entryModule == nullptr) {
         //Shouldn't happen...
         return;
     }//if
@@ -237,15 +237,15 @@ void JackPortFlowCanvas::connect(boost::shared_ptr<FlowCanvas::Connectable> c1, 
 
     jackPort = boost::dynamic_pointer_cast<JackPortPort>(c1);
     entryPort = boost::dynamic_pointer_cast<EntryPort>(c2);
-    if (jackPort == NULL) {
+    if (jackPort == nullptr) {
         jackPort = boost::dynamic_pointer_cast<JackPortPort>(c2);
-        if (jackPort == NULL) {
+        if (jackPort == nullptr) {
             return;
         }//if
         entryPort = boost::dynamic_pointer_cast<EntryPort>(c1);
     }//if
 
-    if (entryPort == NULL) {
+    if (entryPort == nullptr) {
         return;
     }//if
 
@@ -257,12 +257,12 @@ void JackPortFlowCanvas::connect(boost::shared_ptr<FlowCanvas::Connectable> c1, 
             }//if
         }//foreach
 
-        if (entryModule != NULL) {
+        if (entryModule != nullptr) {
             break;
         }//if
     }//forach
 
-    if (entryModule == NULL) {
+    if (entryModule == nullptr) {
         //Shouldn't happen...
         return;
     }//if
@@ -398,7 +398,7 @@ void JackPortModule::removePort(const std::string &title)
         port->remove_connection(connection);
     }//foreach
 
-    if (port != NULL) {
+    if (port != nullptr) {
         remove_port(port);
         resize();
     }//if
@@ -730,9 +730,9 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
     Globals &globals = Globals::Instance();
 
     entryModules.clear();
-    fmaipair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> entryPair = globals.sequencer->getEntryPair();
-    for (std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator entryMapIter = entryPair.first; entryMapIter != entryPair.second; ++entryMapIter) {
-        boost::shared_ptr<EntryModule> entryModule(new EntryModule(::flowCanvas, entryMapIter->first->getTitle().c_str(), 0, 0, uiXml, entryMapIter->first));
+    auto entryPair = globals.projectData.getSequencer()->getEntryPair();
+    for (auto entryMapIter : entryPair) {
+        boost::shared_ptr<EntryModule> entryModule(new EntryModule(::flowCanvas, entryMapIter->getTitle().c_str(), 0, 0, uiXml, entryMapIter));
 
         boost::shared_ptr<EntryPort> inputPort(new EntryPort(entryModule, "Input", true, 0x953c02ff, uiXml));
         entryModule->add_port(inputPort);
@@ -747,8 +747,8 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
         entryModules.push_back(entryModule);
 
         //Set up connections for this module
-        std::set<jack_port_t *> jackInputMap = entryMapIter->first->getInputPorts();
-        std::set<jack_port_t *> jackOutputMap = entryMapIter->first->getOutputPorts();
+        std::set<jack_port_t *> jackInputMap = entryMapIter->getInputPorts();
+        std::set<jack_port_t *> jackOutputMap = entryMapIter->getOutputPorts();
 
         for (jack_port_t *jackPort : jackInputMap) {
             std::string portName = jackSingleton.getInputPortName(jackPort);
@@ -797,21 +797,21 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
             boost::shared_ptr<FlowCanvas::Connectable> sourceConnection = connection->source().lock();
             boost::shared_ptr<FlowCanvas::Connectable> destConnection = connection->dest().lock();
 
-            if ((sourceConnection == NULL) || (destConnection == NULL)) {
+            if ((sourceConnection == nullptr) || (destConnection == nullptr)) {
                 continue;
             }//if
 
             boost::shared_ptr<EntryPort> entryPort = boost::dynamic_pointer_cast<EntryPort>(sourceConnection);
             boost::shared_ptr<JackPortPort> jackPort = boost::dynamic_pointer_cast<JackPortPort>(destConnection);
-            if (entryPort == NULL) {
+            if (entryPort == nullptr) {
                 entryPort = boost::dynamic_pointer_cast<EntryPort>(destConnection);
                 jackPort = boost::dynamic_pointer_cast<JackPortPort>(sourceConnection);
             }//if
 
-            assert((entryPort != NULL) && (jackPort != NULL));
+            assert((entryPort != nullptr) && (jackPort != nullptr));
 
             boost::shared_ptr<EntryModule> entryModule = boost::dynamic_pointer_cast<EntryModule>(entryPort->module().lock());
-            assert(entryModule != NULL);
+            assert(entryModule != nullptr);
 
             if (entryInputMap.find(entryModule) == entryInputMap.end()) {
                 entryInputMap[entryModule] = std::shared_ptr<std::set<jack_port_t *> >(new std::set<jack_port_t *>());
@@ -827,14 +827,14 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
                 std::cout << "Module " << entryModule->name() << " has input to " << portName << std::endl;
 
                 jack_port_t *jackPortPtr = jackSingleton.getInputPort(portName);
-                assert(jackPortPtr != NULL);
+                assert(jackPortPtr != nullptr);
 
                 entryInputMap[entryModule]->insert(jackPortPtr);
             } else {
                 std::cout << "Module " << entryModule->name() << " has output to " << portName << std::endl;
 
                 jack_port_t *jackPortPtr = jackSingleton.getOutputPort(portName);
-                assert(jackPortPtr != NULL);
+                assert(jackPortPtr != nullptr);
 
                 entryOutputMap[entryModule]->insert(jackPortPtr);
             }//if

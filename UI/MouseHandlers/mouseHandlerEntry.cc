@@ -8,11 +8,12 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "FMidiAutomationMainWindow.h"
-#include "Sequencer.h"
-#include "SequencerEntry.h"
+#include "Data/Sequencer.h"
+#include "UI/SequencerUI.h"
+#include "Data/SequencerEntry.h"
+#include "UI/SequencerEntryBlockUI.h"
 #include "FMidiAutomationCurveEditor.h"
 #include "Animation.h"
-#include "Command.h"
 #include <boost/lexical_cast.hpp>
 #include "GraphState.h"
 
@@ -63,7 +64,7 @@ bool handleGraphValueZoom(GdkScrollDirection direction, GraphState &graphState, 
     bool changed = true;
     //double curValuesPerPixel = graphState->valuesPerPixel;
 
-    const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
+    const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState.entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getOwningEntry()->getImpl();
     int minValue = entryImpl->minValue;
     int maxValue = entryImpl->maxValue;
 
@@ -161,14 +162,6 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
         altCurrentlyPressed = false;
     }//if
 
-    static guint32 lastHandledTime = 0; //XXX: This is safe to do, right? Only one thread ever gets here?
-
-    if ((event->time - lastHandledTime) < 100) {
-        return false;
-    } else {
-        lastHandledTime = event->time;
-    }//if
-
     if (true == shiftCurrentlyPressed) {
         int curTicksPerPixel = graphState->ticksPerPixel;
 
@@ -189,7 +182,10 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
         }//if
     }//if
 
-    queue_draw();
+    if ((event->time - lastHandledTime) >= 60) {
+        lastHandledTime = event->time;
+        queue_draw();
+    }//if
 
     return true;
 }//handleScroll/*}}}*/
@@ -474,14 +470,6 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
         return false;
     }//if
 
-    static guint32 lastHandledTime = 0; //XXX: This is safe to do, right? Only one thread ever gets here?
-
-    if ((event->time - lastHandledTime) < 20) {
-        return false;
-    } else {
-        lastHandledTime = event->time;
-    }//if
-
     switch (graphState->displayMode) {        
         case DisplayMode::Curve:
             switch (mouseRegion) {
@@ -530,7 +518,11 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
         }//if
     }//if
 
-    queue_draw();
+    if ((event->time - lastHandledTime) >= 20) {
+        lastHandledTime = event->time;
+        queue_draw();
+    }//if
+
     return true;
 }//mouseMoved/*}}}*/
 

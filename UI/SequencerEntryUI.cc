@@ -6,10 +6,6 @@ Copyright (C) 2011 Chris A. Mennie
 License: Released under the GPL version 3 license. See the included LICENSE.
 */
 
-#include "Sequencer.h"
-#include "SequencerEntry.h"
-#include "Animation.h"
-#include "jack.h"
 #include <iostream>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -20,12 +16,13 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/serialization/map.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include "SerializationHelper.h"
+#include "SequencerUI.h"
+#include "SequencerEntryUI.h"
+#include "Data/SequencerEntry.h"
+#include "Data/SequencerEntryBlock.h"
 #include "Globals.h"
 #include "GraphState.h"
-#include "FMidiAutomationMainWindow.h"
-#include "ProcessRecordedMidi.h"
-
+#include "SerializationHelper.h"
 
 namespace
 {
@@ -52,47 +49,47 @@ void setThemeColours(Gtk::Widget *widget)
     }//if
 
     Gtk::Viewport *viewport = dynamic_cast<Gtk::Viewport *>(widget);
-    if (viewport != NULL) {
+    if (viewport != nullptr) {
         viewport->modify_bg(Gtk::STATE_NORMAL, bgColour);
         viewport->modify_fg(Gtk::STATE_NORMAL, fgColour);
     }//if
 
     Gtk::Label *label = dynamic_cast<Gtk::Label *>(widget);
-    if (label != NULL) {
+    if (label != nullptr) {
         label->modify_fg(Gtk::STATE_NORMAL, darkTextColour);
     }//if
 
     Gtk::Entry *entry = dynamic_cast<Gtk::Entry *>(widget);
-    if (entry != NULL) {
+    if (entry != nullptr) {
         entry->modify_base(Gtk::STATE_NORMAL, bgColour);
         entry->modify_text(Gtk::STATE_NORMAL, darkTextColour);
         entry->modify_bg(Gtk::STATE_NORMAL, fgColour);
     }//if
 
     Gtk::Frame *frame = dynamic_cast<Gtk::Frame *>(widget);
-    if (frame != NULL) {
+    if (frame != nullptr) {
         frame->modify_bg(Gtk::STATE_NORMAL, black);
     }//if
 
     Gtk::Button *button = dynamic_cast<Gtk::Button *>(widget);
-    if (button != NULL) {
+    if (button != nullptr) {
         button->modify_bg(Gtk::STATE_NORMAL, bgColour);
     }//if
 
     Gtk::Table *table = dynamic_cast<Gtk::Table *>(widget);
-    if (table != NULL) {        
+    if (table != nullptr) {        
         table->modify_bg(Gtk::STATE_NORMAL, bgColour);
         table->modify_fg(Gtk::STATE_NORMAL, fgColour);
     }//if
 
     Gtk::EventBox *eventBox = dynamic_cast<Gtk::EventBox *>(widget);
-    if (eventBox != NULL) {
+    if (eventBox != nullptr) {
         eventBox->modify_bg(Gtk::STATE_NORMAL, bgColour);
         eventBox->modify_fg(Gtk::STATE_NORMAL, fgColour);
     }//if
 
     Gtk::ComboBox *comboBox = dynamic_cast<Gtk::ComboBox *>(widget);
-    if (comboBox != NULL) {
+    if (comboBox != nullptr) {
         comboBox->modify_bg(Gtk::STATE_NORMAL, bgColour);
         comboBox->modify_text(Gtk::STATE_NORMAL, bgColour);
         comboBox->modify_base(Gtk::STATE_NORMAL, bgColour);
@@ -110,7 +107,7 @@ void setThemeColours(Gtk::Widget *widget)
 
     /*
     Gtk::Alignment *alignment = dynamic_cast<Gtk::Alignment *>(widget);
-    if (alignment != NULL) {
+    if (alignment != nullptr) {
         alignment->modify_bg(Gtk::STATE_NORMAL, bgColour);
         alignment->modify_fg(Gtk::STATE_NORMAL, bgColour);
         alignment->modify_base(Gtk::STATE_NORMAL, bgColour);
@@ -119,12 +116,12 @@ void setThemeColours(Gtk::Widget *widget)
     */
 
     Gtk::CellRendererText *cellRendererText = dynamic_cast<Gtk::CellRendererText *>(widget);
-    if (cellRendererText != NULL) {
+    if (cellRendererText != nullptr) {
         std::cout << "crt" << std::endl;
     }//if
 
     Gtk::Container *container = dynamic_cast<Gtk::Container *>(widget);
-    if (container != NULL) {
+    if (container != nullptr) {
         Glib::ListHandle<Gtk::Widget *> children = container->get_children();
         for (Gtk::Widget *childWidget : children) {
             ::setThemeColours(childWidget);
@@ -134,68 +131,15 @@ void setThemeColours(Gtk::Widget *widget)
 
 }//anonymous namespace
 
-
-SequencerEntryImpl::SequencerEntryImpl()
+SequencerEntryUI::SequencerEntryUI(const Glib::ustring &entryGlade, unsigned int entryNum, std::shared_ptr<SequencerEntry> baseEntry_,
+                                    std::shared_ptr<SequencerUI> owningSequencer_)
 {
-    controllerType = ControlType::CC;
-    channel = 16;
-    msb = 7;
-    lsb = 0;
+    baseEntry = baseEntry_;
+    owningSequencer = owningSequencer_;
 
-    //UI specific
-    minValue = 0;
-    maxValue = 127;
-    sevenBit = true;
-    useBothMSBandLSB = false; //implied true if sevenBit is true
+    assert(baseEntry != nullptr);
+    assert(owningSequencer.lock() != nullptr);
 
-    recordMode = false;
-    soloMode = false;
-    muteMode = false;
-}//constructor
-
-SequencerEntryImpl::~SequencerEntryImpl()
-{
-    //Nothing
-}//destructor
-
-std::shared_ptr<SequencerEntryImpl> SequencerEntryImpl::clone()
-{
-    std::shared_ptr<SequencerEntryImpl> retVal(new SequencerEntryImpl);
-    *retVal = *this;
-    return retVal;
-}//clone
-
-bool SequencerEntryImpl::operator==(SequencerEntryImpl &other)
-{
-    bool diff = false;
-
-    diff |= this->controllerType != other.controllerType;
-    diff |= this->msb != other.msb;
-    diff |= this->lsb != other.lsb;
-    diff |= this->minValue != other.minValue;
-    diff |= this->maxValue != other.maxValue;
-    diff |= this->sevenBit != other.sevenBit;
-    diff |= this->useBothMSBandLSB != other.useBothMSBandLSB;
-    diff |= this->channel != other.channel;
-    diff |= this->title != other.title;
-    diff |= this->recordMode != other.recordMode;
-    diff |= this->soloMode != other.soloMode;
-    diff |= this->muteMode != other.muteMode;
-
-    return !diff;
-}//operator==
-
-SequencerEntry::SequencerEntry(const Glib::ustring &entryGlade, std::shared_ptr<Sequencer> sequencer_, unsigned int entryNum)
-{
-    impl.reset(new SequencerEntryImpl);
-
-    doInit(entryGlade, sequencer_, entryNum);
-}//constructor
-
-void SequencerEntry::doInit(const Glib::ustring &entryGlade, std::shared_ptr<Sequencer> sequencer_, unsigned int entryNum)
-{
-    sequencer = sequencer_;
-    
     uiXml = Gtk::Builder::create_from_string(entryGlade);
     uiXml->get_widget("entryViewport", mainWindow);
     uiXml->get_widget("smallEntryViewport", smallWindow);
@@ -211,130 +155,106 @@ void SequencerEntry::doInit(const Glib::ustring &entryGlade, std::shared_ptr<Seq
 
     Gtk::Button *switchButton;
     uiXml->get_widget("toggleButton", switchButton);
-    switchButton->signal_clicked().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSwitchPressed) );
+    switchButton->signal_clicked().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleSwitchPressed) );
 
     uiXml->get_widget("toggleButton1", switchButton);
-    switchButton->signal_clicked().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSwitchPressed) );
+    switchButton->signal_clicked().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleSwitchPressed) );
 
     Gtk::Entry *entryBox;
     uiXml->get_widget("titleEntry", entryBox);
     entryBox->set_text("qAutomation " + boost::lexical_cast<std::string>(entryNum)); //!!!!!!!!!!!!!!!!!!!!!!!!! q!
-    entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleKeyEntryOnLargeTitleEntryBox));
+    entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntryUI::handleKeyEntryOnLargeTitleEntryBox));
     uiXml->get_widget("titleEntry1", entryBox);
     entryBox->set_text("qAutomation " + boost::lexical_cast<std::string>(entryNum)); //!!!!!!!!!!!!!!!!!!!!!!!!! q!
-    impl->title = std::string("2Automation ") + boost::lexical_cast<std::string>(entryNum); //!!!!!!!!!!!!!!!!!!! q!
-    entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleKeyEntryOnSmallTitleEntryBox));
-    entryBox->signal_focus_in_event().connect(sigc::mem_fun(*this, &SequencerEntry::handleEntryFocus));
+    entryBox->signal_key_release_event().connect(sigc::mem_fun(*this, &SequencerEntryUI::handleKeyEntryOnSmallTitleEntryBox));
+    entryBox->signal_focus_in_event().connect(sigc::mem_fun(*this, &SequencerEntryUI::handleEntryFocus));
+
+    if (baseEntry->getTitle().empty() == false) {
+        setTitle(baseEntry->getTitle());
+    } else {
+        setTitle(std::string("2Automation ") + boost::lexical_cast<std::string>(entryNum)); //!!!!!!!!!!!!!!!!!!! q!
+    }//if
 
 //    std::cout << "doInit: " << (std::string("qAutomation ") + boost::lexical_cast<std::string>(entryNum)) << std::endl;
 
     Gtk::EventBox *eventBox;
     uiXml->get_widget("eventbox1", eventBox);
-    eventBox->signal_button_press_event().connect ( sigc::mem_fun(*this, &SequencerEntry::mouseButtonPressed) );
+    eventBox->signal_button_press_event().connect ( sigc::mem_fun(*this, &SequencerEntryUI::mouseButtonPressed) );
     uiXml->get_widget("eventbox2", eventBox);
-    eventBox->signal_button_press_event().connect ( sigc::mem_fun(*this, &SequencerEntry::mouseButtonPressed) );
+    eventBox->signal_button_press_event().connect ( sigc::mem_fun(*this, &SequencerEntryUI::mouseButtonPressed) );
 
     Gtk::ToggleButton *toggleButton;
     uiXml->get_widget("recButton", toggleButton);
-    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleRecPressed) );
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleRecPressed) );
     uiXml->get_widget("recButton1", toggleButton);
-    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleRecSmPressed) );
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleRecSmPressed) );
 
     uiXml->get_widget("muteButton", toggleButton);
-    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleMutePressed) );
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleMutePressed) );
     uiXml->get_widget("muteButton1", toggleButton);
-    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleMuteSmPressed) );
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleMuteSmPressed) );
 
     uiXml->get_widget("soloButton", toggleButton);
-    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSoloPressed) );
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleSoloPressed) );
     uiXml->get_widget("soloButton1", toggleButton);
-    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntry::handleSoloSmPressed) );
+    toggleButton->signal_toggled().connect ( sigc::mem_fun(*this, &SequencerEntryUI::handleSoloSmPressed) );
 
     mainWindow->get_parent()->remove(*mainWindow);
     smallWindow->get_parent()->remove(*smallWindow);
 
     isFullBox = false;
-    inHandler = false;
-
     curIndex = -1;
 
     deselect();
-
     setThemeColours();
-}//doInit
+}//constructor
 
-SequencerEntry::~SequencerEntry()
+SequencerEntryUI::~SequencerEntryUI()
 {
     //Nothing
 }//destructor
 
-std::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
+std::shared_ptr<SequencerEntry> SequencerEntryUI::getBaseEntry()
 {
-    std::shared_ptr<SequencerEntry> clone(new SequencerEntry);
+    assert(baseEntry != nullptr);
+    return baseEntry;
+}//getBaseEntry
 
-    clone->impl.reset(new SequencerEntryImpl);
+fmaipair<decltype(SequencerEntryUI::entryBlocks.begin()), decltype(SequencerEntryUI::entryBlocks.end())> SequencerEntryUI::getEntryBlocksPair()
+{
+    return fmai_make_pair(entryBlocks.begin(), entryBlocks.end());
+}//getEntryBlocksPair
 
-    *clone->impl = *impl;
+void SequencerEntryUI::setBaseEntry(std::shared_ptr<SequencerEntry> baseEntry_)
+{
+    baseEntry = baseEntry_;
+    assert(baseEntry != nullptr);
+}//setBaseEntry
 
-    clone->sequencer = sequencer;
+std::shared_ptr<SequencerEntryUI> SequencerEntryUI::deepClone(const Glib::ustring &entryGlade)
+{
+    std::shared_ptr<SequencerEntryUI> clone(new SequencerEntryUI(entryGlade, 99, baseEntry, owningSequencer.lock()));
+
+    /*
     clone->uiXml = uiXml;
     clone->mainWindow = mainWindow;
     clone->smallWindow = smallWindow;
     clone->largeFrame = largeFrame;
     clone->smallFrame = smallFrame;
     clone->activeCheckButton = activeCheckButton;
+    */
     clone->isFullBox = isFullBox;
     clone->curIndex = curIndex;
  
-    std::map<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > oldNewMap;
-
-    for(std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = entryBlocks.begin(); mapIter != entryBlocks.end(); ++mapIter) {
-        std::shared_ptr<SequencerEntryBlock> entryBlockClone = mapIter->second->deepClone();
-        clone->entryBlocks[mapIter->first] = entryBlockClone;
-
-        oldNewMap[mapIter->second] = entryBlockClone;
+    for(auto mapIter : entryBlocks) {
+        std::shared_ptr<SequencerEntryBlockUI> entryBlockClone = mapIter.second->deepClone(shared_from_this());
+        clone->entryBlocks[mapIter.first] = entryBlockClone;
     }//for
-
-    for (std::map<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> >::const_iterator mapIter = oldNewMap.begin(); mapIter != oldNewMap.end(); ++mapIter) {
-        if (mapIter->second->getInstanceOf() != NULL) {
-            std::shared_ptr<SequencerEntryBlock> entryBlockClone = oldNewMap[mapIter->second->getInstanceOf()];
-            assert(entryBlockClone != NULL);
-            mapIter->second->setInstanceOf(entryBlockClone);
-        }//if
-    }//for
-
-    clone->inputPorts = inputPorts;
-    clone->outputPorts = outputPorts;
-
-    clone->recordTokenBuffer = recordTokenBuffer;
 
     return clone;
 }//deepClone
 
-std::shared_ptr<SequencerEntryImpl> SequencerEntry::getImplClone()
-{
-    return impl->clone();
-}//getImplClone
-
-const std::shared_ptr<SequencerEntryImpl> SequencerEntry::getImpl()
-{
-    return impl;
-}//getImpl
-
-void SequencerEntry::setNewDataImpl(std::shared_ptr<SequencerEntryImpl> impl_)
-{
-    impl = impl_;
-
-    Gtk::Entry *entryBox;
-    uiXml->get_widget("titleEntry", entryBox);
-    entryBox->set_text(impl->title);
-    uiXml->get_widget("titleEntry1", entryBox);
-    entryBox->set_text(impl->title);
-
-    std::cout << "setNewDataImpl: " << impl->title << std::endl;
-}//setNewDataImpl
-
-void SequencerEntry::setThemeColours()
+void SequencerEntryUI::setThemeColours()
 {
 return;
 
@@ -366,7 +286,7 @@ return;
     Glib::RefPtr<Glib::Object> obj = uiXml->get_object("cellrenderertext1");
     Glib::RefPtr<Gtk::CellRendererText> cellRendererText = Glib::RefPtr<Gtk::CellRendererText>::cast_dynamic(obj);
 
-    if (cellRendererText != NULL) {
+    if (cellRendererText) {
         #ifdef GLIBMM_PROPERTIES_ENABLED
 //            cellRendererText->property_background_gdk() = bgColour;
             cellRendererText->property_foreground_gdk() = textColour;
@@ -380,7 +300,7 @@ return;
     obj = uiXml->get_object("cellrenderertext2");
     cellRendererText = Glib::RefPtr<Gtk::CellRendererText>::cast_dynamic(obj);
 
-    if (cellRendererText != NULL) {
+    if (cellRendererText) {
         #ifdef GLIBMM_PROPERTIES_ENABLED
 //            cellRendererText->property_background_gdk() = bgColour;
             cellRendererText->property_foreground_gdk() = textColour;
@@ -393,9 +313,9 @@ return;
     }//if
 }//setThemeColours
 
-bool SequencerEntry::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
+bool SequencerEntryUI::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
 {
-    mouseButtonPressed(NULL);
+    mouseButtonPressed(nullptr);
     Gtk::Entry *entryBox;
     uiXml->get_widget("titleEntry", entryBox);
     Glib::ustring title = entryBox->get_text();
@@ -403,16 +323,16 @@ bool SequencerEntry::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
     uiXml->get_widget("titleEntry1", entryBox);
     entryBox->set_text(title);
 
-    impl->title = title;
+    baseEntry->setTitle(title);
 
-    std::cout << "handleKeyEntryOnLaterTitle...: " << impl->title << std::endl;
+    std::cout << "handleKeyEntryOnLaterTitle...: " << getTitle() << std::endl;
 
     return true;
 }//handleKeyEntryOnLargeTitleEntryBox
 
-bool SequencerEntry::handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event)
+bool SequencerEntryUI::handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event)
 {
-    mouseButtonPressed(NULL);
+    mouseButtonPressed(nullptr);
     Gtk::Entry *entryBox;
     uiXml->get_widget("titleEntry1", entryBox);
     Glib::ustring title = entryBox->get_text();
@@ -420,14 +340,14 @@ bool SequencerEntry::handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event)
     uiXml->get_widget("titleEntry", entryBox);
     entryBox->set_text(title);
 
-    impl->title = title;
+    baseEntry->setTitle(title);
 
-std::cout << "hadnleKE..2: " << impl->title << std::endl;
+std::cout << "hadnleKE..2: " << getTitle() << std::endl;
 
     return true;
 }//handleKeyEntryOnSmallTitleEntryBox
 
-void SequencerEntry::handleRecPressed()
+void SequencerEntryUI::handleRecPressed()
 {
     Gtk::ToggleButton *toggleButtonLg;
     Gtk::ToggleButton *toggleButtonSm;
@@ -438,10 +358,11 @@ void SequencerEntry::handleRecPressed()
     bool isActive = toggleButtonLg->get_active();
     toggleButtonSm->set_active(isActive);
 
-    impl->recordMode = isActive;
+    //impl->recordMode = isActive;
+    baseEntry->setRecordMode(isActive);
 }//handleRecPressed
 
-void SequencerEntry::handleRecSmPressed()
+void SequencerEntryUI::handleRecSmPressed()
 {
     Gtk::ToggleButton *toggleButtonLg;
     Gtk::ToggleButton *toggleButtonSm;
@@ -452,10 +373,11 @@ void SequencerEntry::handleRecSmPressed()
     bool isActive = toggleButtonSm->get_active();
     toggleButtonLg->set_active(isActive);
 
-    impl->recordMode = isActive;
+    //impl->recordMode = isActive;
+    baseEntry->setRecordMode(isActive);
 }//handleRecSmPressed
 
-void SequencerEntry::handleSoloPressed()
+void SequencerEntryUI::handleSoloPressed()
 {
     Gtk::ToggleButton *toggleButtonLg;
     Gtk::ToggleButton *toggleButtonSm;
@@ -466,10 +388,11 @@ void SequencerEntry::handleSoloPressed()
     bool isActive = toggleButtonLg->get_active();
     toggleButtonSm->set_active(isActive);
 
-    impl->soloMode = isActive;
+    //impl->soloMode = isActive;
+    baseEntry->setSoloMode(isActive);
 }//handleSoloPressed
 
-void SequencerEntry::handleSoloSmPressed()
+void SequencerEntryUI::handleSoloSmPressed()
 {
     Gtk::ToggleButton *toggleButtonLg;
     Gtk::ToggleButton *toggleButtonSm;
@@ -480,10 +403,11 @@ void SequencerEntry::handleSoloSmPressed()
     bool isActive = toggleButtonSm->get_active();
     toggleButtonLg->set_active(isActive);
 
-    impl->soloMode = isActive;
+    //impl->soloMode = isActive;
+    baseEntry->setSoloMode(isActive);
 }//handleSoloSmPressed
 
-void SequencerEntry::handleMutePressed()
+void SequencerEntryUI::handleMutePressed()
 {
     Gtk::ToggleButton *toggleButtonLg;
     Gtk::ToggleButton *toggleButtonSm;
@@ -494,10 +418,11 @@ void SequencerEntry::handleMutePressed()
     bool isActive = toggleButtonLg->get_active();
     toggleButtonSm->set_active(isActive);
 
-    impl->muteMode = isActive;
+    //impl->muteMode = isActive;
+    baseEntry->setMuteMode(isActive);
 }//handleMutePressed
 
-void SequencerEntry::handleMuteSmPressed()
+void SequencerEntryUI::handleMuteSmPressed()
 {
     Gtk::ToggleButton *toggleButtonLg;
     Gtk::ToggleButton *toggleButtonSm;
@@ -508,24 +433,25 @@ void SequencerEntry::handleMuteSmPressed()
     bool isActive = toggleButtonSm->get_active();
     toggleButtonLg->set_active(isActive);
 
-    impl->muteMode = isActive;
+    //impl->muteMode = isActive;
+    baseEntry->setMuteMode(isActive);
 }//handleMuteSmPressed
 
-void SequencerEntry::handleSwitchPressed()
+void SequencerEntryUI::handleSwitchPressed()
 {
-    sequencer.lock()->editSequencerEntryProperties(shared_from_this(), true);
+    owningSequencer.lock()->editSequencerEntryProperties(shared_from_this(), true);
 
     /*
-    mouseButtonPressed(NULL);
+    mouseButtonPressed(nullptr);
     isFullBox = !isFullBox;
 
     if (false == isFullBox) {
-        if (smallWindow->get_parent() != NULL) {
+        if (smallWindow->get_parent() != nullptr) {
             smallWindow->get_parent()->remove(*smallWindow);
         }//if
         sequencer->doSwapEntryBox(mainWindow, smallWindow);
     } else {
-        if (mainWindow->get_parent() != NULL) {
+        if (mainWindow->get_parent() != nullptr) {
             mainWindow->get_parent()->remove(*mainWindow);
         }//if
         sequencer->doSwapEntryBox(smallWindow, mainWindow);
@@ -535,12 +461,12 @@ void SequencerEntry::handleSwitchPressed()
     */
 }//handleSwitchPressed
 
-bool SequencerEntry::IsFullBox() const
+bool SequencerEntryUI::IsFullBox() const
 {
     return isFullBox;
 }//IsFullBox
 
-void SequencerEntry::setLabelColour(Gdk::Color colour)
+void SequencerEntryUI::setLabelColour(Gdk::Color colour)
 {
     Gtk::EventBox *labelBox;
     uiXml->get_widget("indexLabelEventBox", labelBox);
@@ -548,7 +474,7 @@ void SequencerEntry::setLabelColour(Gdk::Color colour)
     labelBox->modify_bg(Gtk::STATE_NORMAL, colour);
 }//setLabelColour
 
-void SequencerEntry::setIndex(unsigned int index)
+void SequencerEntryUI::setIndex(unsigned int index)
 {
     Gtk::Label *label;
     uiXml->get_widget("indexLabel", label);
@@ -573,32 +499,32 @@ void SequencerEntry::setIndex(unsigned int index)
     curIndex = index;
 }//setIndex
 
-Glib::ustring SequencerEntry::getTitle() const
+Glib::ustring SequencerEntryUI::getTitle() const
 {
-    return impl->title;
+    return baseEntry->getTitle();
 }//getTitle
 
-void SequencerEntry::setTitle(Glib::ustring title)
+void SequencerEntryUI::setTitle(Glib::ustring title)
 {
     if (title.empty() == false) {
 
 //    std::cout << "setTitle: " << title << std::endl;
 
-        impl->title = title;
+        baseEntry->setTitle(title);
         Gtk::Entry *entryBox;
         uiXml->get_widget("titleEntry", entryBox);
-        entryBox->set_text(impl->title);
+        entryBox->set_text(getTitle());
         uiXml->get_widget("titleEntry1", entryBox);
-        entryBox->set_text(impl->title);
+        entryBox->set_text(getTitle());
     }//if
 }//setTitle
 
-unsigned int SequencerEntry::getIndex()
+unsigned int SequencerEntryUI::getIndex()
 {
     return curIndex;
 }//getIndex
 
-Gtk::Widget *SequencerEntry::getHookWidget()
+Gtk::Widget *SequencerEntryUI::getHookWidget()
 {
     if (true == isFullBox) {
         return mainWindow;
@@ -607,13 +533,13 @@ Gtk::Widget *SequencerEntry::getHookWidget()
     }//if
 }//getHookWidget
 
-bool SequencerEntry::handleEntryFocus(GdkEventFocus*)
+bool SequencerEntryUI::handleEntryFocus(GdkEventFocus*)
 {
-    mouseButtonPressed(NULL);
+    mouseButtonPressed(nullptr);
     return true;
 }//handleEntryFocus
 
-bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
+bool SequencerEntryUI::mouseButtonPressed(GdkEventButton *event)
 {
     Gdk::Color fgColour;
     Gdk::Color bgColour;
@@ -630,24 +556,24 @@ bool SequencerEntry::mouseButtonPressed(GdkEventButton *event)
     smallFrame->modify_fg(Gtk::STATE_NORMAL, fgColour);
     smallFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
 
-    sequencer.lock()->notifySelected(this);
+    owningSequencer.lock()->notifySelected(shared_from_this());
 
     return true;
 }//mouseButtonPressed
 
-void SequencerEntry::setFocus()
+void SequencerEntryUI::setFocus()
 {
-    (void)mouseButtonPressed(NULL);
+    (void)mouseButtonPressed(nullptr);
 }//setFocus
 
-void SequencerEntry::select()
+void SequencerEntryUI::select()
 {
-    mouseButtonPressed(NULL);
+    mouseButtonPressed(nullptr);
     activeCheckButton->set_active(true);
 //    std::cout << "select: " << getTitle() << std::endl;
 }//select
 
-void SequencerEntry::deselect()
+void SequencerEntryUI::deselect()
 {
     Gdk::Color fgColour;
     Gdk::Color bgColour;
@@ -670,13 +596,13 @@ void SequencerEntry::deselect()
 //    std::cout << "deselect: " << getTitle() << std::endl;
 }//deselect
 
-void SequencerEntry::addEntryBlock(int, std::shared_ptr<SequencerEntryBlock> entryBlock)
+void SequencerEntryUI::addEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
     removeEntryBlock(entryBlock);
-    entryBlocks[entryBlock->getStartTick()] = entryBlock;
+    entryBlocks[entryBlock->getBaseEntryBlock()->getStartTick()] = entryBlock;
 
-    if (entryBlock->getTitle().empty() == true) {
-        entryBlock->setTitle(getTitle() + Glib::ustring(" - ") + boost::lexical_cast<Glib::ustring>(entryBlocks.size()));
+    if (entryBlock->getBaseEntryBlock()->getTitle().empty() == true) {
+        entryBlock->getBaseEntryBlock()->setTitle(getTitle() + Glib::ustring(" - ") + boost::lexical_cast<Glib::ustring>(entryBlocks.size()));
 
 //        std::cout << "entryBlock title: " << entryBlock->getTitle() << std::endl;
     }//if
@@ -684,198 +610,74 @@ void SequencerEntry::addEntryBlock(int, std::shared_ptr<SequencerEntryBlock> ent
 //    std::cout << "addEntryBlock: " << entryBlock->getTitle() << "  --  " << entryBlock->getStartTick() << "(" << entryBlocks.size() << ")" << std::endl;
 }//addEntryBlock
 
-void SequencerEntry::removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock)
+void SequencerEntryUI::removeEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
-    if (entryBlocks.find(entryBlock->getStartTick()) != entryBlocks.end()) {
+    if (entryBlocks.find(entryBlock->getBaseEntryBlock()->getStartTick()) != entryBlocks.end()) {
 //        std::cout << "removed at: " << entryBlock->getStartTick() << std::endl;
-        entryBlocks.erase(entryBlocks.find(entryBlock->getStartTick()));
+        entryBlocks.erase(entryBlocks.find(entryBlock->getBaseEntryBlock()->getStartTick()));
     } else {
 //        std::cout << "not removed at: " << entryBlock->getStartTick() << std::endl;
     }//if
 }//removeEntryBlock
 
-void SequencerEntry::setUIBounds(unsigned int relativeStartY_, unsigned int relativeEndY_)
+void SequencerEntryUI::setUIBounds(unsigned int relativeStartY_, unsigned int relativeEndY_)
 {
     relativeStartY = relativeStartY_;
     relativeEndY = relativeEndY_;
 }//setUIBounds
 
-std::pair<unsigned int, unsigned int> SequencerEntry::getUIBounds()
+std::pair<unsigned int, unsigned int> SequencerEntryUI::getUIBounds()
 {
     return std::make_pair(relativeStartY, relativeEndY);
 }//getUIBounds
 
-template<class Archive>
-void SequencerEntry::serialize(Archive &ar, const unsigned int version)
+void SequencerEntryUI::doSave(boost::archive::xml_oarchive &outputArchive)
 {
-    ar & BOOST_SERIALIZATION_NVP(impl);
-    ar & BOOST_SERIALIZATION_NVP(isFullBox);
-    ar & BOOST_SERIALIZATION_NVP(curIndex);
-    ar & BOOST_SERIALIZATION_NVP(entryBlocks);
+    int SequencerEntryUIVersion = 1;
+    outputArchive & BOOST_SERIALIZATION_NVP(SequencerEntryUIVersion);
 
-    std::vector<std::string> inputPortsStr;
-    std::vector<std::string> outputPortsStr;
+    int numEntryBlocks = entryBlocks.size();    
+    outputArchive & BOOST_SERIALIZATION_NVP(numEntryBlocks);
 
-    JackSingleton &jackSingleton = JackSingleton::Instance();
+    for (auto entryBlockIter : entryBlocks) {
+        int index = entryBlockIter.first;
+        std::shared_ptr<SequencerEntryBlockUI> entryBlockUI = entryBlockIter.second;
+        std::shared_ptr<SequencerEntryBlock> entryBlockBase = entryBlockUI->getBaseEntryBlock();
 
-    for (jack_port_t *port : inputPorts) {
-        std::string portName = jackSingleton.getInputPortName(port);
-//        std::cout << "IN1: " << portName << std::endl;
+        outputArchive & BOOST_SERIALIZATION_NVP(index);
+        outputArchive & BOOST_SERIALIZATION_NVP(isFullBox);
+        outputArchive & BOOST_SERIALIZATION_NVP(entryBlockBase);
 
-        assert(portName.empty() == false);
-        inputPortsStr.push_back(portName);
-    }//foreach
+        entryBlockUI->doSave(outputArchive);
+    }//for
+}//doSave
 
-    for (jack_port_t *port : outputPorts) {
-        std::string portName = jackSingleton.getOutputPortName(port);
-//        std::cout << "OUT1: " << portName << std::endl;
-
-        assert(portName.empty() == false);
-        outputPortsStr.push_back(portName);
-    }//foreach
-
-    ar & BOOST_SERIALIZATION_NVP(inputPortsStr);
-    ar & BOOST_SERIALIZATION_NVP(outputPortsStr);
-
-    inputPorts.clear();
-    outputPorts.clear();
-
-    for (std::string portStr : inputPortsStr) {
-        jack_port_t *port = jackSingleton.getInputPort(portStr);
-        inputPorts.insert(port);
-
-//        std::cout << "IN2: " << portStr << " - " << port << std::endl;
-    }//foreach
-
-    for (std::string portStr : outputPortsStr) {
-        jack_port_t *port = jackSingleton.getOutputPort(portStr);
-        outputPorts.insert(port);
-
-//        std::cout << "OUT2: " << portStr << " - " << port << std::endl;
-    }//foreach
-
-//    std::cout << "SE serialize: " << isFullBox << std::endl;
-}//serialize
-
-template<class Archive>
-void SequencerEntryImpl::serialize(Archive &ar, const unsigned int version)
+void SequencerEntryUI::doLoad(boost::archive::xml_iarchive &inputArchive)
 {
-    ar & BOOST_SERIALIZATION_NVP(controllerType);
-    ar & BOOST_SERIALIZATION_NVP(msb);
-    ar & BOOST_SERIALIZATION_NVP(lsb);
-    ar & BOOST_SERIALIZATION_NVP(channel);
-    ar & BOOST_SERIALIZATION_NVP(minValue);
-    ar & BOOST_SERIALIZATION_NVP(maxValue);
-    ar & BOOST_SERIALIZATION_NVP(sevenBit);
-    ar & BOOST_SERIALIZATION_NVP(useBothMSBandLSB);
+    int SequencerEntryUIVersion = -1;
+    inputArchive & BOOST_SERIALIZATION_NVP(SequencerEntryUIVersion);
 
-    ar & BOOST_SERIALIZATION_NVP(recordMode);
-    ar & BOOST_SERIALIZATION_NVP(soloMode);
-    ar & BOOST_SERIALIZATION_NVP(muteMode);
+    int numEntryBlocks = 0;
+    inputArchive & BOOST_SERIALIZATION_NVP(numEntryBlocks);
 
-    std::string titleStr = Glib::locale_from_utf8(title);
-    ar & BOOST_SERIALIZATION_NVP(titleStr);
-    title = titleStr;
+    entryBlocks.clear();
+    for (int entryBlock = 0; entryBlock < numEntryBlocks; ++entryBlock) {
+        int index = -1;
+        std::shared_ptr<SequencerEntryBlock> entryBlockBase;
 
-//    std::cout << "TITLE: " << title << std::endl;
-}//serialize
+        inputArchive & BOOST_SERIALIZATION_NVP(index);
+        inputArchive & BOOST_SERIALIZATION_NVP(isFullBox);
+        inputArchive & BOOST_SERIALIZATION_NVP(entryBlockBase);
 
-std::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
-{
-    if (entryBlocks.find(tick) != entryBlocks.end()) {
-        return entryBlocks[tick];
-    } else {
-        return std::shared_ptr<SequencerEntryBlock>();
-    }//if
-}//getEntryBlock
+        std::shared_ptr<SequencerEntryBlockUI> entryBlockUI(new SequencerEntryBlockUI(entryBlockBase, shared_from_this()));
+        entryBlocks[index] = entryBlockUI;
 
-std::set<jack_port_t *> SequencerEntry::getInputPorts() const
-{
-    return inputPorts;
-}//getInputPorts
+        entryBlockUI->doLoad(inputArchive);
+    }//for
+}//doLoad
 
-std::set<jack_port_t *> SequencerEntry::getOutputPorts() const
-{
-    return outputPorts;
-}//getOutputPorts
-
-void SequencerEntry::setInputPorts(std::set<jack_port_t *> ports)
-{
-    inputPorts = ports;
-}//setInputPorts
-
-void SequencerEntry::setOutputPorts(std::set<jack_port_t *> ports)
-{
-    outputPorts = ports;
-}//setOutputPorts
-
-double SequencerEntry::sample(int tick)
-{
-    if (entryBlocks.empty() == true) {
-        return 0;
-    }//if
-
-    std::map<int, std::shared_ptr<SequencerEntryBlock> >::iterator entryBlockIter = entryBlocks.upper_bound(tick);
-    if (entryBlockIter != entryBlocks.begin()) {
-        entryBlockIter--;
-    }//if
-
-    double val = entryBlockIter->second->getCurve()->sample(tick);
-
-    val = std::min(val, (double)impl->maxValue);
-    val = std::max(val, (double)impl->minValue);
-
-    return val;
-}//sample
-
-unsigned char SequencerEntry::sampleChar(int tick)
-{
-    double value = sample(tick);
-    value -= impl->minValue;
-    value /= (double)(impl->maxValue - impl->minValue);
-
-    if (true == impl->sevenBit) {
-        value *= 127.0 + 0.5;
-    } else {        
-        value *= 255.0 + 0.5;
-    }//if
-
-    return (unsigned char)value;
-}//sampleChar
-
-void SequencerEntry::clearRecordTokenBuffer()
-{
-    std::cout << "clearRecordTokenBuffer" << std::endl;
-    recordTokenBuffer.clear();
-}//clearRecordTokenBuffer
-
-void SequencerEntry::addRecordToken(std::shared_ptr<MidiToken> token)
-{
-    if (impl->recordMode == false) {
-        std::cout << "out 1" << std::endl;
-        return;
-    }//if
-
-    if ((token->type == MidiTokenType::CC) && (impl->controllerType != ControlType::CC)) {
-        std::cout << "out 2" << std::endl;
-        return;
-    }//if
-
-    if ((impl->channel != 16) && (impl->channel != token->channel)) {
-        std::cout << "out 3" << std::endl;
-        return;
-    }//if
-
-    if ((token->type == MidiTokenType::CC) && (impl->msb != token->controller)) {
-        std::cout << "out 4" << std::endl;
-        return;
-    }//if
-
-    std::cout << "add token" << std::endl;
-    recordTokenBuffer.push_back(token);
-}//addRecordToken
-
-std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > SequencerEntry::splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick)
+#if 0
+std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > SequencerEntryUI::splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick)
 {
     if ((tick <= entryBlock->getStartTick()) || (tick >= (entryBlock->getStartTick() + entryBlock->getDuration()))) {
         return std::make_pair(entryBlock, entryBlock);
@@ -937,31 +739,31 @@ std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBl
 
     return std::make_pair(firstBlock, secondBlock);
 }//splitEntryBlock
-
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Rendering code
 
-void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
+void SequencerEntryUI::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
                                         std::vector<SequencerEntryBlockSelectionInfo> &selectionInfos,
                                         EntryBlockSelectionState &entryBlockSelectionState)
 
 {
     Globals &globals = Globals::Instance();
 
-    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryBlockIter = entryBlocks.begin(); entryBlockIter != entryBlocks.end(); ++entryBlockIter) {
+
+    auto nextEntryBlockIter = entryBlocks.begin();
+    for (auto entryBlockIter : entryBlocks) {
+        ++nextEntryBlockIter;
 
         //std::cout << "drawEntryBoxes SEB: " << entryBlockIter->second.get() << " - " << &entryBlockSelectionState << std::endl;
 
-        int startTick = entryBlockIter->second->getStartTick();
-        int duration = entryBlockIter->second->getDuration();
+        int startTick = entryBlockIter.second->getBaseEntryBlock()->getStartTick();
+        int duration = entryBlockIter.second->getBaseEntryBlock()->getDuration();
 
         if ((startTick > verticalPixelTickValues[verticalPixelTickValues.size()-1]) || (startTick + duration < verticalPixelTickValues[0])) {
             continue;
         }//if
-
-        std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator nextEntryBlockIter = entryBlockIter;
-        ++nextEntryBlockIter;
 
         int relativeStartXTick = startTick;
         relativeStartXTick = std::max(relativeStartXTick, verticalPixelTickValues[0]);
@@ -969,8 +771,8 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         int relativeEndXTick = startTick + duration;
         bool wasCutOff = false;
         if (nextEntryBlockIter != entryBlocks.end()) {
-            if (nextEntryBlockIter->second->getStartTick() < relativeEndXTick) {
-                relativeEndXTick = nextEntryBlockIter->second->getStartTick();
+            if (nextEntryBlockIter->second->getBaseEntryBlock()->getStartTick() < relativeEndXTick) {
+                relativeEndXTick = nextEntryBlockIter->second->getBaseEntryBlock()->getStartTick();
                 wasCutOff = true;
             }//if
         }//if
@@ -995,7 +797,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         context->rectangle(relativeStartX, relativeStartY + 10, relativeEndX - relativeStartX, relativeEndY - relativeStartY - 10);
         context->clip();
 
-        if (entryBlockIter->second->getInstanceOf() == NULL) {
+        if (entryBlockIter.second->getBaseEntryBlock()->getInstanceOf() == nullptr) {
             if (false == wasCutOff) {
                 context->set_source_rgba(1.0, 0.0, 0.0, 0.3);
             } else {
@@ -1011,7 +813,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 
         context->paint();
 
-        if (entryBlockSelectionState.IsSelected(entryBlockIter->second) == true) {
+        if (entryBlockSelectionState.IsSelected(entryBlockIter.second) == true) {
             context->set_source_rgba(1.0, 1.0, 0.0, 0.8);
             context->set_line_cap(Cairo::LINE_CAP_ROUND);
             context->move_to(relativeStartX, relativeStartY + 10);
@@ -1032,7 +834,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
         Pango::FontDescription font_descr(fontStr.c_str());
 
         pangoLayout->set_font_description(font_descr);
-        pangoLayout->set_text(entryBlockIter->second->getTitle());
+        pangoLayout->set_text(entryBlockIter.second->getBaseEntryBlock()->getTitle());
         pangoLayout->update_from_cairo_context(context);  //gets cairo cursor position
         pangoLayout->add_to_cairo_context(context);       //adds text to cairos stack of stuff to be drawn
         context->set_source_rgba(1.0, 1.0, 1.0, 0.8);
@@ -1041,7 +843,7 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 
         SequencerEntryBlockSelectionInfo newSelectionInfo;
         newSelectionInfo.entry = shared_from_this();
-        newSelectionInfo.entryBlock = entryBlockIter->second;
+        newSelectionInfo.entryBlock = entryBlockIter.second;
         newSelectionInfo.drawnArea = Gdk::Rectangle(relativeStartX, relativeStartY + 10, relativeEndX - relativeStartX, relativeEndY - relativeStartY - 10);
         selectionInfos.push_back(newSelectionInfo);
 
@@ -1050,9 +852,4 @@ void SequencerEntry::drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::
 }//drawEntryBoxes
 
 
-template void SequencerEntry::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
-template void SequencerEntryImpl::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
-
-template void SequencerEntry::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
-template void SequencerEntryImpl::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
 

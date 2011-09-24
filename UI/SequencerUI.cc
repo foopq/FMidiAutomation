@@ -7,8 +7,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 */
 
 
-#include "Sequencer.h"
-#include "SequencerEntry.h"
+#include "SequencerUI.h"
+#include "SequencerEntryUI.h"
+#include "Data/SequencerEntry.h"
 #include "Animation.h"
 #include "jack.h"
 #include <iostream>
@@ -30,14 +31,14 @@ static const unsigned int entryWindowHeight = 138 + 6; //size plus padding
 static const unsigned int smallEntryWindowHeight = 46 + 4; //size plus padding
 
 
-Sequencer::Sequencer(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
+SequencerUI::SequencerUI(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
-    std::cout << "Sequencer constructor" << std::endl;
+    std::cout << "Sequencer UI constructor" << std::endl;
 
     doInit(entryGlade_, parentWidget_, mainWindow_);
 }//constructor
 
-void Sequencer::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
+void SequencerUI::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget_, FMidiAutomationMainWindow *mainWindow_)
 {
     mainWindow = mainWindow_;
     entryGlade = entryGlade_;
@@ -46,7 +47,7 @@ void Sequencer::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget
     tmpLabel.set_text("");
     tmpLabel.show();
 
-    selectedEntry = NULL;
+    selectedEntry = nullptr;
 
     parentWidget->children().clear();
     parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
@@ -56,7 +57,7 @@ void Sequencer::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidget
     notifyOnScroll(-1);
 }//doInit
 
-void Sequencer::updateEntryFocus(unsigned int y)
+void SequencerUI::updateEntryFocus(unsigned int y)
 {
     std::cout << "updateEntryFocus: " << y << std::endl;
 
@@ -73,11 +74,11 @@ void Sequencer::updateEntryFocus(unsigned int y)
     }//foreach
 }//updateEntryFocus
 
-void Sequencer::adjustFillerHeight()
+void SequencerUI::adjustFillerHeight()
 {
     int totalHeight = 0;
-    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-        if (true == mapIter->first->IsFullBox()) {
+    for (auto mapIter : entries) {
+        if (true == mapIter.first->IsFullBox()) {
             totalHeight += entryWindowHeight;
         } else {
             totalHeight += smallEntryWindowHeight;
@@ -90,24 +91,24 @@ void Sequencer::adjustFillerHeight()
     tmpLabel.set_size_request(-1, labelHeight);
 }//adjustFillerHeight
 
-void Sequencer::adjustEntryIndices()
+void SequencerUI::adjustEntryIndices()
 {
     int index = 0;
     for (Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().begin(); entryIter != parentWidget->children().end(); ++entryIter, ++index) {
         Gtk::Widget *curWidget = entryIter->get_widget();
 
-        for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-            Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
+        for (auto mapIter : entries) {
+            Gtk::Widget *entryHookWidget = mapIter.first->getHookWidget();
 
             if (entryHookWidget == curWidget) {
-                mapIter->first->setIndex(index);
-                mapIter->second = index;
+                mapIter.first->setIndex(index);
+                mapIter.second = index;
             }//if
         }//for
     }//for
 }//adjustEntryIndices
 
-void Sequencer::notifyOnScroll(double pos)
+void SequencerUI::notifyOnScroll(double pos)
 {
     std::cout << "notifyOnScroll" << std::endl;
 
@@ -128,15 +129,24 @@ void Sequencer::notifyOnScroll(double pos)
     std::cout << std::endl;
 */
 
-    queue_draw();
+    mainWindow->queue_draw();
 }//notifyOnScroll
 
-unsigned int Sequencer::getNumEntries() const
+unsigned int SequencerUI::getNumEntries() const
 {
     return entries.size();
 }//getNumEntries
 
-void Sequencer::addEntry(std::shared_ptr<SequencerEntry> entry, int index)
+void SequencerUI::deepCloneEntries(std::shared_ptr<SequencerUI> other)
+{
+    entries.clear();
+    
+    for (auto entryIter : other->entries) {
+        entries[entryIter.first->deepClone(entryGlade)] = entryIter.second;
+    }//for
+}//deepCloneEntries
+
+void SequencerUI::addEntry(int index, std::shared_ptr<SequencerEntryUI> entry)
 {
     if (index < 0) {
         index = entries.size();
@@ -159,19 +169,19 @@ void Sequencer::addEntry(std::shared_ptr<SequencerEntry> entry, int index)
 std::cout << "entries: " << entries.size() << std::endl;
 }//addEntry
 
-std::shared_ptr<SequencerEntry> Sequencer::addEntry(int index, bool useDefaults)
+std::shared_ptr<SequencerEntryUI> SequencerUI::addEntry(int index, bool useDefaults, std::shared_ptr<SequencerEntry> origEntry)
 {
-    std::shared_ptr<SequencerEntry> newEntry(new SequencerEntry(entryGlade, shared_from_this(), entries.size()+1));
+    std::shared_ptr<SequencerEntryUI> newEntry(new SequencerEntryUI(entryGlade, entries.size()+1, origEntry, shared_from_this()));
 
     if (false == useDefaults) {
         editSequencerEntryProperties(newEntry, false);
     }//if
 
-    addEntry(newEntry, index);
+    addEntry(index, newEntry);
     return newEntry;
 }//addEntry
 
-void Sequencer::deleteEntry(std::shared_ptr<SequencerEntry> entry)
+void SequencerUI::deleteEntry(std::shared_ptr<SequencerEntryUI> entry)
 {
     assert(entries.find(entry) != entries.end());
 
@@ -182,28 +192,28 @@ void Sequencer::deleteEntry(std::shared_ptr<SequencerEntry> entry)
     notifyOnScroll(-1);
 }//deleteEntry
 
-unsigned int Sequencer::getEntryIndex(std::shared_ptr<SequencerEntry> entry)
+unsigned int SequencerUI::getEntryIndex(std::shared_ptr<SequencerEntryUI> entry)
 {
     return entry->getIndex();
 }//getEntryIndex
 
-std::shared_ptr<SequencerEntry> Sequencer::getSelectedEntry()
+std::shared_ptr<SequencerEntryUI> SequencerUI::getSelectedEntry()
 {
-    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-        if (mapIter->first.get() == selectedEntry) {
-            return mapIter->first;
+    for (auto mapIter : entries) {
+        if (mapIter.first == selectedEntry) {
+            return mapIter.first;
         }//if
     }//for
 
-    return std::shared_ptr<SequencerEntry>();
+    return std::shared_ptr<SequencerEntryUI>();
 }//getSelectedEntry
 
-fmaipair<std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator, std::map<std::shared_ptr<SequencerEntry>, int >::const_iterator> Sequencer::getEntryPair() const
+fmaipair<decltype(SequencerUI::entries.begin()), decltype(SequencerUI::entries.end())> SequencerUI::getEntryPair()
 {
     return fmai_make_pair(entries.begin(), entries.end());
 }//getEntryPair
 
-void Sequencer::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
+void SequencerUI::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
 {
     Glib::List_Iterator<Gtk::Box_Helpers::Child> foundWidget = parentWidget->children().find(*current);
 
@@ -217,44 +227,47 @@ void Sequencer::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
     notifyOnScroll(-1);
 }//doSwapEntryBox
 
-void Sequencer::notifySelected(SequencerEntry *selectedEntry_)
+void SequencerUI::notifySelected(std::shared_ptr<SequencerEntryUI> selectedEntry_)
 {
     if (selectedEntry == selectedEntry_) {
         return;
     }//if
 
-    if (selectedEntry != NULL) {
+    if (selectedEntry != nullptr) {
         selectedEntry->deselect();
     }//if
 
     selectedEntry = selectedEntry_;
 
-    if (selectedEntry != NULL) {
+    if (selectedEntry != nullptr) {
         selectedEntry->select();
     }//if
 
     mainWindow->unsetAllCurveFrames();
 }//notifySelected
 
-std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock() const
+std::shared_ptr<SequencerEntryBlockUI> SequencerUI::getSelectedEntryBlock() const
 {
     return selectedEntryBlock;
 }//getSelectedEntryBlock
 
-std::shared_ptr<SequencerEntryBlock> Sequencer::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
+std::shared_ptr<SequencerEntryBlockUI> SequencerUI::getSelectedEntryBlock(int x, int y, bool setSelection) //x/y is in graphDrawingArea pixels .. this is for mouse over and selection
 {
 //    std::cout << "getSelectedEntryBlock: " << x << " - " << y << "    " << setSelection << std::endl;
 
 //std::cout << "getSelectedEntryBlock: " << selectionInfos.size() << std::endl;
 
+    //FIXME: What was this for?
+/*    
     if (x < 0) {
         selectedEntryBlock = (*entries.begin()).first->getEntryBlock(0);
 
-if (selectedEntryBlock == NULL) {
+if (selectedEntryBlock == nullptr) {
     std::cout << "clearSelectedEntryBlock3" << std::endl;
 }//if
         return selectedEntryBlock;
     }//if
+*/
 
     for (SequencerEntryBlockSelectionInfo selectionInfo : selectionInfos) {
 
@@ -268,7 +281,7 @@ if (selectedEntryBlock == NULL) {
                 selectedEntryBlock = selectionInfo.entryBlock;
                 selectionInfo.entry.lock()->select();
 
-//if (selectedEntryBlock == NULL) {
+//if (selectedEntryBlock == nullptr) {
 //    std::cout << "clearSelectedEntryBlock2" << std::endl;
 //}//if
             }//if
@@ -276,10 +289,10 @@ if (selectedEntryBlock == NULL) {
         }//if
     }//foreach
 
-    return std::shared_ptr<SequencerEntryBlock>();
+    return std::shared_ptr<SequencerEntryBlockUI>();
 }//getSelectedEntryBlock
 
-void Sequencer::updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entryBlockSelectionState,
+void SequencerUI::updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entryBlockSelectionState,
                                                     gdouble mousePressDownX, gdouble mousePressDownY, gdouble mousePosX, gdouble mousePosY,
                                                     int areaWidth, int areaHeight)
 {
@@ -323,76 +336,20 @@ void Sequencer::updateSelectedEntryBlocksInRange(EntryBlockSelectionState &entry
     }//foreach
 }//updateSelectedEntryBlocksInRange
 
-void Sequencer::clearSelectedEntryBlock()
+void SequencerUI::clearSelectedEntryBlock()
 {
     std::cout << "clearSelectedEntryBlock" << std::endl;
 
     selectedEntryBlock.reset();
 }//clearSelectedEntryBlock
 
-void Sequencer::editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint)
+void SequencerUI::editSequencerEntryProperties(std::shared_ptr<SequencerEntryUI> entry, bool createUpdatePoint)
 {
-    mainWindow->editSequencerEntryProperties(entry, createUpdatePoint);
+    mainWindow->editSequencerEntryProperties(entry->getBaseEntry(), createUpdatePoint);
 }//editSequencerEntryProperties
 
-void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
-{
-
-    inputArchive & BOOST_SERIALIZATION_NVP(entries);
-    inputArchive & BOOST_SERIALIZATION_NVP(selectedEntryBlock);
-    inputArchive & BOOST_SERIALIZATION_NVP(selectionInfos);
-
-    parentWidget->children().clear();
-
-    Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().end();
-    int entryNum = 0;
-
-    std::vector<std::shared_ptr<SequencerEntry>> orderedEntries;
-    for (auto entryPair : entries) {
-        orderedEntries.push_back(entryPair.first);
-    }//foreach
-
-    std::sort(orderedEntries.begin(), orderedEntries.end(), 
-                [](const std::shared_ptr<SequencerEntry> &a, const std::shared_ptr<SequencerEntry> &b)
-                    {
-                        return a->getIndex() < b->getIndex();
-                    }
-            );
-
-    for (auto entry : orderedEntries) {
-        std::string entryTitle = entry->getTitle();
-        entry->doInit(entryGlade, shared_from_this(), entryNum);
-        entry->setTitle(entryTitle);
-        Gtk::Widget *entryHookWidget = entry->getHookWidget();
-
-//std::cout << "HERE: " << entryHookWidget << " - " << entryTitle << " - " << entry->getTitle() << " - index: " << entry->getIndex() << std::endl;
-
-        parentWidget->children().insert(entryIter, Gtk::Box_Helpers::Element(*entryHookWidget));
-        
-//        entries[entryPair.first] = entryNum;
-        entryIter = parentWidget->children().end();
-        entryNum++;
-    }//foreach
-
-    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
-
-    std::cout << "entries2: " << entries.size() <<  std::endl;
-
-    adjustFillerHeight();
-    adjustEntryIndices();
-    notifyOnScroll(-1);
-
-    selectedEntry = NULL;
-}//doLoad
-
-void Sequencer::doSave(boost::archive::xml_oarchive &outputArchive)
-{
-    outputArchive & BOOST_SERIALIZATION_NVP(entries);
-    outputArchive & BOOST_SERIALIZATION_NVP(selectedEntryBlock);
-    outputArchive & BOOST_SERIALIZATION_NVP(selectionInfos);
-}//doSave
-
-void Sequencer::cloneEntryMap()
+/*
+void SequencerUI::cloneEntryMap()
 {
     std::map<std::shared_ptr<SequencerEntry>, int > entriesClone;
     std::map<int, std::shared_ptr<SequencerEntry> > entriesCloneRev;
@@ -421,20 +378,21 @@ void Sequencer::cloneEntryMap()
     adjustEntryIndices();
     notifyOnScroll(-1);
 
-    selectedEntry = NULL;
+    selectedEntry = nullptr;
 
  std::cout << "cEM 5" << std::endl;   
 }//cloneEntryMap
+*/
 
-void Sequencer::setEntryMap(std::map<std::shared_ptr<SequencerEntry>, int > entryMap)
+void SequencerUI::setEntryMap(std::map<std::shared_ptr<SequencerEntryUI>, int > entryMap)
 {
 ////!!!! Unset selected entry block
 ////!!!! Switch select selected entry
 
-    std::map<int, std::shared_ptr<SequencerEntry> > entriesRev;
+    std::map<int, std::shared_ptr<SequencerEntryUI> > entriesRev;
 
-    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-        entriesRev[mapIter->second] = mapIter->first;
+    for (auto mapIter : entries) {
+        entriesRev[mapIter.second] = mapIter.first;
         //parentWidget->children().remove(*mapIter->first->getHookWidget());
     }//for
 
@@ -442,8 +400,8 @@ void Sequencer::setEntryMap(std::map<std::shared_ptr<SequencerEntry>, int > entr
 
     parentWidget->children().clear();
 
-    for (std::map<int, std::shared_ptr<SequencerEntry> >::iterator mapIter = entriesRev.begin(); mapIter != entriesRev.end(); ++mapIter) {
-        Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
+    for (auto mapIter : entriesRev) {
+        Gtk::Widget *entryHookWidget = mapIter.second->getHookWidget();
         parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
     }//for
 
@@ -453,13 +411,77 @@ void Sequencer::setEntryMap(std::map<std::shared_ptr<SequencerEntry>, int > entr
     adjustEntryIndices();
     notifyOnScroll(-1);
 
-    selectedEntry = NULL;
+    selectedEntry = nullptr;
 }//setEntryMap
 
-std::map<std::shared_ptr<SequencerEntry>, int > Sequencer::getEntryMap()
+void SequencerUI::doSave(boost::archive::xml_oarchive &outputArchive)
+{
+    int SequencerUIVersion = 1;
+    outputArchive & BOOST_SERIALIZATION_NVP(SequencerUIVersion);
+
+    int numEntries = entries.size();
+    outputArchive & BOOST_SERIALIZATION_NVP(numEntries);
+
+    for (auto entryIter : entries) {
+        int index = entryIter.second;
+        outputArchive & BOOST_SERIALIZATION_NVP(index);
+
+        std::shared_ptr<SequencerEntry> baseEntry = entryIter.first->getBaseEntry();
+        assert(baseEntry != nullptr);
+        outputArchive & BOOST_SERIALIZATION_NVP(baseEntry);
+
+        entryIter.first->doSave(outputArchive);
+    }//for
+}//doSave
+
+void SequencerUI::doLoad(boost::archive::xml_iarchive &inputArchive)
+{
+    int SequencerUIVersion = 0;
+    inputArchive & BOOST_SERIALIZATION_NVP(SequencerUIVersion);
+
+    int numEntries = 0;
+    inputArchive & BOOST_SERIALIZATION_NVP(numEntries);
+
+    entries.clear();
+    parentWidget->children().clear();
+
+    for (int entry = 0; entry < numEntries; ++entry) {
+        int index = -1;
+        inputArchive & BOOST_SERIALIZATION_NVP(index);
+
+        std::shared_ptr<SequencerEntry> baseEntry;
+        inputArchive & BOOST_SERIALIZATION_NVP(baseEntry);
+        assert(baseEntry != nullptr);
+
+        std::shared_ptr<SequencerEntryUI> entryUI(new SequencerEntryUI(entryGlade, index, baseEntry, shared_from_this()));
+        entryUI->doLoad(inputArchive);
+        entries[entryUI] = index;
+    }//for
+
+    std::map<int, std::shared_ptr<SequencerEntryUI> > entriesRev;
+
+    for (auto mapIter : entries) {
+        entriesRev[mapIter.second] = mapIter.first;
+    }//for
+
+    for (auto mapIter : entriesRev) {
+        Gtk::Widget *entryHookWidget = mapIter.second->getHookWidget();
+        parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
+    }//for
+
+    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+
+    adjustFillerHeight();
+    adjustEntryIndices();
+    notifyOnScroll(-1);
+}//doLoad
+
+/*
+std::map<std::shared_ptr<SequencerEntry>, int > SequencerUI::getEntryMap()
 {
     return entries;
 }//getEntryMap
+*/
 
 /*
 std::shared_ptr<VectorStreambuf> Sequencer::serializeEntryMap()
@@ -489,10 +511,10 @@ void Sequencer::deserializeEntryMap(std::shared_ptr<VectorStreambuf> streambuf)
 }//deserializeEntryMap
 */
 
-///////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////UI
 // Rendering code
 
-void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues)
+void SequencerUI::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr<Cairo::Context> context, unsigned int areaWidth, unsigned int areaHeight, std::vector<int> &verticalPixelTickValues)
 {
     selectionInfos.clear();
 
@@ -509,10 +531,10 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
     int drawingAreaStartY;
     graphDrawingArea->get_window()->get_origin(x1, drawingAreaStartY);
 
-    Globals &globals = Globals::Instance();
+    //Globals &globals = Globals::Instance();
 
-    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-        Gtk::Widget *entryHookWidget = mapIter->first->getHookWidget();
+    for (auto mapIter : entries) {
+        Gtk::Widget *entryHookWidget = mapIter.first->getHookWidget();
 
         Gdk::Rectangle entryRect;
         entryHookWidget->get_window()->get_frame_extents(entryRect);
@@ -525,8 +547,8 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
         entryHookWidget->get_window()->get_geometry(x, y, width, height, depth);
 
         entryHookWidget->get_window()->get_origin(x1, y1);
-        mapIter->second = y1;
-        int absEntryStartY = mapIter->second + 1;
+        mapIter.second = y1;
+        int absEntryStartY = mapIter.second + 1;
 
         if (((absEntryStartY + height) >= (drawingAreaStartY + 60)) && (absEntryStartY < (drawingAreaStartY + (int)areaHeight))) {
 //std::cout << "absEntryStartY: " << absEntryStartY << "    drawingAreaStartY: " << drawingAreaStartY << std::endl;            
@@ -544,23 +566,23 @@ void Sequencer::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefPtr
             //std::cout << "drawEntryBoxes graphState: " << globals.graphState.get() << std::endl;
 
             //std::cout << "ui bound for " << mapIter->first->getTitle() << ": " << relativeStartY << " - " << relativeStartY + relativeEndY - 1 << std::endl;
-            mapIter->first->setUIBounds(relativeStartY, relativeStartY + relativeEndY - 1);
+            mapIter.first->setUIBounds(relativeStartY, relativeStartY + relativeEndY - 1);
 
-            mapIter->first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, 
-                                            globals.graphState->entryBlockSelectionState);
+            mapIter.first->drawEntryBoxes(context, verticalPixelTickValues, relativeStartY, relativeStartY + relativeEndY - 1, selectionInfos, 
+                                            mainWindow->getGraphState().entryBlockSelectionState);
             
             context->reset_clip();
             context->rectangle(0, relativeStartY, 100, relativeEndY);
             context->clip();
 
-            if ((mapIter->first->getIndex() % 2) == 0) {
+            if ((mapIter.first->getIndex() % 2) == 0) {
                 context->set_source_rgba(1.0, 0.0, 1.0, 0.3);
             } else {
                 context->set_source_rgba(0.0, 1.0, 1.0, 0.3);
             }//if
             context->paint();
         } else {
-            mapIter->first->setUIBounds(std::numeric_limits<unsigned int>::max(), std::numeric_limits<unsigned int>::max());
+            mapIter.first->setUIBounds(std::numeric_limits<unsigned int>::max(), std::numeric_limits<unsigned int>::max());
         }//if
 
 //std::cout << "top: " << mapIter->second << " --- x: " << x << "   y: " << y << "    width: " << width << "   height: " << height << "   depth: " << depth << std::endl;

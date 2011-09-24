@@ -9,17 +9,16 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "Tempo.h"
 #include <boost/lexical_cast.hpp>
-#include "FMidiAutomationData.h"
+#include "Data/FMidiAutomationData.h"
 #include "GraphState.h"
 #include "Globals.h"
 
 namespace
 {
 
-bool updateTempoBoxWithSelected(std::map<int, std::shared_ptr<Tempo> > &tempoChanges, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry)
+bool updateTempoBoxWithSelected(fmaipair<FMidiAutomationData::TempoChangesIter, FMidiAutomationData::TempoChangesIter> tempoChanges, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry)
 {
-    typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-    for (TempoMarkerPair tempoMarkerPair : tempoChanges) {
+    for (auto tempoMarkerPair : tempoChanges) {
         if (true == tempoMarkerPair.second->currentlySelected) {
             unsigned int bpmNumerator = tempoMarkerPair.second->bpm / 100;
             unsigned int bpmDenominator = tempoMarkerPair.second->bpm - (bpmNumerator * 100);
@@ -102,14 +101,15 @@ void actuallyDrawTempoBars(unsigned int drawingAreaWidth, unsigned int drawingAr
     context->stroke();
 }//actuallyDrawTempoBars
 
-void drawTimeSignatureTicks(int firstPixelTick, int lastPixelTick, std::map<int, std::shared_ptr<Tempo> >::iterator tempoMarker, 
-                                Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, 
+void drawTimeSignatureTicks(int firstPixelTick, int lastPixelTick, FMidiAutomationData::TempoChangesIter tempoMarker, 
+                                Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, FMidiAutomationData &datas, 
                                 unsigned int drawingAreaWidth, unsigned int drawingAreaHeight, std::vector<int> &verticalPixelTickValues, int ticksPerPixel)
 {
     std::vector<std::pair<unsigned int, LineType> > verticalLines;
     std::vector<std::pair<unsigned int, std::string> > lowerLineText;
 
-    if (tempoMarker != datas->tempoChanges.begin()) {
+    auto tempoChanges = datas.getTempoChanges();
+    if (tempoMarker != tempoChanges.first) {
         tempoMarker--;
     }//if
 
@@ -117,12 +117,12 @@ void drawTimeSignatureTicks(int firstPixelTick, int lastPixelTick, std::map<int,
         ticksPerPixel = 0;
     }//if
 
-    while ((tempoMarker != datas->tempoChanges.end()) && (tempoMarker->first < lastPixelTick)) {
+    while ((tempoMarker != tempoChanges.second) && (tempoMarker->first < lastPixelTick)) {
         std::map<int, std::shared_ptr<Tempo> >::iterator nextTempoMarker = tempoMarker;
         nextTempoMarker++;
 
         int nextStartTick = std::numeric_limits<int>::max();
-        if (nextTempoMarker != datas->tempoChanges.end()) {
+        if (nextTempoMarker != tempoChanges.second) {
             nextStartTick = nextTempoMarker->first;
         }//if
 
@@ -191,23 +191,24 @@ TempoGlobals::TempoGlobals()
     tempoDataSelected = false;
 }//constructor
 
-void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, 
+void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, FMidiAutomationData &datas, 
                     unsigned int drawingAreaWidth, unsigned int drawingAreaHeight, std::vector<int> &verticalPixelTickValues, int ticksPerPixel)
 {
     int firstPixelTick = graphState.verticalPixelTickValues[0];
     int lastPixelTick = graphState.verticalPixelTickValues[graphState.verticalPixelTickValues.size()-1];
 
-    typedef std::pair<int, std::shared_ptr<Tempo> > TempoMarkerPair;
-    for (TempoMarkerPair tempoMarkerPair : datas->tempoChanges) {
+    auto tempoChanges = datas.getTempoChanges();
+
+    for (auto tempoMarkerPair : tempoChanges) {
         tempoMarkerPair.second->xPixelPos = -1;
     }//foreach
 
-    std::map<int, std::shared_ptr<Tempo> >::iterator firstTempoMarker = datas->tempoChanges.lower_bound(firstPixelTick);
+    auto firstTempoMarker = datas.getTempoChangesLowerBound(firstPixelTick);
 
     drawTimeSignatureTicks(firstPixelTick, lastPixelTick, firstTempoMarker, context, graphState, datas, 
                             drawingAreaWidth, drawingAreaHeight, verticalPixelTickValues, ticksPerPixel);
 
-    while ((firstTempoMarker != datas->tempoChanges.end()) && (firstTempoMarker->first < lastPixelTick)) {
+    while ((firstTempoMarker != tempoChanges.second) && (firstTempoMarker->first < lastPixelTick)) {
         unsigned int timePointerPixel = 0;
 
         std::vector<int>::iterator bound = std::lower_bound(graphState.verticalPixelTickValues.begin(), graphState.verticalPixelTickValues.end(), firstTempoMarker->first);
@@ -235,15 +236,16 @@ void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState,
     }//while
 }//drawTempoBar
 
-void updateTempoBox(GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry)
+void updateTempoBox(GraphState &graphState, FMidiAutomationData &datas, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry)
 {
-    if (true == updateTempoBoxWithSelected(datas->tempoChanges, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry)) {
+    if (true == updateTempoBoxWithSelected(datas.getTempoChanges(), bpmEntry, beatsPerBarEntry, barSubdivisionsEntry)) {
         return;
     }//if
 
-    std::map<int, std::shared_ptr<Tempo> >::const_iterator firstTempoMarker = datas->tempoChanges.lower_bound(graphState.curPointerTick);
+    auto tempoChanges = datas.getTempoChanges();
+    auto firstTempoMarker = datas.getTempoChangesLowerBound(graphState.curPointerTick);
 
-    if ((firstTempoMarker == datas->tempoChanges.end()) || (firstTempoMarker->first != graphState.curPointerTick)) {
+    if ((firstTempoMarker == tempoChanges.second) || (firstTempoMarker->first != graphState.curPointerTick)) {
         --firstTempoMarker;
     }//if
 
@@ -261,7 +263,7 @@ void updateTempoBox(GraphState &graphState, std::shared_ptr<FMidiAutomationData>
     barSubdivisionsEntry->set_text(boost::lexical_cast<std::string>(firstTempoMarker->second->barSubDivisions));
 }//updateTempoBox
 
-bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &tempoChanges)
+bool checkForTempoSelection(int xPos, fmaipair<FMidiAutomationData::TempoChangesIter, FMidiAutomationData::TempoChangesIter> tempoChanges)
 {
     bool foundIt = false;
 
@@ -288,9 +290,9 @@ bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &te
     return foundIt;
 }//checkForTempoSelection
 
-void updateTempoChangesUIData(std::map<int, std::shared_ptr<Tempo> > &tempoChanges)
+void updateTempoChangesUIData(fmaipair<FMidiAutomationData::TempoChangesIter, FMidiAutomationData::TempoChangesIter> tempoChanges)
 {
-    if (tempoChanges.empty() == true) {
+    if (tempoChanges.first == tempoChanges.second) {
         return;
     }//if
 

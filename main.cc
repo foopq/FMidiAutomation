@@ -9,20 +9,19 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include "FMidiAutomationMainWindow.h"
 #include "jack.h"
+#include "WindowManager.h"
+#include "Globals.h"
 #include <iostream>
 #include <libgnomecanvasmm.h>
 #include <glibmm/exception.h>
 
-FMidiAutomationMainWindow *mainWindow;
 
-void queue_draw()
-{
-    mainWindow->queue_draw();
-}//queue_draw
+//- jack needs to use reentrant locks
+//- we do need to serialize ui state (sequencer ui)
 
 int main(int argc, char** argv) 
 {
-    srand(time(NULL));
+    srand(time(nullptr));
 
     Glib::thread_init();
     Gnome::Canvas::init();
@@ -35,12 +34,22 @@ int main(int argc, char** argv)
     Gtk::Main kit(argc, argv);
 //    gdk_threads_leave();
 
-    mainWindow = new FMidiAutomationMainWindow();
-    mainWindow->init();
+    //mainWindow = new FMidiAutomationMainWindow();
+    //mainWindow->init();
 
-    JackSingleton &jackSingleton = JackSingleton::Instance();
+    WindowManager &windowManager = WindowManager::Instance();
+    std::shared_ptr<FMidiAutomationMainWindow> mainWindow = windowManager.createMainWindow();
+    //std::shared_ptr<FMidiAutomationMainWindow> mainWindow(new FMidiAutomationMainWindow);
+    //mainWindow->init(false, std::shared_ptr<SequencerEntryBlockUI>());
+
+    (void)JackSingleton::Instance();
+    Globals::ResetInstance();
 
     kit.run(*mainWindow->MainWindow());
+
+//    std::cout << "EXITING MAIN" << std::endl;
+    // reenable if we ever do multiple sequencer windows
+//    kit.run();
 
 /*    
     Glib::RefPtr<Gtk::Builder> uiXml;

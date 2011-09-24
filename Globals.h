@@ -10,11 +10,15 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #define __GLOBALS_H
 
 #include "Config.h"
+#include "Data/FMidiAutomationData.h"
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/access.hpp>
+#include <thread>
 
 class Sequencer;
 struct GraphState;
-
-void queue_draw();
 
 struct TempoGlobals
 {
@@ -28,8 +32,12 @@ struct Globals
     Globals();
     ~Globals();
 
-    static Globals &Instance();
+    static std::recursive_mutex globalsMutex;
 
+    static Globals &Instance();
+    static void ResetInstance();
+
+    FMidiAutomationData projectData;
     FMidiAutomationConfig config;
 
     std::string versionStr;
@@ -42,13 +50,16 @@ struct Globals
 
     bool darkTheme;
 
-    Gtk::DrawingArea *graphDrawingArea;
-    std::shared_ptr<GraphState> graphState;
-    std::shared_ptr<Sequencer> sequencer;
-
     TempoGlobals tempoGlobals;
+
+    template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    friend class boost::serialization::access;
+private:
+
+    static std::shared_ptr<Globals> instance;
 };//Globals
 
+BOOST_CLASS_VERSION(Globals, 1);
 
 #endif
 

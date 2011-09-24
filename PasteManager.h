@@ -22,12 +22,14 @@ struct FMidiAutomationData;
 class Sequencer;
 class SequencerEntry;
 class SequencerEntryBlock;
+class SequencerEntryBlockUI;
 struct Keyframe;
+class FMidiAutomationMainWindow;
 
 struct PasteCommand
 {
-    virtual void doPaste(boost::any contextData) = 0;
-    virtual void doPasteInstance(boost::any contextData) = 0;
+    virtual void doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow) = 0;
+    virtual void doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow) = 0;
 };//PasteCommand
 
 class PasteManager
@@ -50,21 +52,21 @@ public:
     void setPasteOnly(bool pasteOnly);
     void clearCommand();
 
-    void doPaste(boost::any contextData);
-    void doPasteInstance(boost::any contextData);
+    void doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
+    void doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
     void setNewCommand(std::shared_ptr<PasteCommand> command);
 };//PasteManager
 
 struct PasteSequencerEntryBlocksCommand : public PasteCommand
 {
-    PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
+    PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > entryBlocks); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerEntryBlocksCommand();
 
-    void doPaste(boost::any contextData);
-    void doPasteInstance(boost::any contextData);
+    void doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
+    void doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
 
 private:    
-    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > entryBlocks;
 };//PasteSequencerEntryBlocksCommand
 
 struct PasteSequencerKeyframesCommand : public PasteCommand
@@ -72,8 +74,8 @@ struct PasteSequencerKeyframesCommand : public PasteCommand
     PasteSequencerKeyframesCommand(std::map<int, std::shared_ptr<Keyframe> > keyframes); //FIXME: This shouldn't be a copy, but a reference!
     ~PasteSequencerKeyframesCommand();
 
-    void doPaste(boost::any contextData);
-    void doPasteInstance(boost::any contextData);
+    void doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
+    void doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
 
 private:
     std::map<int, std::shared_ptr<Keyframe> > keyframes;

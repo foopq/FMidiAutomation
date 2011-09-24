@@ -19,14 +19,16 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-#include <boost/thread.hpp>
+#include <boost/function.hpp>
 #include <jack/transport.h>
+#include <thread>
 
 struct FMidiAutomationData;
-class Sequencer;
+class SequencerUI;
 class SequencerEntry;
 struct GraphState;
 struct CurveEditor;
+class SequencerEntryBlockUI;
 
 enum class UIThreadOperation : char
 {
@@ -35,7 +37,7 @@ enum class UIThreadOperation : char
 };//UIThreadOperation
 
 
-class FMidiAutomationMainWindow
+class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutomationMainWindow>
 {
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Window *mainWindow;
@@ -75,10 +77,11 @@ class FMidiAutomationMainWindow
     Gtk::CheckButton *bpmFrameCheckButton;
     Gtk::MenuItem *menu_pasteSEBToSelectedEntry;
 
-
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
     Gtk::Menu *m_pMenuPopup;
+
+    sigc::connection idleConnection;
 
     int drawingAreaWidth;
     int drawingAreaHeight;
@@ -101,23 +104,31 @@ class FMidiAutomationMainWindow
 
     std::vector <Gtk::Window *> automationTrackWindows;
     
-    std::shared_ptr<FMidiAutomationData> datas;
     std::shared_ptr<GraphState> graphState;
-    std::shared_ptr<Sequencer> sequencer;
+    std::shared_ptr<SequencerUI> sequencer;
 
     Gtk::Label *statusBar;
     float statusTextAlpha;
     Glib::ustring currentStatusText;
     bool needsStatusTextUpdate;
-    void statusTextThreadFunc();
-    boost::thread statusTextThread;
-    void setStatusText(Glib::ustring text);
-    boost::mutex statusTextMutex;
+    std::thread statusTextThread;
+    std::mutex statusTextMutex; //We intentionally leak this to avoid segfaulting on exit
+    std::mutex statusTextDataMutex;
 
     UIThreadOperation queuedUIThreadOperation;
 
+    guint32 lastHandledTime; //last handled scroll time
     bool recordMidi;
-    
+    bool curveEditorOnlyMode;
+    std::shared_ptr<SequencerEntryBlockUI> editingEntryBlock;
+    bool isExiting;
+
+    std::shared_ptr<std::thread> recordThread;
+ 
+    /* functions */
+    void setStatusText(Glib::ustring text);
+    void statusTextThreadFunc();
+
     void handleGraphResize(Gtk::Allocation&);
     
     void refreshGraphBackground();
@@ -145,6 +156,8 @@ class FMidiAutomationMainWindow
 
     void on_handleDelete();
 
+    bool handleOnClose(GdkEventAny *);
+
     bool key_pressed(GdkEventKey *event);
     bool key_released(GdkEventKey *event);
     bool mouseButtonPressed(GdkEventButton *event);
@@ -167,6 +180,7 @@ class FMidiAutomationMainWindow
     void handleDownButtonPressed();
     void handleSequencerButtonPressed();
     void handleCurveButtonPressed();
+    void handleCurveButtonPressedHelper(std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock);
 
     void handleRewPressed();
     void handlePlayPressed();
@@ -174,23 +188,21 @@ class FMidiAutomationMainWindow
     void handleRecordPressed();
 
     void handleJackPressed();
-
     void handleInsertModeChanged();
-
-    std::shared_ptr<boost::thread> recordThread;
     void startRecordThread();
-
+    void handleEditSelectedInSeparateWindow();
     bool handleEntryWindowScroll(Gtk::ScrollType, double);
 
     void handleAddSequencerEntryBlock();
     void handleDeleteSequencerEntryBlocks();
-    void handleDeleteSequencerEntryBlock();
+//    void handleDeleteSequencerEntryBlock();
     void handleSequencerEntryProperties();
     void handleSequencerEntryCurve();
 
     void handleDeleteKeyframe();
 
     void updateCursorTick(int tick, bool updateJack);
+    void handleSetFocus(Gtk::Widget *widget);
 
     void setThemeColours();
 
@@ -268,16 +280,25 @@ class FMidiAutomationMainWindow
 public:    
     FMidiAutomationMainWindow();
     ~FMidiAutomationMainWindow();
-    void init(); //Note: We split the constructor so that ::mainWindow is always valid
+    void init(bool curveEditorOnlyMode_, std::shared_ptr<SequencerEntryBlockUI> editingEntryBlock); //Note: We split the constructor so that ::mainWindow is always valid
     
     Gtk::Window *MainWindow();
     GraphState &getGraphState();
 
     void doTestInit();
 
+    std::shared_ptr<SequencerUI> getSequencer();
     void unsetAllCurveFrames();
     void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
+    boost::function<void (const std::string &)> getLoadCallback();
     void queue_draw();
+
+    //For serialization
+    bool getCurveEditorOnlyMode();
+    std::shared_ptr<SequencerEntryBlockUI> getEditingEntryBlock();
+    void forceCurveEditorMode(std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock);
+    void doSave(boost::archive::xml_oarchive &outputArchive);
+    void doLoad(boost::archive::xml_iarchive &inputArchive);
 };//FMidiAutomationMainWindow
 
 

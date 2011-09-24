@@ -8,18 +8,20 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "FMidiAutomationMainWindow.h"
-#include "Sequencer.h"
+#include "UI/SequencerUI.h"
 #include "FMidiAutomationCurveEditor.h"
 #include "Animation.h"
-#include "Command.h"
 #include "GraphState.h"
-#include "FMidiAutomationData.h"
+#include "Data/FMidiAutomationData.h"
 #include "Tempo.h"
+#include "Globals.h"
 #include <boost/lexical_cast.hpp>
 
 
 void FMidiAutomationMainWindow::handleSequencerTickMarkerRegionLMBPress(gdouble xPos)
 {
+    Globals &globals = Globals::Instance();
+
     if (false == ctrlCurrentlyPressed) {
         if ((graphState->leftMarkerTickXPixel >= 0) && (abs(xPos - graphState->leftMarkerTickXPixel) <= 5)) {
             graphState->selectedEntity = SelectedEntity::LeftTickBar;
@@ -30,10 +32,10 @@ void FMidiAutomationMainWindow::handleSequencerTickMarkerRegionLMBPress(gdouble 
         else if (abs(xPos - graphState->curPointerTickXPixel) <= 5) {
             graphState->selectedEntity = SelectedEntity::PointerTickBar;
         }//if
-        else if (checkForTempoSelection(xPos, datas->tempoChanges) == true) {
+        else if (checkForTempoSelection(xPos, globals.projectData.getTempoChanges()) == true) {
             graphState->selectedEntity = SelectedEntity::TempoChange;
             handleBPMFrameClickBase();
-            updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+            updateTempoBox(*graphState, globals.projectData, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
 
             if (graphState->displayMode == DisplayMode::Sequencer) {
                 sequencer->clearSelectedEntryBlock();
@@ -43,7 +45,7 @@ void FMidiAutomationMainWindow::handleSequencerTickMarkerRegionLMBPress(gdouble 
 
         else {
             //Essentially clear the selection state of the tempo changes
-            (void)checkForTempoSelection(-100, datas->tempoChanges);
+            (void)checkForTempoSelection(-100, globals.projectData.getTempoChanges());
         }//if
     }//if
 }//handleSequencerTickMarkerRegionLMBPress

@@ -8,8 +8,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "EntryProperties.h"
-#include "Sequencer.h"
-#include "SequencerEntry.h"
+#include "Data/SequencerEntry.h"
 #include <iostream>
 #include <boost/lexical_cast.hpp>
 

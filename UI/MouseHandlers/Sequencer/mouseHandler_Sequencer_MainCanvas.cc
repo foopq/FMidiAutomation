@@ -8,14 +8,15 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "FMidiAutomationMainWindow.h"
-#include "Sequencer.h"
+#include "UI/SequencerUI.h"
 #include "FMidiAutomationCurveEditor.h"
 #include "Animation.h"
-#include "Command.h"
+#include "Command_Sequencer.h"
 #include <boost/lexical_cast.hpp>
 #include "GraphState.h"
-#include "FMidiAutomationData.h"
+#include "Data/FMidiAutomationData.h"
 #include "Tempo.h"
+#include "Globals.h"
 
 namespace
 {
@@ -57,11 +58,11 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
     if (false == ctrlCurrentlyPressed) {
         unsetAllCurveFrames();
 
-        std::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+        std::shared_ptr<SequencerEntryBlockUI> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
 
 //std::cout << "handleSequencerMainCanvasLMBPress: entryBlock is: " << entryBlock << std::endl;
 
-        if (entryBlock == NULL) {
+        if (entryBlock == nullptr) {
             sequencer->clearSelectedEntryBlock();
 
             menuCopy->set_sensitive(false);
@@ -79,22 +80,24 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
                 graphState->entryBlockSelectionState.ClearSelected();
                 graphState->entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
 
-//std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is: " << entryBlock << " - " << graphState.get() <<  std::endl;
+std::cout << "handleSequencerMainCanvasLMBPress: entryBlock selection is: " << entryBlock << " - " << graphState.get() <<  std::endl;
 
-                positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getStartTick()));
+                positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(entryBlock->getBaseEntryBlock()->getStartTick()));
 
                 menuCopy->set_sensitive(true);
                 menuCut->set_sensitive(true);
             }//if
         }//if
 
+        Globals &globals = Globals::Instance();
+
         //Essentially clear the selection state of the tempo changes
-        (void)checkForTempoSelection(-100, datas->tempoChanges);
+        (void)checkForTempoSelection(-100, globals.projectData.getTempoChanges());
     } else {
         //Left click while control is held
-        std::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
+        std::shared_ptr<SequencerEntryBlockUI> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, true);
 
-        if (entryBlock != NULL) {
+        if (entryBlock != nullptr) {
             if (graphState->entryBlockSelectionState.IsSelected(entryBlock) == false) {
                 graphState->entryBlockSelectionState.AddSelectedEntryBlock(entryBlock);
             } else {
@@ -109,11 +112,11 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBPress()
         graphState->entryBlockSelectionState.ResetRubberbandingSelection();
     }//if
 
-    std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
+    std::map<std::shared_ptr<SequencerEntryBlockUI>, int> entryNewStartTicks;
     for (auto blockIter : graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
-        std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second;
+        std::shared_ptr<SequencerEntryBlockUI> entryBlock = blockIter.second;
 
-        entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
+        entryNewStartTicks[entryBlock] = entryBlock->getBaseEntryBlock()->getStartTick();
     }//for
 
     graphState->entryBlockSelectionState.SetCurrentlySelectedEntryOriginalStartTicks(entryNewStartTicks);
@@ -132,9 +135,9 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
     m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
 
     Glib::ustring ui_info = "<ui><popup name='PopupMenu'></popup></ui>";
-    std::shared_ptr<SequencerEntryBlock> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, false);
+    std::shared_ptr<SequencerEntryBlockUI> entryBlock = sequencer->getSelectedEntryBlock(mousePressDownX, mousePressDownY, false);
 
-    if (entryBlock != NULL) {
+    if (entryBlock != nullptr) {
         //XXX: I don't think we want to change the selection
         //if (graphState->entryBlockSelectionState.IsSelected(entryBlock) == false) {
         //    std::cout << "adding new entry block 2" << std::endl;
@@ -144,9 +147,10 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
 
         //Context menu to delete entry
         
-        m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlock));
         if (graphState->entryBlockSelectionState.GetNumSelected() > 1) {
             m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete All Selected Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks));
+        } else {
+            m_refActionGroup->add(Gtk::Action::create("ContextDelete", "Delete Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleDeleteSequencerEntryBlocks));
         }//if
 
         m_refActionGroup->add(Gtk::Action::create("ContextProperties", "Entry Block Properties"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleSequencerEntryProperties));
@@ -167,6 +171,10 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
 
             m_refActionGroup->add(Gtk::Action::create("ContextJoinSEB", "Join Sequencer Entry Blocks"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuJoinEntryBlocks));
             ui_info += "<menuitem action='ContextJoinSEB'/>";
+
+            ui_info += "<separator/>";
+            m_refActionGroup->add(Gtk::Action::create("ContextEditSeparateWindow", "Edit Selected in Separate Window"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEditSelectedInSeparateWindow));
+            ui_info += "<menuitem action='ContextEditSeparateWindow'/>";
         }//if
 
         ui_info +=
@@ -175,7 +183,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
 
         queue_draw();
     } else {
-        if (sequencer->getSelectedEntry() != NULL) {
+        if (sequencer->getSelectedEntry() != nullptr) {
             //Context menu to add entry
             m_refActionGroup->add(Gtk::Action::create("ContextAdd", "Add Entry Block"), sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleAddSequencerEntryBlock));
             ui_info =
@@ -231,7 +239,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBPress(guint button, 
     #endif //GLIBMM_EXCEPTIONS_ENABLED
 
     m_pMenuPopup = dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
-    if(m_pMenuPopup != NULL) {
+    if(m_pMenuPopup != nullptr) {
         m_pMenuPopup->show_all_children();
         m_pMenuPopup->popup(button, time);
     } else {
@@ -262,14 +270,14 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
         }//for
         */
 
-        std::map<std::shared_ptr<SequencerEntryBlock>, int> entryNewStartTicks;
+        std::map<std::shared_ptr<SequencerEntryBlockUI>, int> entryNewStartTicks;
         //for (std::multimap<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator blockIter = graphState->currentlySelectedEntryBlocks.begin(); 
         //            blockIter != graphState->currentlySelectedEntryBlocks.end(); ++blockIter) {
         
         for (auto blockIter : graphState->entryBlockSelectionState.GetCurrentlySelectedEntryBlocks()) {
-            std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second;
+            std::shared_ptr<SequencerEntryBlockUI> entryBlock = blockIter.second;
 
-            entryNewStartTicks[entryBlock] = entryBlock->getStartTick();
+            entryNewStartTicks[entryBlock] = entryBlock->getBaseEntryBlock()->getStartTick();
 
             //std::cout << "2handleSequencerMainCanvasLMBRelease: " << blockIter->first << std::endl << std::endl;
         }//for
@@ -281,7 +289,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
 
         std::shared_ptr<Command> moveSequencerEntryBlockCommand(
                 new MoveSequencerEntryBlockCommand(graphState->entryBlockSelectionState.GetEntryBlocksMapCopy(), 
-                                                    graphState->entryBlockSelectionState.GetEntryOriginalStartTicksCopy(), entryNewStartTicks));
+                                                    graphState->entryBlockSelectionState.GetEntryOriginalStartTicksCopy(), entryNewStartTicks, this));
         CommandManager::Instance().setNewCommand(moveSequencerEntryBlockCommand, true);
 
         graphState->entryBlockSelectionState.SetCurrentlySelectedEntryOriginalStartTicks(entryNewStartTicks); //XXX: Is this necessary here?
@@ -296,11 +304,11 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasLMBRelease(gdouble xPos
     }//if
 
     if (graphState->entryBlockSelectionState.HasSelected() == true) {
-        positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(graphState->entryBlockSelectionState.GetFirstEntryBlock()->getStartTick()));
+        positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(graphState->entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getStartTick()));
 
         Gtk::Entry *entry;
         uiXml->get_widget("selectedEntryBlockNameEntry", entry);
-        entry->set_text(graphState->entryBlockSelectionState.GetFirstEntryBlock()->getTitle());
+        entry->set_text(graphState->entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getTitle());
     } else {
         positionTickEntry->set_text("");
     }//if
@@ -318,8 +326,6 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasRMBRelease()
 
 void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos, gdouble yPos)
 {
-    std::cout << "handleSequencerMainCanvasMouseMove" << std::endl;
-
     if (true == shiftCurrentlyPressed) {
         //We are scrolling the canvas
         gdouble curOffsetX = graphState->offsetX;
@@ -345,7 +351,7 @@ void FMidiAutomationMainWindow::handleSequencerMainCanvasMouseMove(gdouble xPos,
 //            std::cout << "x: " << curX << std::endl;
 //            std::cout << "diffTick: " << diffTick << "   --  curTick: " << curTick << std::endl;
 
-                (blockIter.second)->moveBlock(curTick);
+                (blockIter.second)->getBaseEntryBlock()->moveBlock(curTick);
 
                 if (std::numeric_limits<int>::min() == firstCurTick) {
                     firstCurTick = curTick;

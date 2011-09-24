@@ -8,7 +8,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "EntryBlockProperties.h"
-#include "Sequencer.h"
+#include "Data/SequencerEntryBlock.h"
 #include <iostream>
 
 EntryBlockProperties::EntryBlockProperties(Glib::RefPtr<Gtk::Builder> uiXml, std::shared_ptr<SequencerEntryBlock> entryBlock)

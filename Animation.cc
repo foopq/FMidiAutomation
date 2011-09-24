@@ -8,13 +8,13 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "Animation.h"
-#include "Sequencer.h"
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/weak_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include "GraphState.h"
 #include "SerializationHelper.h"
+#include "Data/SequencerEntryBlock.h"
 
 namespace
 {
@@ -105,7 +105,7 @@ Keyframe::Keyframe()
     outTangent[0] = std::numeric_limits<int>::min();
     outTangent[1] = std::numeric_limits<int>::min();
     curveType = CurveType::Init;
-    selectedState = KeySelectedType::NotSelected;
+    //selectedState = KeySelectedType::NotSelected;
 };//constructor
 
 std::shared_ptr<Keyframe> Keyframe::deepClone()
@@ -127,7 +127,7 @@ Animation::~Animation()
     //Nothing
 }//destructor
 
-std::shared_ptr<Animation> Animation::deepClone()
+std::shared_ptr<Animation> Animation::deepClone(int *startTick_)
 {
     std::shared_ptr<Animation> clone(new Animation);
 
@@ -135,7 +135,9 @@ std::shared_ptr<Animation> Animation::deepClone()
         clone->keyframes[mapIter->first] = mapIter->second->deepClone();
     }//for
 
-    clone->startTick = startTick;
+    clone->startTick = startTick_;
+
+    std::cout << "Animation::deepClone: " << startTick << " - " << clone->startTick << std::endl;
 
     return clone;
 }//deepClone
@@ -143,11 +145,8 @@ std::shared_ptr<Animation> Animation::deepClone()
 std::pair<std::shared_ptr<Animation>, std::shared_ptr<Animation> > Animation::deepCloneSplit(int offset, SequencerEntryBlock *owningEntryBlock1, 
                                                                                                  SequencerEntryBlock *owningEntryBlock2)
 {
-    std::shared_ptr<Animation> animClone1 = deepClone();
-    std::shared_ptr<Animation> animClone2 = deepClone();
-
-    animClone1->startTick = owningEntryBlock1->getRawStartTick();
-    animClone2->startTick = owningEntryBlock2->getRawStartTick();
+    std::shared_ptr<Animation> animClone1 = deepClone(owningEntryBlock1->getRawStartTick());
+    std::shared_ptr<Animation> animClone2 = deepClone(owningEntryBlock2->getRawStartTick());
 
     std::map<int, std::shared_ptr<Keyframe> > keyframesAfter;
     auto splitIter = animClone1->keyframes.lower_bound(offset);
@@ -215,7 +214,7 @@ void Animation::absorbCurve(std::shared_ptr<Animation> otherAnim)
 std::shared_ptr<Keyframe> Animation::getNextKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -237,7 +236,7 @@ std::shared_ptr<Keyframe> Animation::getNextKeyframe(std::shared_ptr<Keyframe> k
 std::shared_ptr<Keyframe> Animation::getPrevKeyframe(std::shared_ptr<Keyframe> keyframe)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -259,7 +258,7 @@ std::shared_ptr<Keyframe> Animation::getPrevKeyframe(std::shared_ptr<Keyframe> k
 void Animation::addKey(std::shared_ptr<Keyframe> keyframe)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -304,14 +303,14 @@ void Animation::addKey(std::shared_ptr<Keyframe> keyframe)
                 keyframe->curveType = CurveType::Linear;
             }//if
         }//if
-//        std::cout << "addKey: " << keyframe->tick << "  --  " << curKeyframes->size() << std::endl;
+//std::cout << "addKey: " << keyframe->tick << "  --  " << curKeyframes->size() << std::endl;
     }//if
 }//addKey
 
 void Animation::deleteKey(std::shared_ptr<Keyframe> keyframe)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -343,7 +342,7 @@ asm ("int $0x03;");
 
 int Animation::getNumKeyframes() const
 {
-    if (instanceOf == NULL) {
+    if (instanceOf == nullptr) {
         return keyframes.size();
     } else {
         return instanceOf->keyframes.size();
@@ -353,7 +352,7 @@ int Animation::getNumKeyframes() const
 std::shared_ptr<Keyframe> Animation::getKeyframe(unsigned int index)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -366,7 +365,7 @@ std::shared_ptr<Keyframe> Animation::getKeyframe(unsigned int index)
 std::shared_ptr<Keyframe> Animation::getKeyframeAtTick(int tick)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -406,7 +405,7 @@ void Animation::serialize(Archive &ar, const unsigned int version)
 double Animation::sample(int tick)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -449,6 +448,7 @@ double Animation::sample(int tick)
     return 0;
 }//sample
 
+/*
 KeySelectedType Keyframe::getSelectedState()
 {
     return selectedState;
@@ -458,6 +458,7 @@ void Keyframe::setSelectedState(KeySelectedType state)
 {
     selectedState = state;
 }//setSelectedState
+*/
 
 template void Animation::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
 //template void Keyframe::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);

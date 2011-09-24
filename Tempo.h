@@ -17,9 +17,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
+#include "Data/FMidiAutomationData.h"
 
 struct GraphState;
-struct FMidiAutomationData;
 
 struct Tempo
 {    
@@ -42,11 +42,11 @@ struct Tempo
     friend class boost::serialization::access;
 };//Tempo
 
-void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, 
+void drawTempoBar(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, FMidiAutomationData &datas, 
                     unsigned int drawingAreaWidth, unsigned int drawingAreaHeight, std::vector<int> &verticalPixelTickValues, int ticksPerPixel);
-void updateTempoBox(GraphState &graphState, std::shared_ptr<FMidiAutomationData> datas, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry);
-bool checkForTempoSelection(int xPos, std::map<int, std::shared_ptr<Tempo> > &tempoChanges);
-void updateTempoChangesUIData(std::map<int, std::shared_ptr<Tempo> > &tempoChanges);
+void updateTempoBox(GraphState &graphState, FMidiAutomationData &datas, Gtk::Entry *bpmEntry, Gtk::Entry *beatsPerBarEntry, Gtk::Entry *barSubdivisionsEntry);
+bool checkForTempoSelection(int xPos, fmaipair<FMidiAutomationData::TempoChangesIter, FMidiAutomationData::TempoChangesIter> tempoChanges);
+void updateTempoChangesUIData(fmaipair<FMidiAutomationData::TempoChangesIter, FMidiAutomationData::TempoChangesIter> tempoChanges);
 
 BOOST_CLASS_VERSION(Tempo, 1);
 

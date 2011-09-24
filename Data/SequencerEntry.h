@@ -54,16 +54,16 @@ struct SequencerEntryImpl
     unsigned char lsb;
     unsigned char channel;
 
-    bool recordMode;
-    bool soloMode;
-    bool muteMode;
-
     //UI specific
     Glib::ustring title;    
     int minValue;
     int maxValue;
     bool sevenBit;
     bool useBothMSBandLSB; //implied true if sevenBit is true
+
+    bool recordMode;
+    bool soloMode;
+    bool muteMode;
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;
@@ -72,40 +72,10 @@ struct SequencerEntryImpl
 class SequencerEntry : public std::enable_shared_from_this<SequencerEntry>
 {
     std::shared_ptr<SequencerEntryImpl> impl;
-
-    std::weak_ptr<Sequencer> sequencer;
-    Glib::RefPtr<Gtk::Builder> uiXml;
-    Gtk::Viewport *mainWindow;
-    Gtk::Viewport *smallWindow;
-    Gtk::Frame *largeFrame;
-//    Gtk::Frame *smallFrame;
-    Gtk::Viewport *smallFrame;
-    Gtk::CheckButton *activeCheckButton;
-    bool isFullBox;
-    int curIndex;
     std::map<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks;
-
-    unsigned int relativeStartY; //for UI
-    unsigned int relativeEndY; //for UI
-
     std::set<jack_port_t *> inputPorts;
     std::set<jack_port_t *> outputPorts;
-
     std::vector<std::shared_ptr<MidiToken> > recordTokenBuffer;
-
-    bool inHandler;
-    void handleSwitchPressed();
-    bool handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event);
-    bool handleKeyEntryOnSmallTitleEntryBox(GdkEventKey *event);
-    bool mouseButtonPressed(GdkEventButton *event);
-    bool handleEntryFocus(GdkEventFocus*);
-
-    void handleRecPressed();
-    void handleRecSmPressed();
-    void handleSoloPressed();
-    void handleSoloSmPressed();
-    void handleMutePressed();
-    void handleMuteSmPressed();
 
     void mergeEntryBlockLists(std::shared_ptr<SequencerEntry> entry, std::deque<std::shared_ptr<SequencerEntryBlock> > &newEntryBlocks, 
                               EntryBlockMergePolicy mergePolicy);
@@ -113,38 +83,25 @@ class SequencerEntry : public std::enable_shared_from_this<SequencerEntry>
     std::shared_ptr<SequencerEntryBlock> mergeEntryBlocks(std::shared_ptr<SequencerEntryBlock> oldEntryBlock, std::shared_ptr<SequencerEntryBlock> newEntryBlock,
                                                              EntryBlockMergePolicy mergePolicy);
 
-    SequencerEntry() {} //For serialization and clone
-
 public:
-    SequencerEntry(const Glib::ustring &entryGlade, std::shared_ptr<Sequencer> sequencer, unsigned int entryNum);
-    void doInit(const Glib::ustring &entryGlade, std::shared_ptr<Sequencer> sequencer, unsigned int entryNum);
+    SequencerEntry();
     ~SequencerEntry();
 
     double sample(int tick);
     unsigned char sampleChar(int tick);
 
+    void setRecordMode(bool mode);
+    void setSoloMode(bool mode);
+    void setMuteMode(bool mode);
+    bool getRecordMode();
+    bool getSoloMode();
+    bool getMuteMode();
+
     const std::shared_ptr<SequencerEntryImpl> getImpl();
     std::shared_ptr<SequencerEntryImpl> getImplClone();
     void setNewDataImpl(std::shared_ptr<SequencerEntryImpl> impl);
 
-    void setThemeColours();
-
-    void setIndex(unsigned int index);
-    unsigned int getIndex();
-    void deselect();
-    void select();
-
-    Gtk::Widget *getHookWidget();
-    bool IsFullBox() const;
-    Glib::ustring getTitle() const;
-    void setTitle(Glib::ustring);
-
-    void setLabelColour(Gdk::Color colour);
-
-    void setUIBounds(unsigned int relativeStartY, unsigned int relativeEndY);
-    std::pair<unsigned int, unsigned int> getUIBounds();
-
-    void addEntryBlock(int, std::shared_ptr<SequencerEntryBlock> entryBlock);
+    void addEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
     std::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
     std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick);
@@ -158,13 +115,10 @@ public:
     void addRecordToken(std::shared_ptr<MidiToken> token);
     void commitRecordedTokens();
 
-    void setFocus();
+    Glib::ustring getTitle() const;
+    void setTitle(Glib::ustring);
 
     std::shared_ptr<SequencerEntry> deepClone();
-
-    void drawEntryBoxes(Cairo::RefPtr<Cairo::Context> context, std::vector<int> &verticalPixelTickValues, int relativeStartY, int relativeEndY, 
-                            std::vector<SequencerEntryBlockSelectionInfo> &selectionInfo, 
-                            EntryBlockSelectionState &entryBlockSelectionState);
 
     template<class Archive> void serialize(Archive &ar, const unsigned int version);
     friend class boost::serialization::access;

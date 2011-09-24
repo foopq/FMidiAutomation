@@ -8,12 +8,15 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include "PasteManager.h"
-#include "Sequencer.h"
-#include "SequencerEntry.h"
-#include "Command.h"
+#include "Data/SequencerEntry.h"
+#include "UI/SequencerEntryBlockUI.h"
+#include "UI/SequencerEntryUI.h"
+#include "Command_Sequencer.h"
+#include "Command_CurveEditor.h"
 #include "Animation.h"
 #include "Globals.h"
 #include "GraphState.h"
+#include "FMidiAutomationMainWindow.h"
 
 PasteManager &PasteManager::Instance()
 {
@@ -44,17 +47,17 @@ void PasteManager::setMenuItems(Gtk::ImageMenuItem *menuPaste_, Gtk::ImageMenuIt
     pasteInstanceBlocksToEntry = pasteInstanceBlocksToEntry_;
 }//setMenuItems
 
-void PasteManager::doPaste(boost::any contextData)
+void PasteManager::doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow)
 {
-    if (command != NULL) {
-        command->doPaste(contextData);
+    if (command != nullptr) {
+        command->doPaste(contextData, targetWindow);
     }//if
 }//doPaste
 
-void PasteManager::doPasteInstance(boost::any contextData)
+void PasteManager::doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow)
 {
-    if (command != NULL) {
-        command->doPasteInstance(contextData);
+    if (command != nullptr) {
+        command->doPasteInstance(contextData, targetWindow);
     }//if
 }//doPasteInstance
 
@@ -75,11 +78,9 @@ void PasteManager::setNewCommand(std::shared_ptr<PasteCommand> command_)
     }//if
 }//setNewCommand
 
-PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlock> > entryBlocks_)
+PasteSequencerEntryBlocksCommand::PasteSequencerEntryBlocksCommand(std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > entryBlocks_)
 {
     entryBlocks = entryBlocks_;
-
-std::cout << "PasteSequencerEntryBlocksCommand: " << entryBlocks.size() << std::endl;
 }//constructor
 
 PasteSequencerEntryBlocksCommand::~PasteSequencerEntryBlocksCommand()
@@ -87,11 +88,11 @@ PasteSequencerEntryBlocksCommand::~PasteSequencerEntryBlocksCommand()
     //Nothing
 }//destructor
 
-void PasteSequencerEntryBlocksCommand::doPaste(boost::any contextData)
+void PasteSequencerEntryBlocksCommand::doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow)
 {
-    Globals &globals = Globals::Instance();
-    
-    if (globals.graphState->displayMode != DisplayMode::Sequencer) {
+std::cout << "PasteSequencerEntryBlocksCommand::doPaste" << std::endl;
+
+    if (targetWindow->getGraphState().displayMode != DisplayMode::Sequencer) {
         return;
     }//if
 
@@ -99,49 +100,43 @@ void PasteSequencerEntryBlocksCommand::doPaste(boost::any contextData)
         return;
     }//if
 
-    std::shared_ptr<SequencerEntry> targetSequencerEntry = boost::any_cast<std::shared_ptr<SequencerEntry> >(contextData);
+    std::shared_ptr<SequencerEntryUI> targetSequencerEntry = boost::any_cast<std::shared_ptr<SequencerEntryUI> >(contextData);
 
-    int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
-    int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
+    int firstEntryOrigStartTick = entryBlocks.begin()->second->getBaseEntryBlock()->getStartTick();
+    int tickOffset = targetWindow->getGraphState().curPointerTick - firstEntryOrigStartTick;
 
-    std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
+    std::vector<std::pair<std::shared_ptr<SequencerEntryUI>, std::shared_ptr<SequencerEntryBlockUI>>> newEntryBlocks;
     newEntryBlocks.reserve(entryBlocks.size());
 
-std::cout << "PasteSequencerEntryBlocksCommand::doPaste " << entryBlocks.size() << std::endl;
-
     for (auto entryIter : entryBlocks) {
-        std::shared_ptr<SequencerEntry> selectedEntry = entryIter.second->getOwningEntry();
+        std::shared_ptr<SequencerEntryUI> selectedEntry = entryIter.second->getOwningEntry();
 
-std::cout << "PasteSequencerEntryBlocksCommand 1" << std::endl;
-
-        if (targetSequencerEntry != NULL) {
+        if (targetSequencerEntry != nullptr) {
             selectedEntry = targetSequencerEntry;
         }//if        
 
-        if (selectedEntry == NULL) {
+        if (selectedEntry == nullptr) {
             continue;
         }//if
 
-std::cout << "PasteSequencerEntryBlocksCommand 2: " << selectedEntry->getTitle() << std::endl;
+        int startTick = entryIter.second->getBaseEntryBlock()->getStartTick() + tickOffset;
 
-        int startTick = entryIter.second->getStartTick() + tickOffset;
+        std::shared_ptr<SequencerEntryBlock> newEntryBlock;
+        newEntryBlock = entryIter.second->getBaseEntryBlock()->deepClone(selectedEntry->getBaseEntry(), startTick);
+        newEntryBlock->setTitle(entryIter.second->getBaseEntryBlock()->getTitle());
 
-        std::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter.second));
-        newEntryBlock->setTitle(entryIter.second->getTitle());
-        newEntryBlock->cloneCurves(entryIter.second);
+        std::shared_ptr<SequencerEntryBlockUI> newEntryBlockUI(new SequencerEntryBlockUI(newEntryBlock, selectedEntry));
 
-        newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlock));
+        newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlockUI));
     }//for
 
-    std::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
+    std::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks, targetWindow));
     CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPaste
 
-void PasteSequencerEntryBlocksCommand::doPasteInstance(boost::any contextData)
+void PasteSequencerEntryBlocksCommand::doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow)
 {
-    Globals &globals = Globals::Instance();
-    
-    if (globals.graphState->displayMode != DisplayMode::Sequencer) {
+    if (targetWindow->getGraphState().displayMode != DisplayMode::Sequencer) {
         return;
     }//if
 
@@ -149,34 +144,38 @@ void PasteSequencerEntryBlocksCommand::doPasteInstance(boost::any contextData)
         return;
     }//if
 
-    std::shared_ptr<SequencerEntry> targetSequencerEntry = boost::any_cast<std::shared_ptr<SequencerEntry> >(contextData);
+    std::shared_ptr<SequencerEntryUI> targetSequencerEntry = boost::any_cast<std::shared_ptr<SequencerEntryUI> >(contextData);
 
-    int firstEntryOrigStartTick = entryBlocks.begin()->second->getStartTick();
-    int tickOffset = globals.graphState->curPointerTick - firstEntryOrigStartTick;
+    int firstEntryOrigStartTick = entryBlocks.begin()->second->getBaseEntryBlock()->getStartTick();
+    int tickOffset = targetWindow->getGraphState().curPointerTick - firstEntryOrigStartTick;
 
-    std::vector<std::pair<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntryBlock>>> newEntryBlocks;
+    std::vector<std::pair<std::shared_ptr<SequencerEntryUI>, std::shared_ptr<SequencerEntryBlockUI>>> newEntryBlocks;
     newEntryBlocks.reserve(entryBlocks.size());
 
-    for (std::map<int, std::shared_ptr<SequencerEntryBlock> >::const_iterator entryIter = entryBlocks.begin(); entryIter != entryBlocks.end(); ++entryIter) {
-        std::shared_ptr<SequencerEntry> selectedEntry = entryIter->second->getOwningEntry();
+    for (auto entryIter : entryBlocks) {
+        std::shared_ptr<SequencerEntryUI> selectedEntry = entryIter.second->getOwningEntry();
 
-        if (targetSequencerEntry != NULL) {
+        if (targetSequencerEntry != nullptr) {
             selectedEntry = targetSequencerEntry;
-        }//if
+        }//if        
 
-        if (selectedEntry == NULL) {
+        if (selectedEntry == nullptr) {
             continue;
         }//if
 
-        int startTick = entryIter->second->getStartTick() + tickOffset;
+        int startTick = entryIter.second->getBaseEntryBlock()->getStartTick() + tickOffset;
 
-        std::shared_ptr<SequencerEntryBlock> newEntryBlock(new SequencerEntryBlock(selectedEntry, startTick, entryIter->second));
-        newEntryBlock->setTitle(entryIter->second->getTitle() + " (Instance)");
+        std::shared_ptr<SequencerEntryBlock> newEntryBlock;
+        newEntryBlock.reset(new SequencerEntryBlock(selectedEntry->getBaseEntry(), startTick, entryIter.second->getBaseEntryBlock()));
+        newEntryBlock->setTitle(entryIter.second->getBaseEntryBlock()->getTitle() + " (Instance)");
+        newEntryBlock->cloneCurves(entryIter.second->getBaseEntryBlock());
 
-        newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlock));
+        std::shared_ptr<SequencerEntryBlockUI> newEntryBlockUI(new SequencerEntryBlockUI(newEntryBlock, selectedEntry));
+
+        newEntryBlocks.push_back(std::make_pair(selectedEntry, newEntryBlockUI));
     }//for
 
-    std::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks));
+    std::shared_ptr<Command> addSequencerEntryBlocksCommand(new AddSequencerEntryBlocksCommand(newEntryBlocks, targetWindow));
     CommandManager::Instance().setNewCommand(addSequencerEntryBlocksCommand, true);
 }//doPasteInstance
 
@@ -190,32 +189,30 @@ PasteSequencerKeyframesCommand::~PasteSequencerKeyframesCommand()
     //Nothing
 }//destructor
 
-void PasteSequencerKeyframesCommand::doPaste(boost::any contextData)
+void PasteSequencerKeyframesCommand::doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow)
 {
-    Globals &globals = Globals::Instance();
-    
-    if (globals.graphState->displayMode != DisplayMode::Curve) {
+    if (targetWindow->getGraphState().displayMode != DisplayMode::Curve) {
         return;
     }//if
 
-    std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock = globals.graphState->entryBlockSelectionState.GetFirstEntryBlock();
-    if (currentlySelectedEntryBlock == NULL) {
+    std::shared_ptr<SequencerEntryBlockUI> currentlySelectedEntryBlock = targetWindow->getGraphState().entryBlockSelectionState.GetFirstEntryBlock();
+    if (currentlySelectedEntryBlock == nullptr) {
         return;
     }//if
 
-    int tick = globals.graphState->curPointerTick;
+    int tick = targetWindow->getGraphState().curPointerTick;
 
-    //if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(tick) != NULL) {
+    //if (currentlySelectedEntryBlock->getCurve()->getKeyframeAtTick(tick) != nullptr) {
     //    return;
     //}//if
 
-    std::shared_ptr<Command> addKeyframesCommand(new AddKeyframesCommand(currentlySelectedEntryBlock, keyframes, tick - currentlySelectedEntryBlock->getStartTick()));
+    std::shared_ptr<Command> addKeyframesCommand(new AddKeyframesCommand(currentlySelectedEntryBlock->getBaseEntryBlock(), keyframes, tick - currentlySelectedEntryBlock->getBaseEntryBlock()->getStartTick(), targetWindow));
     CommandManager::Instance().setNewCommand(addKeyframesCommand, true);
 }//doPaste
 
-void PasteSequencerKeyframesCommand::doPasteInstance(boost::any contextData)
+void PasteSequencerKeyframesCommand::doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow)
 {
-    doPaste(std::shared_ptr<SequencerEntry>());
+    doPaste(std::shared_ptr<SequencerEntry>(), targetWindow);
 }//doPasteInstance
 
 

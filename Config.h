@@ -10,7 +10,9 @@
 #include <gtkmm.h>
 #include <boost/function.hpp>
 
-class MRUFileLoadHelper
+class FMidiAutomationMainWindow;
+
+struct MRUFileLoadHelper
 {
     Glib::ustring filename;
     boost::function<void (const Glib::ustring &)> loadCallback;
@@ -23,14 +25,14 @@ public:
 
 class MRUList
 {
+    Glib::ustring configFileName;
     std::deque<Glib::ustring> fileList;
     unsigned int depth;
-    std::string fileName;
-    Gtk::MenuItem *menuOpenRecent;
     std::shared_ptr<Gtk::Menu> mruSubmenu;
     std::vector<std::shared_ptr<Gtk::MenuItem>> mruMenuItems;
     std::vector<std::shared_ptr<MRUFileLoadHelper>> mruFileLoadHelpers;
     boost::function<void (const Glib::ustring &)> loadCallback;
+    std::map<FMidiAutomationMainWindow *, Gtk::MenuItem *> menuOpenRecentList;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
 
@@ -38,29 +40,28 @@ class MRUList
     void saveFileList();
     void updateRecentMenu();
 
+    MRUList(unsigned int depth);
 public:
-    MRUList(unsigned int depth, const Glib::ustring &&fileName);
     virtual ~MRUList();
+
+    static MRUList &Instance();
 
     void addFile(const Glib::ustring &fileName);
     std::pair<decltype(fileList.begin()), decltype(fileList.end())> getFileList();
 
-    void setTopMenu(Gtk::MenuItem *menuOpenRecent);
+    void registerTopMenu(FMidiAutomationMainWindow *window, Gtk::MenuItem *menuOpenRecent);
+    void unregisterTopMenu(FMidiAutomationMainWindow *window);
     void setLoadCallback(boost::function<void (const Glib::ustring &)> loadCallback);
 };//MRUList
 
 class FMidiAutomationConfig
 {
-    MRUList mruList;
-
 public:    
     FMidiAutomationConfig();
     ~FMidiAutomationConfig();
 
     void loadConfig();
     void saveConfig();
-
-    MRUList &getMRUList();
 };//FMidiAutomationConfig
 
 #endif

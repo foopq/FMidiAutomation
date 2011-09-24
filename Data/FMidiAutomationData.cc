@@ -6,32 +6,95 @@ Copyright (C) 2011 Chris A. Mennie
 License: Released under the GPL version 3 license. See the included LICENSE.
 */
 
-
+#include <fstream>
 #include "FMidiAutomationData.h"
 #include "FMidiAutomationMainWindow.h"
 #include "boost/serialization/map.hpp" 
 #include "GraphState.h"
 #include "SerializationHelper.h"
 #include "Tempo.h"
+#include "Sequencer.h"
+#include "fmaipair.h"
 
 namespace
 {
 
+Glib::ustring readEntryGlade()
+{
+    std::ifstream inputStream("FMidiAutomationEntry.glade");
+    assert(inputStream.good());
+    if (false == inputStream.good()) {
+        return "";
+    }//if
+
+    Glib::ustring retString;
+    std::string line;
+    while (std::getline(inputStream,line)) {
+        retString += line;
+    }//while
+
+    return retString;
+}//readEntryGlade
 
 }//anonymous namespace
 
+FMidiAutomationData::FMidiAutomationData()
+{
+    sequencer.reset(new Sequencer);
+    addTempoChange(0U, std::shared_ptr<Tempo>(new Tempo(12000, 4, 4)));
+    entryGlade = readEntryGlade();
+}//constructor
+
+FMidiAutomationData::~FMidiAutomationData()
+{
+    //Nothing
+}//destructor
+
+std::shared_ptr<Sequencer> FMidiAutomationData::getSequencer()
+{
+    return sequencer;
+}//getSequencer
+
+Glib::ustring &FMidiAutomationData::getEntryGlade()
+{
+    return entryGlade;
+}//getEntryGlade
 
 void FMidiAutomationData::addTempoChange(int tick, std::shared_ptr<Tempo> tempo)
 {
     tempoChanges.insert(std::make_pair(tick, tempo));
-    updateTempoChangesUIData(tempoChanges);
+    updateTempoChangesUIData(getTempoChanges());
 }//addTempoChange
 
 void FMidiAutomationData::removeTempoChange(int tick)
 {
     tempoChanges.erase(tempoChanges.find(tick));
-    updateTempoChangesUIData(tempoChanges);
+    updateTempoChangesUIData(getTempoChanges());
 }//removeTempoChange
+
+bool FMidiAutomationData::HasTempoChangeAtTick(int tick)
+{
+    return (tempoChanges.find(tick) != tempoChanges.end());
+}//HasTempoChangeAtTick
+
+std::shared_ptr<Tempo> FMidiAutomationData::getTempoChangeAtTick(int tick)
+{
+    if (tempoChanges.find(tick) != tempoChanges.end()) {
+        return tempoChanges[tick];
+    } else {
+        return std::shared_ptr<Tempo>();
+    }//if
+}//getTempoChangeAtTick
+
+fmaipair<FMidiAutomationData::TempoChangesIter, FMidiAutomationData::TempoChangesIter> FMidiAutomationData::getTempoChanges()
+{
+    return fmai_make_pair(tempoChanges.begin(), tempoChanges.end());
+}//getTempoChanges
+
+FMidiAutomationData::TempoChangesIter FMidiAutomationData::getTempoChangesLowerBound(int tick)
+{
+    return tempoChanges.lower_bound(tick);
+}//getTempoChangesLowerBound
 
 template<class Archive>
 void FMidiAutomationData::serialize(Archive &ar, const unsigned int version)

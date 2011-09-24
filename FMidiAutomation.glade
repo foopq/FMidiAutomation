@@ -1586,7 +1586,7 @@
                     <property name="position">336</property>
                     <property name="position_set">True</property>
                     <child>
-                      <object class="GtkViewport" id="viewport5">
+                      <object class="GtkViewport" id="sequencerEntryViewport">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="resize_mode">queue</property>
@@ -2427,7 +2427,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHButtonBox" id="hbuttonbox1">
+                      <object class="GtkHButtonBox" id="mergeReplaceButtonBox">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>

@@ -21,7 +21,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/access.hpp>
-#include "Sequencer.h"
+#include <boost/thread/recursive_mutex.hpp>
 
 enum class ControlType : char;
 
@@ -38,7 +38,7 @@ class JackSingleton
     jack_client_t *jackClient;
     jack_transport_state_t curTransportState;
     int curFrame;
-    boost::mutex mutex; 
+    boost::recursive_mutex mutex; 
     boost::condition_variable condition;
     std::shared_ptr<boost::thread> thread;
 
@@ -66,6 +66,7 @@ class JackSingleton
 
 public:
     ~JackSingleton();
+    void stopClient();
 
     static JackSingleton &Instance();
 
@@ -96,7 +97,7 @@ public:
     std::vector<unsigned char> &getRecordBuffer();
     std::vector<MidiInputInfoHeader> &getMidiRecordBufferHeaders();
 
-    bool areProcessingMidi() const;
+    bool areProcessingMidi();
     void setProcessingMidi(bool processing);
 
     void doLoad(boost::archive::xml_iarchive &inputArchive);

@@ -13,8 +13,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <cairomm/surface.h>
 #include <iostream>
 #include <sstream>
-#include "SequencerEntry.h"
-#include "Sequencer.h"
+#include "UI/SequencerEntryUI.h"
+#include "Data/SequencerEntry.h"
+#include "UI/SequencerUI.h"
 #include "Animation.h"
 #include <boost/array.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -189,8 +190,8 @@ void drawRubberBand(Cairo::RefPtr<Cairo::Context> context, GraphState &graphStat
     mousePosY = std::max<gdouble>(mousePosY, 61);
     mousePosY = std::min<gdouble>(mousePosY, areaHeight);
 
-static int dashOffset = 0;
-dashOffset++;
+int dashOffset = 0;
+//dashOffset++;
 std::vector<double> dashes;
 dashes.push_back(10);
 
@@ -440,30 +441,34 @@ int determineTickCountGroupSize(int ticksPerPixel)
 
 bool EntryBlockSelectionState::HasSelected()/*{{{*/
 {
+//    std::cout << "HasSelected: " << currentlySelectedEntryBlocks.size() << " " << (currentlySelectedEntryBlocks.empty() == false) << " " << this << std::endl;
+
     return (currentlySelectedEntryBlocks.empty() == false);
 }//HasSelected/*}}}*/
 
-std::shared_ptr<SequencerEntryBlock> EntryBlockSelectionState::GetFirstEntryBlock()/*{{{*/
+std::shared_ptr<SequencerEntryBlockUI> EntryBlockSelectionState::GetFirstEntryBlock()/*{{{*/
 {
     if (HasSelected() == true) {
         return ((*currentlySelectedEntryBlocks.begin()).second);
     } else {
-        return std::shared_ptr<SequencerEntryBlock>();
+        return std::shared_ptr<SequencerEntryBlockUI>();
     }//if
 }//GetFirstEntryBlock/*}}}*/
 
 void EntryBlockSelectionState::ClearSelected()/*{{{*/
 {
+//    std::cout << "EntryBlockSelectionState::ClearSelected() " << this << std::endl;
+
     currentlySelectedEntryBlocks.clear();
     currentlySelectedEntryOriginalStartTicks.clear();
 }//ClearSelected/*}}}*/
 
-std::multimap<int, std::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetEntryBlocksMapCopy()/*{{{*/
+std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > EntryBlockSelectionState::GetEntryBlocksMapCopy()/*{{{*/
 {
     return currentlySelectedEntryBlocks;
 }//GetEntryBlocksMapCopy/*}}}*/
 
-bool EntryBlockSelectionState::IsSelected(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+bool EntryBlockSelectionState::IsSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
         return true;
@@ -472,7 +477,7 @@ bool EntryBlockSelectionState::IsSelected(std::shared_ptr<SequencerEntryBlock> e
     }//if
 }//IsSelected/*}}}*/
 
-bool EntryBlockSelectionState::IsOrigSelected(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+bool EntryBlockSelectionState::IsOrigSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
 {
     if (origSelectedEntryBlocks.find(entryBlock) != origSelectedEntryBlocks.end()) {
         return true;
@@ -491,8 +496,10 @@ void EntryBlockSelectionState::ResetRubberbandingSelection()/*{{{*/
     }//for
 }//ResetRubberbandingSelection/*}}}*/
 
-std::set<std::shared_ptr<SequencerEntryBlock> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()/*{{{*/
+std::set<std::shared_ptr<SequencerEntryBlockUI> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()/*{{{*/
 {
+    std::cout << "EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy: " << origSelectedEntryBlocks.size() << std::endl;
+
     return origSelectedEntryBlocks;
 }//GetOrigSelectedEntryBlocksCopy/*}}}*/
 
@@ -501,7 +508,7 @@ int EntryBlockSelectionState::GetNumSelected()/*{{{*/
     return currentlySelectedEntryBlocks.size();
 }//GetNumSelected/*}}}*/
 
-int EntryBlockSelectionState::GetOriginalStartTick(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+int EntryBlockSelectionState::GetOriginalStartTick(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
         return currentlySelectedEntryOriginalStartTicks[entryBlock];
@@ -510,7 +517,7 @@ int EntryBlockSelectionState::GetOriginalStartTick(std::shared_ptr<SequencerEntr
     }//if
 }//GetOriginalStartTick/*}}}*/
 
-std::map<std::shared_ptr<SequencerEntryBlock>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()/*{{{*/
+std::map<std::shared_ptr<SequencerEntryBlockUI>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()/*{{{*/
 {
     return currentlySelectedEntryOriginalStartTicks;
 }//GetEntryOriginalStartTicksCopy/*}}}*/
@@ -520,20 +527,24 @@ fmaipair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()
     return fmai_make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
 }//GetCurrentlySelectedEntryBlocks/*}}}*/
 
-void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlock>, int> &origStartTicks)/*{{{*/
+void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlockUI>, int> &origStartTicks)/*{{{*/
 {
     currentlySelectedEntryOriginalStartTicks.swap(origStartTicks);
 }//SetCurrentlySelectedEntryOriginalStartTicks/*}}}*/
 
-void EntryBlockSelectionState::AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+void EntryBlockSelectionState::AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
 {
-    currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getStartTick();
-    currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getStartTick(), entryBlock));
+//    std::cout << "EntryBlockSelectionState::AddSelectedEntryBlock: " << entryBlock.get() << " - " << this << std::endl;
+
+    currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getBaseEntryBlock()->getStartTick();
+    currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getBaseEntryBlock()->getStartTick(), entryBlock));
 }//AddSelectedEntryBlock/*}}}*/
 
-void EntryBlockSelectionState::RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock)/*{{{*/
+void EntryBlockSelectionState::RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
 {
-    auto tickRangePair = currentlySelectedEntryBlocks.equal_range(entryBlock->getStartTick());
+//    std::cout << "EntryBlockSelectionState::RemoveSelectedEntryBlock: " << entryBlock.get() << " - " << this << std::endl;
+
+    auto tickRangePair = currentlySelectedEntryBlocks.equal_range(entryBlock->getBaseEntryBlock()->getStartTick());
     for (auto tickRangeIter = tickRangePair.first; tickRangeIter != tickRangePair.second; ++tickRangeIter) {
         if (tickRangeIter->second == entryBlock) {
             currentlySelectedEntryBlocks.erase(tickRangeIter);
@@ -614,10 +625,10 @@ void KeyframeSelectionState::AddKeyframe(std::shared_ptr<Keyframe> keyframe)
     currentlySelectedKeyframes.insert(std::make_pair(keyframe->tick, keyframe));
 }//AddKeyframe
 
-void KeyframeSelectionState::ClearSelectedKeyframes()
+void KeyframeSelectionState::ClearSelectedKeyframes(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
     for (auto keyIter : currentlySelectedKeyframes) {
-        keyIter.second->setSelectedState(KeySelectedType::NotSelected);
+        entryBlock->setSelectedState(keyIter.second, KeySelectedType::NotSelected);
     }//for
 //    std::cout << "NotSelected2" << std::endl;
 
@@ -668,10 +679,10 @@ void KeyframeSelectionState::SetCurrentlySelectedKeyframes(std::map<int, std::sh
     currentlySelectedKeyframes.swap(origSelectedKeyframes);
 }//SetCurrentlySelectedKeyframes
 
-void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight)
+void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphState, unsigned int areaWidth, unsigned int areaHeight, std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
     std::map<int, std::shared_ptr<Keyframe> > *curKeyframes = &keyframes;
-    if (instanceOf != NULL) {
+    if (instanceOf != nullptr) {
         curKeyframes = &instanceOf->keyframes;
     }//if
 
@@ -694,10 +705,10 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
     int lastTimePixel = std::numeric_limits<int>::min();
     int lastValuePixel = std::numeric_limits<int>::min();
 
-    std::shared_ptr<SequencerEntryBlock> firstSelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
+    std::shared_ptr<SequencerEntryBlockUI> firstSelectedEntryBlock = graphState.entryBlockSelectionState.GetFirstEntryBlock();
 
-    int maxEntryBlockValue = firstSelectedEntryBlock->getOwningEntry()->getImpl()->maxValue;
-    int minEntryBlockValue = firstSelectedEntryBlock->getOwningEntry()->getImpl()->minValue;
+    int maxEntryBlockValue = firstSelectedEntryBlock->getBaseEntryBlock()->getOwningEntry()->getImpl()->maxValue;
+    int minEntryBlockValue = firstSelectedEntryBlock->getBaseEntryBlock()->getOwningEntry()->getImpl()->minValue;
     
     int tickValuesSize = graphState.verticalPixelTickValues.size();
     for (int index = 0; index < tickValuesSize; ++index) {
@@ -812,7 +823,7 @@ void Animation::render(Cairo::RefPtr<Cairo::Context> context, GraphState &graphS
         }//if
         */
 
-        if (KeySelectedType::Key == keyPair.second->getSelectedState()) {
+        if (KeySelectedType::Key == entryBlock->getSelectedState(keyPair.second)) {
             selectedRectX.push_back(timePointerPixel - 4);
             selectedRectY.push_back(areaHeight - valuePointerPixel - 4);
         }//if
@@ -995,6 +1006,8 @@ void FMidiAutomationMainWindow::doUIQueuedThreadStuff()
 
 bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
 {
+//    std::cout << std::endl << std::endl << "updateGraph" << std::endl;
+
     doUIQueuedThreadStuff();
 
     if (false == graphDrawingArea->is_realized()) {
@@ -1027,6 +1040,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
         context->rectangle(0, 60, graphState->zeroithTickPixel, drawingAreaHeight - 60);
         context->clip();
 
+//        std::cout << "DARKEN 1: " << graphState->zeroithTickPixel << std::endl;
         context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
         context->paint();
     }//if
@@ -1042,9 +1056,13 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     }//foreach
 
     if (graphState->displayMode == DisplayMode::Curve) {
-        const std::shared_ptr<SequencerEntryImpl> entryImpl = graphState->entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
-        int minValue = entryImpl->minValue;
-        int maxValue = entryImpl->maxValue;
+        //int zzfirst = *(graphState->roundedHorizontalValues.begin());
+        //int zzsecond = *(graphState->roundedHorizontalValues.rbegin());
+        //std::cout << "HERE!!!! " << graphState->roundedHorizontalValues.size() << " - " << zzfirst << " - " << zzsecond << std::endl;
+        //std::cout << graphState->maxValue << " - " << graphState->minValue << std::endl;
+        std::shared_ptr<SequencerEntryImpl> impl = graphState->entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getOwningEntry()->getImpl();
+        int minValue = impl->minValue;
+        int maxValue = impl->maxValue;
 
         //std::vector<int>::reverse_iterator maxIter = std::upper_bound(roundedHorizontalValues.rbegin(), roundedHorizontalValues.rend(), maxValue);
         std::pair<std::vector<int>::reverse_iterator, std::vector<int>::reverse_iterator> maxIterPair = std::equal_range(graphState->roundedHorizontalValues.rbegin(), graphState->roundedHorizontalValues.rend(), maxValue);
@@ -1060,6 +1078,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
             context->rectangle(60, 60, drawingAreaWidth-60, dist+1);
             context->clip();
 
+//            std::cout << "DARKEN 2: " << drawingAreaWidth-60 << " - " << dist+1 << std::endl;
             context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
             context->paint();
         }//if
@@ -1076,13 +1095,16 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
             context->rectangle(60, drawingAreaHeight-dist, drawingAreaWidth-60, dist);
             context->clip();
 
+//            std::cout << "DARKEN 3: " << drawingAreaHeight-dist << " - " << drawingAreaWidth-60 << " - " << dist << std::endl;
             context->set_source_rgba(0.0, 0.0, 0.0, 0.3);
             context->paint();
         }//if
     }//if
 
+    Globals &globals = Globals::Instance();
+
     drawTopBar(context, *graphState, drawingAreaWidth, drawingAreaHeight);
-    drawTempoBar(context, *graphState, datas, drawingAreaWidth, drawingAreaHeight, graphState->verticalPixelTickValues, graphState->ticksPerPixel);
+    drawTempoBar(context, *graphState, globals.projectData, drawingAreaWidth, drawingAreaHeight, graphState->verticalPixelTickValues, graphState->ticksPerPixel);
     drawLeftMarker(context, *graphState, drawingAreaWidth, drawingAreaHeight);
     drawRightMarker(context, *graphState, drawingAreaWidth, drawingAreaHeight);
     drawCurrentTimePointer(context, *graphState, drawingAreaWidth, drawingAreaHeight);
@@ -1130,7 +1152,7 @@ bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
     
     //graphDrawingArea->show();
     
-    updateTempoBox(*graphState, datas, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
+    updateTempoBox(*graphState, globals.projectData, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
 
     return true;
 }//updateGraph
@@ -1142,6 +1164,7 @@ GraphState::GraphState()
 
 void GraphState::doInit()
 {
+    lastOffsetX = std::numeric_limits<int>::max();
     offsetX = 0;
     offsetY = 0;
     barsSubdivisionAmount = 1;
@@ -1187,7 +1210,7 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
     }//if
 
     if (std::numeric_limits<double>::max() == valuesPerPixel) {
-        const std::shared_ptr<SequencerEntryImpl> entryImpl = entryBlockSelectionState.GetFirstEntryBlock()->getOwningEntry()->getImpl();
+        const std::shared_ptr<SequencerEntryImpl> entryImpl = entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getOwningEntry()->getImpl();
         int minValue = entryImpl->minValue;
         int maxValue = entryImpl->maxValue;
 
@@ -1248,7 +1271,6 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
 //std::cout << "refreshVerticalLines entry" << std::endl;
 
     //Ugly kluge to handle the case where if we've already reached the half-way zeroith point and keep scrolling over too far, bad things happen
-    static int lastOffsetX = std::numeric_limits<int>::max();
     if (((areaWidth-2) * ticksPerPixel + offsetX * ticksPerPixel) < 0) {
         if (lastOffsetX == std::numeric_limits<int>::max()) {
             lastOffsetX = offsetX;
@@ -1268,8 +1290,8 @@ void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaH
     int tickCountGroupSize = determineTickCountGroupSize(ticksPerPixel);
 
     int zeroithTickCount = 0;
-    if ((displayMode == DisplayMode::Curve) && (entryBlockSelectionState.GetFirstEntryBlock() != NULL)) {
-        zeroithTickCount = entryBlockSelectionState.GetFirstEntryBlock()->getStartTick();
+    if ((displayMode == DisplayMode::Curve) && (entryBlockSelectionState.GetFirstEntryBlock() != nullptr)) {
+        zeroithTickCount = entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getStartTick();
     }//if
 
     int realZeroithTickPixel = std::numeric_limits<int>::max();

@@ -15,7 +15,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <vector>
 #include "fmaipair.h"
 
-class SequencerEntryBlock;
+class SequencerEntryBlockUI;
 struct Keyframe;
 
 enum class InsertMode : char;
@@ -50,35 +50,35 @@ enum class DisplayMode : char
 
 class EntryBlockSelectionState
 {
-    std::map<std::shared_ptr<SequencerEntryBlock>, int> currentlySelectedEntryOriginalStartTicks;
-    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > currentlySelectedEntryBlocks;
-    std::set<std::shared_ptr<SequencerEntryBlock> > origSelectedEntryBlocks; //for rubberbanding
+    std::map<std::shared_ptr<SequencerEntryBlockUI>, int> currentlySelectedEntryOriginalStartTicks;
+    std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > currentlySelectedEntryBlocks;
+    std::set<std::shared_ptr<SequencerEntryBlockUI> > origSelectedEntryBlocks; //for rubberbanding
 
 public:
     EntryBlockSelectionState() {}
     ~EntryBlockSelectionState() {}
 
     bool HasSelected();
-    bool IsSelected(std::shared_ptr<SequencerEntryBlock> entryBlock);
-    bool IsOrigSelected(std::shared_ptr<SequencerEntryBlock> entryBlock); //checks origSelectedEntryBlocks
+    bool IsSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock);
+    bool IsOrigSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock); //checks origSelectedEntryBlocks
     void ClearSelected();
     void ResetRubberbandingSelection();
 
     int GetNumSelected();
-    std::shared_ptr<SequencerEntryBlock> GetFirstEntryBlock();
-    int GetOriginalStartTick(std::shared_ptr<SequencerEntryBlock> entryBlock);
+    std::shared_ptr<SequencerEntryBlockUI> GetFirstEntryBlock();
+    int GetOriginalStartTick(std::shared_ptr<SequencerEntryBlockUI> entryBlock);
 
-    std::multimap<int, std::shared_ptr<SequencerEntryBlock> > GetEntryBlocksMapCopy();
-    std::map<std::shared_ptr<SequencerEntryBlock>, int> GetEntryOriginalStartTicksCopy();
-    std::set<std::shared_ptr<SequencerEntryBlock> > GetOrigSelectedEntryBlocksCopy();
+    std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > GetEntryBlocksMapCopy();
+    std::map<std::shared_ptr<SequencerEntryBlockUI>, int> GetEntryOriginalStartTicksCopy();
+    std::set<std::shared_ptr<SequencerEntryBlockUI> > GetOrigSelectedEntryBlocksCopy();
 
     //std::pair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
     fmaipair<decltype(currentlySelectedEntryBlocks.begin()), decltype(currentlySelectedEntryBlocks.end())> GetCurrentlySelectedEntryBlocks();
 
-    void SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlock>, int> &origStartTicks); //FIXME: This feels very questionable
+    void SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlockUI>, int> &origStartTicks); //FIXME: This feels very questionable
 
-    void AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
-    void RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
+    void AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock);
+    void RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock);
 };//EntryBlockSelectionState
 
 class KeyframeSelectionState
@@ -94,7 +94,7 @@ public:
     ~KeyframeSelectionState() {}
 
     bool HasSelected();
-    void ClearSelectedKeyframes();
+    void ClearSelectedKeyframes(std::shared_ptr<SequencerEntryBlockUI> entryBlock);
     void ResetRubberbandingSelection();
     bool IsSelected(std::shared_ptr<Keyframe> keyframe);
     bool IsOrigSelected(std::shared_ptr<Keyframe> keyframe); //checks origSelectedKeyframes
@@ -121,6 +121,7 @@ struct GraphState
     double baseOffsetY;
     bool inMotion; //when actively scrolling
 
+    int lastOffsetX; //Ugly kluge to handle the case where if we've already reached the half-way zeroith point and keep scrolling over too far, bad things happen
     int zeroithTickPixel;
     double offsetX; //scroll offset
     double offsetY;

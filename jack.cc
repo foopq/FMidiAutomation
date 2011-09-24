@@ -12,8 +12,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <boost/lambda/bind.hpp>
 #include <boost/function.hpp>
 #include <iostream>
-#include "Sequencer.h"
-#include "SequencerEntry.h"
+#include "Data/Sequencer.h"
+#include "Data/SequencerEntry.h"
 #include <boost/serialization/vector.hpp>
 #include "Globals.h"
 
@@ -74,9 +74,9 @@ JackSingleton::JackSingleton()
 //    boost::function<void (void)> threadFunc = boost::lambda::bind(&notifyJackUpdate, boost::lambda::var(condition));
 //    thread.reset(new boost::thread(threadFunc));
 
-    jackClient = jack_client_open("FMidiAutomation", JackNullOption, NULL);
+    jackClient = jack_client_open("FMidiAutomation", JackNullOption, nullptr);
 
-    assert(jackClient != NULL);
+    assert(jackClient != nullptr);
 
 //    jack_set_error_function(&error_impl); -- causes reentrant issues
     jack_set_process_callback(jackClient, &process_impl, this);
@@ -102,8 +102,14 @@ JackSingleton::JackSingleton()
 
 JackSingleton::~JackSingleton()
 {
-    jack_client_close(jackClient);
+    //Nothing
 }//destructor
+
+void JackSingleton::stopClient()
+{
+    jack_client_close(jackClient);
+}//stopClient
+
 
 JackSingleton &JackSingleton::Instance()
 {
@@ -112,18 +118,24 @@ JackSingleton &JackSingleton::Instance()
     return jackSingleton;
 }//Instance
 
-bool JackSingleton::areProcessingMidi() const
+bool JackSingleton::areProcessingMidi()
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     return processingMidi;
 }//areProcessingMidi
 
 void JackSingleton::setProcessingMidi(bool processing)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     processingMidi = processing;
 }//setProcessingMidi
 
 std::string JackSingleton::getOutputPortName(jack_port_t *port)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     for (std::map<std::string, jack_port_t *>::const_iterator iter = outputPorts.begin(); iter != outputPorts.end(); ++iter) {
         if (iter->second == port) {
             return iter->first;
@@ -135,6 +147,8 @@ std::string JackSingleton::getOutputPortName(jack_port_t *port)
 
 std::string JackSingleton::getInputPortName(jack_port_t *port)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     for (std::map<std::string, jack_port_t *>::const_iterator iter = inputPorts.begin(); iter != inputPorts.end(); ++iter) {
         if (iter->second == port) {
             return iter->first;
@@ -146,7 +160,7 @@ std::string JackSingleton::getInputPortName(jack_port_t *port)
 
 std::vector<std::string> JackSingleton::getInputPorts()
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
 
     std::vector<std::string> inputPortsVec;
 
@@ -159,7 +173,7 @@ std::vector<std::string> JackSingleton::getInputPorts()
 
 void JackSingleton::setInputPorts(std::vector<std::string> ports)
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
 
     std::vector<std::string> inputPortsVec;
 
@@ -187,7 +201,7 @@ void JackSingleton::setInputPorts(std::vector<std::string> ports)
 
 std::vector<std::string> JackSingleton::getOutputPorts()
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
 
     std::vector<std::string> outPortsVec;
 
@@ -200,7 +214,7 @@ std::vector<std::string> JackSingleton::getOutputPorts()
 
 void JackSingleton::setOutputPorts(std::vector<std::string> ports)
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
 
     std::vector<std::string> outputPortsVec;
 
@@ -228,24 +242,30 @@ void JackSingleton::setOutputPorts(std::vector<std::string> ports)
 
 jack_port_t *JackSingleton::getOutputPort(const std::string &portName)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     if (outputPorts.find(portName) != outputPorts.end()) {
         return outputPorts[portName];
     } else {
-        return NULL;
+        return nullptr;
     }//if
 }//getOutputPort
 
 jack_port_t *JackSingleton::getInputPort(const std::string &portName)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     if (inputPorts.find(portName) != inputPorts.end()) {
         return inputPorts[portName];
     } else {
-        return NULL;
+        return nullptr;
     }//if
 }//getInputPort
 
 void JackSingleton::setRecordMidi(bool record)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     if (true == record) {
         midiRecordBuffer.clear();
         midiRecordBuffer.reserve(1024 * 1024 * 10);
@@ -259,17 +279,23 @@ void JackSingleton::setRecordMidi(bool record)
 
 std::vector<unsigned char> &JackSingleton::getRecordBuffer()
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     return midiRecordBuffer;
 }//getRecordBuffer
 
 std::vector<MidiInputInfoHeader> &JackSingleton::getMidiRecordBufferHeaders()
-{ 
+{
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     return midiRecordBufferHeaders;
 }//getMidiRecordBufferHeaders
 
 bool JackSingleton::hasValueChanged(jack_port_t *port, unsigned int channel, unsigned int msb, unsigned int lsb, 
                                     ControlType controllerType, unsigned int sampledValue)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     if (ControlType::CC == controllerType) {
         std::map<unsigned int /*channel*/, std::map<unsigned int /*controller*/, unsigned char /*value*/> > &ccValueCache_ChannelControllerValueMap = ccValueCache[port];
 
@@ -293,7 +319,7 @@ bool JackSingleton::hasValueChanged(jack_port_t *port, unsigned int channel, uns
 
 int JackSingleton::process(jack_nframes_t nframes, void *arg)
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
 
     jack_position_t pos;
     jack_transport_state_t newTransportState = jack_transport_query(jackClient, &pos);
@@ -374,18 +400,17 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
                 portVec.reserve(maxPortSize);
             }//for
 
-            typedef std::pair<std::shared_ptr<SequencerEntry>, int> EntryPairType;
-            for (EntryPairType entry : globals.sequencer->getEntryPair()) {
+            for (auto entry : globals.projectData.getSequencer()->getEntryPair()) {
 ////////// CHECK TO SEE IF WE SHOULD SAMPLE THIS ENTRY                
-                unsigned char sampledValue = entry.first->sampleChar(curFrame);
+                unsigned char sampledValue = entry->sampleChar(curFrame);
 
-                unsigned char channel = entry.first->getImpl()->channel;
-                unsigned char msb = entry.first->getImpl()->msb;
-                unsigned char lsb = entry.first->getImpl()->lsb;
+                unsigned char channel = entry->getImpl()->channel;
+                unsigned char msb = entry->getImpl()->msb;
+                unsigned char lsb = entry->getImpl()->lsb;
 
-                ControlType controllerType = entry.first->getImpl()->controllerType;
+                ControlType controllerType = entry->getImpl()->controllerType;
 
-                std::set<jack_port_t *> ports = entry.first->getOutputPorts();
+                std::set<jack_port_t *> ports = entry->getOutputPorts();
                 for (jack_port_t *port : ports) {
                     if (hasValueChanged(port, channel, msb, lsb, controllerType, sampledValue) == false) {                        
                         continue;
@@ -415,7 +440,8 @@ int JackSingleton::process(jack_nframes_t nframes, void *arg)
                     continue;
                 }//if
 
-                int result = jack_midi_event_write(midiOutputBuffersRaw[outPortIter->second], 0, &portVec[0], portVec.size());                
+                //int result = 
+                (void)jack_midi_event_write(midiOutputBuffersRaw[outPortIter->second], 0, &portVec[0], portVec.size());                
             }//for
 
         }//if (true == processingMidi) {
@@ -436,18 +462,20 @@ void JackSingleton::jack_shutdown(void *arg)
 
 jack_transport_state_t JackSingleton::getTransportState()
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
     return curTransportState;
 }//getTransportState
 
 int JackSingleton::getTransportFrame()
 {
-    boost::mutex::scoped_lock lock(mutex);
+    boost::recursive_mutex::scoped_lock lock(mutex);
     return curFrame;
 }//getTransportFrame
 
 void JackSingleton::setTransportState(jack_transport_state_t state)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     if (false == processingMidi) {
         return;
     }//if
@@ -463,6 +491,8 @@ void JackSingleton::setTransportState(jack_transport_state_t state)
 
 void JackSingleton::setTime(int frame)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     if (false == processingMidi) {
         return;
     }//if
@@ -476,6 +506,8 @@ void JackSingleton::setTime(int frame)
 
 void JackSingleton::doLoad(boost::archive::xml_iarchive &inputArchive)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     std::vector<std::string> inputPorts;
     std::vector<std::string> outputPorts;
 
@@ -488,6 +520,8 @@ void JackSingleton::doLoad(boost::archive::xml_iarchive &inputArchive)
 
 void JackSingleton::doSave(boost::archive::xml_oarchive &outputArchive)
 {
+    boost::recursive_mutex::scoped_lock lock(mutex);
+
     std::vector<std::string> inputPorts = getInputPorts();
     std::vector<std::string> outputPorts = getOutputPorts();
 
