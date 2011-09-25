@@ -141,7 +141,7 @@ MouseButton getMouseButton(guint button)
 
 }//anonymous namespace
 
-bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
+bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)
 {
     //Good idea to sync up the bucky bits
     if (event->state & GDK_CONTROL_MASK) {
@@ -188,9 +188,9 @@ bool FMidiAutomationMainWindow::handleScroll(GdkEventScroll *event)/*{{{*/
     }//if
 
     return true;
-}//handleScroll/*}}}*/
+}//handleScroll
 
-bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
+bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)
 {
     bool retVal = true;
     MouseButton eventButton = getMouseButton(event->button);
@@ -333,9 +333,9 @@ bool FMidiAutomationMainWindow::mouseButtonPressed(GdkEventButton *event)/*{{{*/
 
     queue_draw();
     return retVal;
-}//mouseButtonPressed/*}}}*/
+}//mouseButtonPressed
 
-bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*/
+bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)
 {
     MouseButton eventButton = getMouseButton(event->button);
 
@@ -440,9 +440,9 @@ bool FMidiAutomationMainWindow::mouseButtonReleased(GdkEventButton *event)/*{{{*
 
     queue_draw();
     return true;
-}//mouseButtonReleased/*}}}*/
+}//mouseButtonReleased
 
-bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
+bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)
 {
     graphState->curMousePosX = event->x;
     graphState->curMousePosY = event->y;
@@ -524,7 +524,7 @@ bool FMidiAutomationMainWindow::mouseMoved(GdkEventMotion *event)/*{{{*/
     }//if
 
     return true;
-}//mouseMoved/*}}}*/
+}//mouseMoved
 
 
 

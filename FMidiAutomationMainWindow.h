@@ -23,12 +23,14 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <jack/transport.h>
 #include <thread>
 
+
 struct FMidiAutomationData;
 class SequencerUI;
 class SequencerEntry;
 struct GraphState;
 struct CurveEditor;
 class SequencerEntryBlockUI;
+class CommandManager;
 
 enum class UIThreadOperation : char
 {
@@ -36,6 +38,11 @@ enum class UIThreadOperation : char
     finishProcessRecordedMidiOp,
 };//UIThreadOperation
 
+enum class WindowMode : char
+{
+    MainWindow,
+    CurveEditorOnly
+};//WindowMode
 
 class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutomationMainWindow>
 {
@@ -53,6 +60,8 @@ class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutom
     Gtk::ImageMenuItem *menuCopy;
     Gtk::ImageMenuItem *menuCut;
     Gtk::ImageMenuItem *menuPaste;
+    Gtk::ImageMenuItem *menuRedo;
+    Gtk::ImageMenuItem *menuUndo;
     Gtk::ImageMenuItem *menuPasteInstance;
     Gtk::MenuItem *menuSplitEntryBlock;
     Gtk::MenuItem *menuJoinEntryBlocks;
@@ -291,6 +300,11 @@ public:
     void unsetAllCurveFrames();
     void editSequencerEntryProperties(std::shared_ptr<SequencerEntry> entry, bool createUpdatePoint);
     std::function<void (const std::string &)> getLoadCallback();
+    WindowMode getWindowMode();
+    bool IsInSequencer();
+    Gtk::ImageMenuItem *getMenuUndo();
+    Gtk::ImageMenuItem *getMenuRedo();
+    std::function<void (void)> getTitleStarFunc();
     void queue_draw();
 
     //For serialization

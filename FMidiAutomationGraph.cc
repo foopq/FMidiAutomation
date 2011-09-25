@@ -27,7 +27,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "ProcessRecordedMidi.h"
 
 namespace
-{/*{{{*/
+{
     
 Glib::RefPtr<Gdk::Pixbuf> scale_keeping_ratio(const Glib::RefPtr<Gdk::Pixbuf>& pixbuf, int target_height, int target_width)
 {
@@ -437,56 +437,56 @@ int determineTickCountGroupSize(int ticksPerPixel)
     return 1000;
 }//determineTickCountGroupSize
 
-}//anonymous namespace/*}}}*/
+}//anonymous namespace
 
-bool EntryBlockSelectionState::HasSelected()/*{{{*/
+bool EntryBlockSelectionState::HasSelected()
 {
 //    std::cout << "HasSelected: " << currentlySelectedEntryBlocks.size() << " " << (currentlySelectedEntryBlocks.empty() == false) << " " << this << std::endl;
 
     return (currentlySelectedEntryBlocks.empty() == false);
-}//HasSelected/*}}}*/
+}//HasSelected
 
-std::shared_ptr<SequencerEntryBlockUI> EntryBlockSelectionState::GetFirstEntryBlock()/*{{{*/
+std::shared_ptr<SequencerEntryBlockUI> EntryBlockSelectionState::GetFirstEntryBlock()
 {
     if (HasSelected() == true) {
         return ((*currentlySelectedEntryBlocks.begin()).second);
     } else {
         return std::shared_ptr<SequencerEntryBlockUI>();
     }//if
-}//GetFirstEntryBlock/*}}}*/
+}//GetFirstEntryBlock
 
-void EntryBlockSelectionState::ClearSelected()/*{{{*/
+void EntryBlockSelectionState::ClearSelected()
 {
 //    std::cout << "EntryBlockSelectionState::ClearSelected() " << this << std::endl;
 
     currentlySelectedEntryBlocks.clear();
     currentlySelectedEntryOriginalStartTicks.clear();
-}//ClearSelected/*}}}*/
+}//ClearSelected
 
-std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > EntryBlockSelectionState::GetEntryBlocksMapCopy()/*{{{*/
+std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > EntryBlockSelectionState::GetEntryBlocksMapCopy()
 {
     return currentlySelectedEntryBlocks;
-}//GetEntryBlocksMapCopy/*}}}*/
+}//GetEntryBlocksMapCopy
 
-bool EntryBlockSelectionState::IsSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
+bool EntryBlockSelectionState::IsSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
         return true;
     } else {
         return false;
     }//if
-}//IsSelected/*}}}*/
+}//IsSelected
 
-bool EntryBlockSelectionState::IsOrigSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
+bool EntryBlockSelectionState::IsOrigSelected(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
     if (origSelectedEntryBlocks.find(entryBlock) != origSelectedEntryBlocks.end()) {
         return true;
     } else {
         return false;
     }//if
-}//IsOrigSelected/*}}}*/
+}//IsOrigSelected
 
-void EntryBlockSelectionState::ResetRubberbandingSelection()/*{{{*/
+void EntryBlockSelectionState::ResetRubberbandingSelection()
 {
     origSelectedEntryBlocks.clear();
 
@@ -494,53 +494,53 @@ void EntryBlockSelectionState::ResetRubberbandingSelection()/*{{{*/
             entryBlockIter != currentlySelectedEntryOriginalStartTicks.end(); ++entryBlockIter) {
         origSelectedEntryBlocks.insert(entryBlockIter->first);
     }//for
-}//ResetRubberbandingSelection/*}}}*/
+}//ResetRubberbandingSelection
 
-std::set<std::shared_ptr<SequencerEntryBlockUI> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()/*{{{*/
+std::set<std::shared_ptr<SequencerEntryBlockUI> > EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy()
 {
     std::cout << "EntryBlockSelectionState::GetOrigSelectedEntryBlocksCopy: " << origSelectedEntryBlocks.size() << std::endl;
 
     return origSelectedEntryBlocks;
-}//GetOrigSelectedEntryBlocksCopy/*}}}*/
+}//GetOrigSelectedEntryBlocksCopy
 
-int EntryBlockSelectionState::GetNumSelected()/*{{{*/
+int EntryBlockSelectionState::GetNumSelected()
 {
     return currentlySelectedEntryBlocks.size();
-}//GetNumSelected/*}}}*/
+}//GetNumSelected
 
-int EntryBlockSelectionState::GetOriginalStartTick(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
+int EntryBlockSelectionState::GetOriginalStartTick(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
     if (currentlySelectedEntryOriginalStartTicks.find(entryBlock) != currentlySelectedEntryOriginalStartTicks.end()) {
         return currentlySelectedEntryOriginalStartTicks[entryBlock];
     } else {
         return 0;
     }//if
-}//GetOriginalStartTick/*}}}*/
+}//GetOriginalStartTick
 
-std::map<std::shared_ptr<SequencerEntryBlockUI>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()/*{{{*/
+std::map<std::shared_ptr<SequencerEntryBlockUI>, int> EntryBlockSelectionState::GetEntryOriginalStartTicksCopy()
 {
     return currentlySelectedEntryOriginalStartTicks;
-}//GetEntryOriginalStartTicksCopy/*}}}*/
+}//GetEntryOriginalStartTicksCopy
 
-fmaipair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()/*{{{*/
+fmaipair<decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.begin()), decltype(EntryBlockSelectionState::currentlySelectedEntryBlocks.end())> EntryBlockSelectionState::GetCurrentlySelectedEntryBlocks()
 {
     return fmai_make_pair(currentlySelectedEntryBlocks.begin(), currentlySelectedEntryBlocks.end());
-}//GetCurrentlySelectedEntryBlocks/*}}}*/
+}//GetCurrentlySelectedEntryBlocks
 
-void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlockUI>, int> &origStartTicks)/*{{{*/
+void EntryBlockSelectionState::SetCurrentlySelectedEntryOriginalStartTicks(std::map<std::shared_ptr<SequencerEntryBlockUI>, int> &origStartTicks)
 {
     currentlySelectedEntryOriginalStartTicks.swap(origStartTicks);
-}//SetCurrentlySelectedEntryOriginalStartTicks/*}}}*/
+}//SetCurrentlySelectedEntryOriginalStartTicks
 
-void EntryBlockSelectionState::AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
+void EntryBlockSelectionState::AddSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
 //    std::cout << "EntryBlockSelectionState::AddSelectedEntryBlock: " << entryBlock.get() << " - " << this << std::endl;
 
     currentlySelectedEntryOriginalStartTicks[entryBlock]  = entryBlock->getBaseEntryBlock()->getStartTick();
     currentlySelectedEntryBlocks.insert(std::make_pair(entryBlock->getBaseEntryBlock()->getStartTick(), entryBlock));
-}//AddSelectedEntryBlock/*}}}*/
+}//AddSelectedEntryBlock
 
-void EntryBlockSelectionState::RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)/*{{{*/
+void EntryBlockSelectionState::RemoveSelectedEntryBlock(std::shared_ptr<SequencerEntryBlockUI> entryBlock)
 {
 //    std::cout << "EntryBlockSelectionState::RemoveSelectedEntryBlock: " << entryBlock.get() << " - " << this << std::endl;
 
@@ -555,7 +555,7 @@ void EntryBlockSelectionState::RemoveSelectedEntryBlock(std::shared_ptr<Sequence
     auto tickIter = currentlySelectedEntryOriginalStartTicks.find(entryBlock);
     assert(tickIter != currentlySelectedEntryOriginalStartTicks.end());
     currentlySelectedEntryOriginalStartTicks.erase(tickIter);
-}//RemoveSelectedEntryBlock/*}}}*/
+}//RemoveSelectedEntryBlock
 
 bool KeyframeSelectionState::HasSelected()
 {
@@ -1205,7 +1205,7 @@ std::shared_ptr<SequencerEntryBlock> GraphState::getFirstCurrentlySelectedEntryB
 
 void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
-    if (displayMode != DisplayMode::Curve) {
+    if ((displayMode != DisplayMode::Curve) || (0 == areaWidth)) {
         return;
     }//if
 
@@ -1268,6 +1268,10 @@ void GraphState::refreshHorizontalLines(unsigned int areaWidth, unsigned int are
 
 void GraphState::refreshVerticalLines(unsigned int areaWidth, unsigned int areaHeight)
 {
+    if (0 == areaWidth) {
+        return;
+    }//if
+
 //std::cout << "refreshVerticalLines entry" << std::endl;
 
     //Ugly kluge to handle the case where if we've already reached the half-way zeroith point and keep scrolling over too far, bad things happen

@@ -33,6 +33,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "SerializationHelper.h"
 #include "Tempo.h"
 #include "WindowManager.h"
+#include "Command_Other.h"
 
 
 namespace
@@ -186,8 +187,6 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     menuPaste->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuPaste));
     menuPasteInstance->signal_activate().connect(sigc::mem_fun(*this, &FMidiAutomationMainWindow::on_menuPasteInstance));
 
-    Gtk::ImageMenuItem *menuUndo;
-    Gtk::ImageMenuItem *menuRedo;
     uiXml->get_widget("menu_redo", menuRedo);
     uiXml->get_widget("menu_undo", menuUndo);
 
@@ -329,6 +328,9 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     Gtk::VBox *entryVBox;
     uiXml->get_widget("entryVBox", entryVBox);
     sequencer.reset(new SequencerUI(globals.projectData.getEntryGlade(), entryVBox, this));
+
+    drawingAreaWidth = 0;
+    drawingAreaHeight = 0;
 }//constructor
 
 FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
@@ -339,6 +341,40 @@ FMidiAutomationMainWindow::~FMidiAutomationMainWindow()
     statusTextThread.join();
 }//destructor
  
+std::function<void (void)> FMidiAutomationMainWindow::getTitleStarFunc()
+{
+    std::function<void (void)> titleStarFunc = [=]() { setTitleChanged(); };
+    return titleStarFunc;
+}//getTitleStarFunc
+
+WindowMode FMidiAutomationMainWindow::getWindowMode()
+{
+    if (curveEditorOnlyMode == true) {
+        return WindowMode::CurveEditorOnly;
+    } else {
+        return WindowMode::MainWindow;
+    }//if
+}//getWindowMode
+
+bool FMidiAutomationMainWindow::IsInSequencer()
+{
+    if (getGraphState().displayMode == DisplayMode::Sequencer) {
+        return true;
+    } else {
+        return false;
+    }//if
+}//IsInSequencer
+
+Gtk::ImageMenuItem *FMidiAutomationMainWindow::getMenuUndo()
+{
+    return menuUndo;
+}//getMenuUndo
+
+Gtk::ImageMenuItem *FMidiAutomationMainWindow::getMenuRedo()
+{
+    return menuRedo;
+}//getMenuRedo
+
 std::shared_ptr<SequencerUI> FMidiAutomationMainWindow::getSequencer()
 {
     return sequencer;
@@ -367,11 +403,7 @@ void FMidiAutomationMainWindow::init(bool curveEditorOnlyMode_, std::shared_ptr<
 
     uiXml->get_widget("menu_pasteSEBToSelectedEntry", menu_pasteSEBToSelectedEntry);
 
-    CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
     PasteManager::Instance().setMenuItems(menuPaste, menuPasteInstance, menu_pasteSEBToSelectedEntry, menu_pasteSEBInstancesToSelectedEntry);
-
-    std::function<void (void)> titleStarFunc = [=]() { setTitleChanged(); };
-    CommandManager::Instance().setTitleStar(titleStarFunc);
 
     //Globals &globals = Globals::Instance();
     //std::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
@@ -410,6 +442,11 @@ void FMidiAutomationMainWindow::init(bool curveEditorOnlyMode_, std::shared_ptr<
 
 void FMidiAutomationMainWindow::queue_draw()
 {
+    if (graphState != nullptr) {
+        graphState->refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+        graphState->refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    }//if
+
     graphDrawingArea->queue_draw();
 }//queue_draw
 
@@ -545,7 +582,7 @@ return;
     menuUndo->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
     menuRedo->get_child()->modify_fg(Gtk::STATE_NORMAL, textColour);
 
-    CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
+    //CommandManager::Instance().setMenuItems(menuUndo, menuRedo);
 
     Gtk::SeparatorMenuItem *separatorMenuItem;
     uiXml->get_widget("separatormenuitem1", separatorMenuItem);
@@ -615,15 +652,9 @@ void FMidiAutomationMainWindow::handleEditSelectedInSeparateWindow()
     std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlockClone = findWrappingEntryBlockUI(newWindow->sequencer, selectedEntryBlock->getBaseEntryBlock());
     assert(selectedEntryBlockClone != nullptr);
 
-    std::cout << "11" << std::endl;
-
     newWindow->graphState->entryBlockSelectionState.ClearSelected();
     newWindow->graphState->entryBlockSelectionState.AddSelectedEntryBlock(selectedEntryBlockClone);
-
-std::cout << "22" << std::endl;
     newWindow->handleCurveButtonPressedHelper(selectedEntryBlockClone);
-
-std::cout << "33" << std::endl;
     newWindow->queue_draw();
 }//handleEditSelectedInSeparateWindow
 
@@ -686,8 +717,8 @@ void FMidiAutomationMainWindow::handleRewPressed()
     getGraphState().curPointerTick = 0;
     updateTempoBox(*graphState, globals.projectData, bpmEntry, beatsPerBarEntry, barSubdivisionsEntry);
     getGraphState().setOffsetCenteredOnTick(0, drawingAreaWidth);
-    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     queue_draw();
 }//handleRewPressed
 
@@ -1005,9 +1036,12 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     menuItem->set_visible(false);
 
     getGraphState().setOffsetCenteredOnTick(getGraphState().curPointerTick, drawingAreaWidth);
-    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     updateCursorTick(getGraphState().curPointerTick, false);
+
+    CommandManager::Instance().updateUndoRedoMenus();
+
     queue_draw();
 }//handleSequencerButtonPressed
 
@@ -1015,12 +1049,11 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
 {
     std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     handleCurveButtonPressedHelper(selectedEntryBlock);
+    CommandManager::Instance().updateUndoRedoMenus();
 }//handleCurveButtonPressed
 
 void FMidiAutomationMainWindow::handleCurveButtonPressedHelper(std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock)
 {
-std::cout << "handleCurveButtonPressedHelper 1" << std::endl;
-
     //std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     if (selectedEntryBlock == nullptr) {
         return;
@@ -1032,13 +1065,8 @@ std::cout << "handleCurveButtonPressedHelper 1" << std::endl;
     uiXml->get_widget("selectedEntryBlockFrame", frame);
     frame->set_visible(false);
 
-std::cout << "handleCurveButtonPressedHelper 2" << std::endl;
-
     positionTickEntry->property_editable() = false;
-
     positionValueEntry->set_text("");
-
-std::cout << "handleCurveButtonPressedHelper 3" << std::endl;
 
     getGraphState().valuesPerPixel = selectedEntryBlock->getValuesPerPixel();
     getGraphState().offsetY = selectedEntryBlock->getOffsetY();
@@ -1057,8 +1085,6 @@ std::cout << "handleCurveButtonPressedHelper 3" << std::endl;
     positionValueEntry->show_all();
     positionValueLabel->show_all();
 
-std::cout << "handleCurveButtonPressedHelper 4" << std::endl;
-
     curveEditor->getKeySelection(*graphState, std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), false, selectedEntryBlock);
 
     if (getGraphState().keyframeSelectionState.HasSelected() == true) {
@@ -1066,8 +1092,6 @@ std::cout << "handleCurveButtonPressedHelper 4" << std::endl;
     } else {
         curveEditor->setKeyUIValues(uiXml, std::shared_ptr<Keyframe>());
     }//if
-
-std::cout << "handleCurveButtonPressedHelper 5" << std::endl;
 
     PasteManager::Instance().clearCommand();
 
@@ -1085,20 +1109,10 @@ std::cout << "handleCurveButtonPressedHelper 5" << std::endl;
     uiXml->get_widget("menu_resetTangents", menuItem);
     menuItem->set_visible(true);
 
-std::cout << "handleCurveButtonPressedHelper 6" << std::endl;
-
     getGraphState().setOffsetCenteredOnTick(getGraphState().curPointerTick, drawingAreaWidth);
-std::cout << "handleCurveButtonPressedHelper 6b: " << drawingAreaWidth << " - " << drawingAreaHeight << std::endl;
-
-    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-
-std::cout << "handleCurveButtonPressedHelper 6c" << std::endl;
-    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
-
-std::cout << "handleCurveButtonPressedHelper 6d" << std::endl;
+    //getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     updateCursorTick(getGraphState().curPointerTick, false);
-
-std::cout << "handleCurveButtonPressedHelper 7" << std::endl;
 
     queue_draw();
 }//handleCurveButtonPressed
@@ -1258,8 +1272,8 @@ std::cout << "**************************************************FMidiAutomationM
  
 std::cout << "drawingAreaWidth: " << drawingAreaWidth << " - " << "drawingAreaHeight: " << drawingAreaHeight << std::endl;
 
-    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     refreshGraphBackground();
 
     static bool firstTime = true;
@@ -1272,6 +1286,8 @@ std::cout << "drawingAreaWidth: " << drawingAreaWidth << " - " << "drawingAreaHe
     if (sequencer != nullptr) {
         sequencer->adjustFillerHeight();
     }//if
+
+    queue_draw();
 }//handleGraphResize
 
 void FMidiAutomationMainWindow::on_menuCopy()
@@ -1545,8 +1561,8 @@ void FMidiAutomationMainWindow::on_menuNew()
     mainWindow->sequencer.reset(new SequencerUI(globals.projectData.getEntryGlade(), entryVBox, this));
 
     mainWindow->getGraphState().entryBlockSelectionState.ClearSelected();
-    mainWindow->getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    mainWindow->getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    //mainWindow->getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    //mainWindow->getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
 
     mainWindow->queue_draw();
 }//on_menuNew
@@ -1719,8 +1735,8 @@ globals.projectData.getSequencer()->doLoad(inputArchive);
     mruList.addFile(currentFilename_);
 
     getGraphState().entryBlockSelectionState.ClearSelected();
-    getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
-    getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
+    //getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
     queue_draw();
 
     Gtk::ScrolledWindow *entryScrollWindow;
@@ -1764,13 +1780,13 @@ void FMidiAutomationMainWindow::on_menuOpen()
 
 void FMidiAutomationMainWindow::on_menuUndo()
 {
-    CommandManager::Instance().doUndo();
+    CommandManager::Instance().doUndo(this);
     queue_draw();
 }//on_menuUndo
 
 void FMidiAutomationMainWindow::on_menuRedo()
 {
-    CommandManager::Instance().doRedo();
+    CommandManager::Instance().doRedo(this);
     queue_draw();
 }//on_menuRedo
 

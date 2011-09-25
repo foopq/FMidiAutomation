@@ -20,7 +20,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 //AddSequencerEntryCommand
-AddSequencerEntryCommand::AddSequencerEntryCommand(bool useDefaults_, FMidiAutomationMainWindow *window) : Command("Add Sequencer Entry", window)/*{{{*/
+AddSequencerEntryCommand::AddSequencerEntryCommand(bool useDefaults_, FMidiAutomationMainWindow *window) : Command("Add Sequencer Entry", window, CommandFilter::SequencerOnly)
 {
     useDefaults = useDefaults_;
 }//constructor
@@ -50,11 +50,11 @@ void AddSequencerEntryCommand::undoAction()
 
     globals.projectData.getSequencer()->deleteEntry(entry->getBaseEntry());
     window->getSequencer()->deleteEntry(entry);
-}//undoAction/*}}}*/
+}//undoAction
 
 //DeleteSequencerEntryCommand
 DeleteSequencerEntryCommand::DeleteSequencerEntryCommand(std::shared_ptr<SequencerEntryUI> entry_, FMidiAutomationMainWindow *window) 
-                                                            : Command("Delete Sequencer Entry", window)/*{{{*/
+                                                            : Command("Delete Sequencer Entry", window, CommandFilter::SequencerOnly)
 {
     entry = entry_;
     entryIndex = entry->getIndex();
@@ -79,11 +79,11 @@ void DeleteSequencerEntryCommand::undoAction()
 
     globals.projectData.getSequencer()->addEntry(entry->getBaseEntry());
     window->getSequencer()->addEntry(entryIndex, entry);
-}//undoAction/*}}}*/
+}//undoAction
 
 //SequencerEntryUpCommand
 SequencerEntryUpCommand::SequencerEntryUpCommand(std::shared_ptr<SequencerEntryUI> entry_, FMidiAutomationMainWindow *window) 
-                                                        : Command("Sequencer Entry Up", window)/*{{{*/
+                                                        : Command("Sequencer Entry Up", window, CommandFilter::SequencerOnly)
 {
     entry = entry_;
     origIndex = entry->getIndex();
@@ -104,11 +104,11 @@ void SequencerEntryUpCommand::undoAction()
 {
     window->getSequencer()->deleteEntry(entry);
     window->getSequencer()->addEntry(origIndex, entry);
-}//undoAction/*}}}*/
+}//undoAction
 
 //SequencerEntryDownCommand
 SequencerEntryDownCommand::SequencerEntryDownCommand(std::shared_ptr<SequencerEntryUI> entry_, FMidiAutomationMainWindow *window) 
-                                                        : Command("Sequencer Entry Down", window)/*{{{*/
+                                                        : Command("Sequencer Entry Down", window, CommandFilter::SequencerOnly)
 {
     entry = entry_;
     origIndex = entry->getIndex();
@@ -129,12 +129,12 @@ void SequencerEntryDownCommand::undoAction()
 {
     window->getSequencer()->deleteEntry(entry);
     window->getSequencer()->addEntry(origIndex, entry);
-}//undoAction/*}}}*/
+}//undoAction
 
 #if 0
 //AddSequencerEntryBlockCommand
 AddSequencerEntryBlockCommand::AddSequencerEntryBlockCommand(std::shared_ptr<SequencerEntryUI> entry_, std::shared_ptr<SequencerEntryBlock> entryBlock_,
-                                                                FMidiAutomationMainWindow *window) : Command("Add Sequencer Entry Block", window)/*{{{*/
+                                                                FMidiAutomationMainWindow *window) : Command("Add Sequencer Entry Block", window)
 {
     entry = entry_;
     entryBlock = entryBlock_;
@@ -158,13 +158,13 @@ void AddSequencerEntryBlockCommand::undoAction()
 {
     entry->getBaseEntry()->removeEntryBlock(entryBlock);
     entry->removeEntryBlock(entryBlockUI);
-}//undoAction/*}}}*/
+}//undoAction
 #endif
 
 //AddSequencerEntryBlocksCommand
 AddSequencerEntryBlocksCommand::AddSequencerEntryBlocksCommand(
         std::vector<std::pair<std::shared_ptr<SequencerEntryUI>, std::shared_ptr<SequencerEntryBlockUI>>> &entryBlocks_,
-        FMidiAutomationMainWindow *window) : Command("Add Sequencer Entry Blocks", window)/*{{{*/
+        FMidiAutomationMainWindow *window) : Command("Add Sequencer Entry Blocks", window, CommandFilter::SequencerOnly)
 {
     entryBlocks.swap(entryBlocks_);
 }//constructor
@@ -188,12 +188,12 @@ void AddSequencerEntryBlocksCommand::undoAction()
         entryBlockIter.first->getBaseEntry()->removeEntryBlock(entryBlockIter.second->getBaseEntryBlock());
         entryBlockIter.first->removeEntryBlock(entryBlockIter.second);
     }//foreach
-}//undoAction/*}}}*/
+}//undoAction
 
 #if 0
 //DeleteSequencerEntryBlockCommand
 DeleteSequencerEntryBlockCommand::DeleteSequencerEntryBlockCommand(std::shared_ptr<SequencerEntryBlockUI> entryBlock_, FMidiAutomationMainWindow *window) 
-                                                                        : Command("Delete Sequencer Entry Block", window)/*{{{*/
+                                                                        : Command("Delete Sequencer Entry Block", window)
 {
     entryBlockUI = entryBlock_;
     entryBlock = entryBlockUI->getBaseEntryBlock();
@@ -215,12 +215,12 @@ void DeleteSequencerEntryBlockCommand::undoAction()
 {
     entry->getBaseEntry()->addEntryBlock(entryBlock);
     entry->addEntryBlock(entryBlockUI);
-}//undoAction/*}}}*/
+}//undoAction
 #endif
 
 //DeleteSequencerEntryBlocksCommand
 DeleteSequencerEntryBlocksCommand::DeleteSequencerEntryBlocksCommand(std::vector<std::shared_ptr<SequencerEntryBlockUI>> entryBlocks_,
-                                                                        FMidiAutomationMainWindow *window) : Command("Delete Sequencer Entry Blocks", window)/*{{{*/
+                                                                        FMidiAutomationMainWindow *window) : Command("Delete Sequencer Entry Blocks", window, CommandFilter::SequencerOnly)
 {
     entryBlocks = entryBlocks_;
 }//constructor
@@ -244,11 +244,11 @@ void DeleteSequencerEntryBlocksCommand::undoAction()
         entryBlock->getOwningEntry()->getBaseEntry()->addEntryBlock(entryBlock->getBaseEntryBlock());
         entryBlock->getOwningEntry()->addEntryBlock(entryBlock);
     }//for
-}//undoAction/*}}}*/
+}//undoAction
 
 //ChangeSequencerEntryBlockPropertiesCommand
 ChangeSequencerEntryBlockPropertiesCommand::ChangeSequencerEntryBlockPropertiesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, Glib::ustring newTitle_,
-                                                                                        FMidiAutomationMainWindow *window) : Command("Change Sequencer Entry Block Properties", window)/*{{{*/
+                                                                                        FMidiAutomationMainWindow *window) : Command("Change Sequencer Entry Block Properties", window, CommandFilter::SequencerOnly)
 {
     entryBlock = entryBlock_;
     prevTitle = newTitle_;
@@ -269,14 +269,14 @@ void ChangeSequencerEntryBlockPropertiesCommand::doAction()
 void ChangeSequencerEntryBlockPropertiesCommand::undoAction()
 {
     doAction();
-}//undoAction/*}}}*/
+}//undoAction
 
 //MoveSequencerEntryBlockCommand
-MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(/*{{{*/
+MoveSequencerEntryBlockCommand::MoveSequencerEntryBlockCommand(
                                                                 std::multimap<int, std::shared_ptr<SequencerEntryBlockUI> > entryBlocks_,
                                                                 std::map<std::shared_ptr<SequencerEntryBlockUI>, int> entryOriginalStartTicks_,
                                                                 std::map<std::shared_ptr<SequencerEntryBlockUI>, int> entryNewStartTicks_,
-                                                                FMidiAutomationMainWindow *window) : Command("Move Sequencer Entry Block", window)
+                                                                FMidiAutomationMainWindow *window) : Command("Move Sequencer Entry Block", window, CommandFilter::SequencerOnly)
 {
     entryBlocks = entryBlocks_;
 
@@ -318,12 +318,12 @@ void MoveSequencerEntryBlockCommand::undoAction()
         std::shared_ptr<SequencerEntryBlock> entryBlock = blockIter.second->getBaseEntryBlock();
         entryBlock->moveBlock(entryOriginalStartTicks[blockIter.second]);
     }//for
-}//undoAction/*}}}*/
+}//undoAction
 
 //ChangeSequencerEntryPropertiesCommand
 ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand(std::shared_ptr<SequencerEntry> entry_, std::shared_ptr<SequencerEntryImpl> origImpl_,
                                                                                 std::shared_ptr<SequencerEntryImpl> newImpl_,
-                                                                                FMidiAutomationMainWindow *window) : Command("Change Sequencer Entry Properties", window)/*{{{*/
+                                                                                FMidiAutomationMainWindow *window) : Command("Change Sequencer Entry Properties", window, CommandFilter::SequencerOnly)
 {
     entry = entry_;
     origImpl = origImpl_;
@@ -343,13 +343,13 @@ void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesComman
 void ChangeSequencerEntryPropertiesCommand::ChangeSequencerEntryPropertiesCommand::undoAction()
 {
     entry->setNewDataImpl(origImpl);
-}//undoAction/*}}}*/
+}//undoAction
 
 MergeSequencerEntryBlocksCommand::MergeSequencerEntryBlocksCommand(
                                         std::vector<std::shared_ptr<SequencerEntryBlockUI> > &origEntryBlocks_,
                                         std::vector<std::shared_ptr<SequencerEntryBlockUI> > &replacementEntryBlocks_,
                                         FMidiAutomationMainWindow *window) 
-                                        : Command("Merge Sequencer Entry Blocks", window)
+                                        : Command("Merge Sequencer Entry Blocks", window, CommandFilter::SequencerOnly)
 {
     origEntryBlocks.swap(origEntryBlocks_);
     replacementEntryBlocks.swap(replacementEntryBlocks_);
@@ -392,7 +392,7 @@ SplitSequencerEntryBlocksCommand::SplitSequencerEntryBlocksCommand(
                                         std::set<std::shared_ptr<SequencerEntryBlockUI> > &origEntryBlocks_,
                                         std::vector<std::shared_ptr<SequencerEntryBlockUI> > &replacementEntryBlocks_,
                                         FMidiAutomationMainWindow *window) 
-                                        : Command("Split Sequencer Entry Blocks", window)
+                                        : Command("Split Sequencer Entry Blocks", window, CommandFilter::SequencerOnly)
 {
     origEntryBlocks.swap(origEntryBlocks_);
     replacementEntryBlocks.swap(replacementEntryBlocks_);

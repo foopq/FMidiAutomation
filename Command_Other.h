@@ -12,41 +12,85 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 #include <memory>
 #include <functional>
-#include <stack>
+#include <map>
+#include <queue>
 #include "Data/Sequencer.h"
 
 struct Tempo;
 class FMidiAutomationMainWindow;
+enum class WindowMode : char;
+
+enum class CommandFilter : char
+{
+    SequencerOnly,
+    CurveEditorOnly,
+    Both,
+    BothMainWindowOnly
+};//ComandFilter
+
 
 struct Command
 {
-    Command(Glib::ustring commandStr, FMidiAutomationMainWindow *window);
+    Command(Glib::ustring commandStr, FMidiAutomationMainWindow *window, CommandFilter commandFilter);
     virtual ~Command() {};
 
     Glib::ustring commandStr;
     FMidiAutomationMainWindow *window;
+    CommandFilter commandFilter;
 
     virtual void doAction() = 0;
     virtual void undoAction() = 0;
 };//Command
 
+struct OrderedCommandPairComparator : public std::binary_function<std::pair<int, std::shared_ptr<Command>> &, 
+                                                                  std::pair<int, std::shared_ptr<Command>> &, bool>
+{
+    bool operator()(const std::pair<int, std::shared_ptr<Command>> &a, const std::pair<int, std::shared_ptr<Command>> &b) const
+    {
+        return a.first < b.first;
+    }//operator()
+};//OrderedCommandPairComparator
+
+class CommandQueue
+{
+    typedef std::priority_queue<std::pair<int, std::shared_ptr<Command>>, std::vector<std::pair<int, std::shared_ptr<Command>>>, OrderedCommandPairComparator> CommandQueueType;
+
+    CommandQueueType sequencerQueue;
+    CommandQueueType curveEditorQueue;
+    CommandQueueType bothQueue;
+    CommandQueueType bothMainWindowOnlyQueue;
+
+    int commandCount;
+
+public:
+    CommandQueue();
+
+    std::shared_ptr<Command> getNextCommand(FMidiAutomationMainWindow *window);
+    std::shared_ptr<Command> getNextCommandNoRemove(FMidiAutomationMainWindow *window);
+
+    void clear();
+    void addNewCommand(std::shared_ptr<Command> command);
+};//CommandQueue
+
 class CommandManager
 {
-    std::stack<std::shared_ptr<Command> > undoStack;
-    std::stack<std::shared_ptr<Command> > redoStack;
-    Gtk::ImageMenuItem *menuUndo;
-    Gtk::ImageMenuItem *menuRedo;
+    CommandQueue undoStack;
+    CommandQueue redoStack;
+    std::map<FMidiAutomationMainWindow *, Gtk::ImageMenuItem *> undoMenuMap;
+    std::map<FMidiAutomationMainWindow *, Gtk::ImageMenuItem *> redoMenuMap;
     std::function<void (void)> titleStarFunc;
 
 public:
     static CommandManager &Instance();
 
     void setTitleStar(std::function<void (void)> titleStarFunc);
+    void updateUndoRedoMenus();
 
-    void setMenuItems(Gtk::ImageMenuItem *menuUndo, Gtk::ImageMenuItem *menuRedo);
+    void registerMenuItems(FMidiAutomationMainWindow *window, Gtk::ImageMenuItem *menuUndo, Gtk::ImageMenuItem *menuRedo);
+    void unregisterMenuItems(FMidiAutomationMainWindow *window);
 
-    void doRedo();
-    void doUndo();
+    void doRedo(FMidiAutomationMainWindow *window);
+    void doUndo(FMidiAutomationMainWindow *window);
     void setNewCommand(std::shared_ptr<Command> command, bool applyCommand);
 };//CommandManager
 

@@ -38,16 +38,12 @@ MRUList &MRUList::Instance()
 
 void MRUList::registerTopMenu(FMidiAutomationMainWindow *window, Gtk::MenuItem *menuOpenRecent_)
 {
-    std::cout << "%%%% registerTopMenu: " << window << std::endl;
-
     menuOpenRecentList[window] = menuOpenRecent_;
     updateRecentMenu();
 }//registerTopMenu
 
 void MRUList::unregisterTopMenu(FMidiAutomationMainWindow *window)
 {
-    std::cout << "%%%% unregisterTopMenu: " << window << std::endl;
-
     auto mapIter = menuOpenRecentList.find(window);
     if (mapIter != menuOpenRecentList.end()) {
         menuOpenRecentList.erase(mapIter);
@@ -56,7 +52,6 @@ void MRUList::unregisterTopMenu(FMidiAutomationMainWindow *window)
 
 void MRUList::setLoadCallback(std::function<void (const Glib::ustring &)> loadCallback_)
 {
-    std::cout << "%%%% setLoadCallback" << std::endl;
     loadCallback = loadCallback_;
     assert(loadCallback);
 
@@ -84,8 +79,6 @@ void MRUList::addFile(const Glib::ustring &fileName)
 
 void MRUList::updateRecentMenu()
 {
-    std::cout << "%%%%% updateRecentMenu: " << menuOpenRecentList.empty() << " - " << this << std::endl;
-
     if (menuOpenRecentList.empty() == true) {
         return;
     }//if

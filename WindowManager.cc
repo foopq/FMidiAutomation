@@ -15,6 +15,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Data/SequencerEntryBlock.h"
 #include "SerializationHelper.h"
 #include "Globals.h"
+#include "Command_Other.h"
 
 namespace
 {
@@ -50,6 +51,10 @@ std::shared_ptr<FMidiAutomationMainWindow> WindowManager::createMainWindow()
     MRUList &mruList = MRUList::Instance();
     mruList.setLoadCallback(mainWindow->getLoadCallback());
 
+    CommandManager &commandManager = CommandManager::Instance();
+    commandManager.setTitleStar(mainWindow->getTitleStarFunc());
+    commandManager.registerMenuItems(mainWindow.get(), mainWindow->getMenuUndo(), mainWindow->getMenuRedo());    
+
     return mainWindow;
 }//createMainWindow
 
@@ -57,6 +62,9 @@ std::shared_ptr<FMidiAutomationMainWindow> WindowManager::createWindow(bool curv
 {
     std::shared_ptr<FMidiAutomationMainWindow> newWindow(new FMidiAutomationMainWindow);
     newWindow->init(curveEditorOnlyMode, editingEntryBlock);
+
+    CommandManager &commandManager = CommandManager::Instance();
+    commandManager.registerMenuItems(newWindow.get(), newWindow->getMenuUndo(), newWindow->getMenuRedo());
 
     windows.insert(newWindow);
     return newWindow;
@@ -71,6 +79,9 @@ void WindowManager::unregisterWindow(std::shared_ptr<FMidiAutomationMainWindow> 
 
     MRUList &mruList = MRUList::Instance();
     mruList.unregisterTopMenu(window.get());
+
+    CommandManager &commandManager = CommandManager::Instance();
+    commandManager.unregisterMenuItems(window.get());
 
     /* -- reenable if we ever do multiple sequencer windows
     if (windows.empty() == true) {
@@ -122,6 +133,9 @@ void WindowManager::doLoad(boost::archive::xml_iarchive &inputArchive)
 
         newWindow->init(curveEditorOnlyMode, editingEntryBlock);
         newWindow->forceCurveEditorMode(editingEntryBlock);
+
+        CommandManager &commandManager = CommandManager::Instance();
+        commandManager.registerMenuItems(newWindow.get(), newWindow->getMenuUndo(), newWindow->getMenuRedo());
     }//for
 }//doLoad
 

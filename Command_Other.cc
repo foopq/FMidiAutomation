@@ -11,7 +11,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <libglademm.h>
 #include "Command_Other.h"
 #include "Tempo.h"
-//#include "Data/FMidiAutomationData.h"
 #include "Data/Sequencer.h"
 #include "UI/SequencerEntryUI.h"
 #include "UI/SequencerUI.h"
@@ -19,111 +18,244 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Globals.h"
 #include "FMidiAutomationMainWindow.h"
 
-Command::Command(Glib::ustring commandStr_, FMidiAutomationMainWindow *window_)/*{{{*/
+Command::Command(Glib::ustring commandStr_, FMidiAutomationMainWindow *window_, CommandFilter commandFilter_)
 {
     window = window_;
     commandStr = commandStr_;
-}//constructor/*}}}*/
+    commandFilter = commandFilter_;
+}//constructor
 
-CommandManager &CommandManager::Instance()/*{{{*/
+CommandQueue::CommandQueue()
+{
+    commandCount = 0;
+}//constructor
+
+std::shared_ptr<Command> CommandQueue::getNextCommand(FMidiAutomationMainWindow *window)
+{
+    std::shared_ptr<Command> command = getNextCommandNoRemove(window);
+    if (command != nullptr) {
+        if ((bothQueue.empty() == false) && (bothQueue.top().second == command)) {
+            bothQueue.pop();
+        }//if
+
+        else if ((bothMainWindowOnlyQueue.empty() == false) && (bothMainWindowOnlyQueue.top().second == command)) {
+            bothMainWindowOnlyQueue.pop();
+        }//if
+
+        else if ((sequencerQueue.empty() == false) && (sequencerQueue.top().second == command)) {
+            sequencerQueue.pop();
+        }//if
+
+        else if ((curveEditorQueue.empty() == false) && (curveEditorQueue.top().second == command)) {
+            curveEditorQueue.pop();
+        }//if
+    }//if
+
+    return command;
+}//getNextCommand
+
+std::shared_ptr<Command> CommandQueue::getNextCommandNoRemove(FMidiAutomationMainWindow *window)
+{
+    WindowMode windowMode = window->getWindowMode();
+    std::pair<int, std::shared_ptr<Command>> topCommand = std::make_pair(std::numeric_limits<int>::min(), std::shared_ptr<Command>());
+
+    std::pair<int, std::shared_ptr<Command>> tmpCommand;
+
+    if (bothQueue.empty() == false) {
+        tmpCommand = bothQueue.top();
+        if (tmpCommand.first > topCommand.first) {
+            topCommand = tmpCommand;
+        }//if
+    }//if
+
+    switch (windowMode) {
+        case WindowMode::MainWindow:
+            if (bothMainWindowOnlyQueue.empty() == false) {
+                tmpCommand = bothMainWindowOnlyQueue.top();
+                if (tmpCommand.first > topCommand.first) {
+                    topCommand = tmpCommand;
+                }//if
+            }//if
+
+            if (window->IsInSequencer() == true) {
+                if (sequencerQueue.empty() == false) {
+                    tmpCommand = sequencerQueue.top();
+                    if (tmpCommand.first > topCommand.first) {
+                        topCommand = tmpCommand;
+                    }//if
+                }//if
+            } else {
+                if (curveEditorQueue.empty() == false) {
+                    tmpCommand = curveEditorQueue.top();
+                    if (tmpCommand.first > topCommand.first) {
+                        topCommand = tmpCommand;
+                    }//if
+                }//if
+            }//if
+            break;
+
+        case WindowMode::CurveEditorOnly:
+            //assert(window->IsInSequencer() == false); -- I want this assertion in, but sadly it fails during the creation of a new window (not loaded).. could be refactored I suppose..
+            if (curveEditorQueue.empty() == false) {
+                tmpCommand = curveEditorQueue.top();
+                if (tmpCommand.first > topCommand.first) {
+                    topCommand = tmpCommand;
+                }//if
+            }//if
+            break;
+    }//switch
+
+    return topCommand.second;
+}//getNextCommandNoRemove
+
+void CommandQueue::clear()
+{
+    sequencerQueue = CommandQueueType();
+    curveEditorQueue = CommandQueueType();
+    bothQueue = CommandQueueType();
+    bothMainWindowOnlyQueue = CommandQueueType();
+}//clear
+
+void CommandQueue::addNewCommand(std::shared_ptr<Command> command)
+{
+    commandCount++;
+    std::pair<int, std::shared_ptr<Command>> newCommand = std::make_pair(commandCount, command);
+
+    switch (command->commandFilter) {
+        case CommandFilter::SequencerOnly:
+            sequencerQueue.push(newCommand);
+            break;
+        case CommandFilter::CurveEditorOnly:
+            curveEditorQueue.push(newCommand);
+            break;
+        case CommandFilter::Both:
+            bothQueue.push(newCommand);
+            break;
+        case CommandFilter::BothMainWindowOnly:
+            bothMainWindowOnlyQueue.push(newCommand);
+            break;
+    }//switch
+}//addNewCommand
+
+CommandManager &CommandManager::Instance()
 {
     static CommandManager manager;
     return manager;
-}//Instance/*}}}*/
+}//Instance
 
-void CommandManager::setTitleStar(std::function<void (void)> titleStarFunc_)/*{{{*/
+void CommandManager::setTitleStar(std::function<void (void)> titleStarFunc_)
 {
     titleStarFunc = titleStarFunc_;
-}//setTitleStar/*}}}*/
+}//setTitleStar
 
-void CommandManager::setMenuItems(Gtk::ImageMenuItem *menuUndo_, Gtk::ImageMenuItem *menuRedo_)/*{{{*/
+void CommandManager::registerMenuItems(FMidiAutomationMainWindow *window, Gtk::ImageMenuItem *menuUndo, Gtk::ImageMenuItem *menuRedo)
 {
-    menuUndo = menuUndo_;
-    menuRedo = menuRedo_;
+    undoMenuMap[window] = menuUndo;
+    redoMenuMap[window] = menuRedo;
 
-    menuUndo->set_label("Undo");
-    menuRedo->set_label("Redo");
+std::cout << "%%%%%% registerMenuItems: " << undoMenuMap.size() << std::endl;
 
-    menuUndo->set_sensitive(false);
-    menuRedo->set_sensitive(false);
-}//setMenuItems/*}}}*/
+    updateUndoRedoMenus();
+}//registerMenuItems
 
-void CommandManager::doRedo()/*{{{*/
+void CommandManager::unregisterMenuItems(FMidiAutomationMainWindow *window)
 {
-    if (redoStack.empty() == true) {
+    auto mapIter = undoMenuMap.find(window);
+    if (mapIter != undoMenuMap.end()) {
+        undoMenuMap.erase(mapIter);
+    }//if
+
+    mapIter = redoMenuMap.find(window);
+    if (mapIter != redoMenuMap.end()) {
+        redoMenuMap.erase(mapIter);
+    }//if
+}//unregisterMenuItems
+
+void CommandManager::updateUndoRedoMenus()
+{
+    for (auto mapIter : undoMenuMap) {
+        std::shared_ptr<Command> nextCommand = undoStack.getNextCommandNoRemove(mapIter.first);
+
+        Gtk::ImageMenuItem *menuItem = mapIter.second;
+        if (nextCommand != nullptr) {
+            menuItem->set_sensitive(true);
+            menuItem->set_label("Undo " + nextCommand->commandStr);
+        } else {
+            menuItem->set_label("Undo");
+            menuItem->set_sensitive(false);
+        }//if
+    }//for
+
+    for (auto mapIter : redoMenuMap) {
+        std::shared_ptr<Command> nextCommand = redoStack.getNextCommandNoRemove(mapIter.first);
+
+        Gtk::ImageMenuItem *menuItem = mapIter.second;
+        if (nextCommand != nullptr) {
+            menuItem->set_sensitive(true);
+            menuItem->set_label("Redo " + nextCommand->commandStr);
+        } else {
+            menuItem->set_label("Redo");
+            menuItem->set_sensitive(false);
+        }//if
+    }//for
+}//updateUndoRedoMenus
+
+void CommandManager::doRedo(FMidiAutomationMainWindow *window)
+{
+    std::shared_ptr<Command> nextCommand = redoStack.getNextCommand(window);
+
+    if (nextCommand == nullptr) {
         return;
     }//if
 
-    std::shared_ptr<Command> command = redoStack.top();
-    redoStack.pop();
+    nextCommand->doAction();
+    undoStack.addNewCommand(nextCommand);
 
-    if (redoStack.empty() == true) {
-        menuRedo->set_label("Redo");
-        menuRedo->set_sensitive(false);
-    } else {
-        menuRedo->set_label("Redo " + redoStack.top()->commandStr);
-    }//if
+    for (auto mapIter : undoMenuMap) {
+        mapIter.first->queue_draw();
+    }//for
 
-    undoStack.push(command);
-    menuUndo->set_sensitive(true);
-    menuUndo->set_label("Undo " + command->commandStr);
+    updateUndoRedoMenus();
+}//doRedo
 
-    command->doAction();
-
-    command->window->queue_draw();
-}//doRedo/*}}}*/
-
-void CommandManager::doUndo()/*{{{*/
+void CommandManager::doUndo(FMidiAutomationMainWindow *window)
 {
-    if (undoStack.empty() == true) {
+    std::shared_ptr<Command> nextCommand = undoStack.getNextCommand(window);
+
+    if (nextCommand == nullptr) {
         return;
     }//if
 
-    std::shared_ptr<Command> command = undoStack.top();
-    undoStack.pop();
+    nextCommand->undoAction();
+    redoStack.addNewCommand(nextCommand);
 
-    if (undoStack.empty() == true) {
-        menuUndo->set_label("Undo");
-        menuUndo->set_sensitive(false);
-    } else {
-        menuUndo->set_label("Undo " + undoStack.top()->commandStr);
-    }//if
+    for (auto mapIter : undoMenuMap) {
+        mapIter.first->queue_draw();
+    }//for
 
-    redoStack.push(command);
-    menuRedo->set_sensitive(true);
-    menuRedo->set_label("Redo " + command->commandStr);
+    updateUndoRedoMenus();
+}//doUndo
 
-    command->undoAction();
-
-    command->window->queue_draw();
-}//doUndo/*}}}*/
-
-void CommandManager::setNewCommand(std::shared_ptr<Command> command, bool applyCommand)/*{{{*/
+void CommandManager::setNewCommand(std::shared_ptr<Command> command, bool applyCommand)
 {
-    while (redoStack.empty() == false) {
-        redoStack.pop();
-    }//while
+    redoStack.clear();
 
-    menuRedo->set_label("Redo");
-    menuRedo->set_sensitive(false);
-
-    undoStack.push(command);
-    menuUndo->set_sensitive(true);
-    menuUndo->set_label("Undo " + command->commandStr);
+    undoStack.addNewCommand(command);
 
     if (true == applyCommand) {
         command->doAction();
     }//if
 
     titleStarFunc();
+    updateUndoRedoMenus();
 
     command->window->queue_draw();
-}//setNewcommand/*}}}*/
+}//setNewCommand
 
 //UpdateTempoChangeCommand
-UpdateTempoChangeCommand::UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,/*{{{*/
+UpdateTempoChangeCommand::UpdateTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int new_bpm, unsigned int new_beatsPerBar,
                                                     unsigned int new_barSubDivisions, std::function<void (void)> updateTempoChangesUIData_,
-                                                    FMidiAutomationMainWindow *window) : Command("Update Tempo Change", window)
+                                                    FMidiAutomationMainWindow *window) : Command("Update Tempo Change", window, CommandFilter::Both)
 {
     old_bpm = new_bpm;
     old_beatsPerBar = new_beatsPerBar;
@@ -149,12 +281,12 @@ void UpdateTempoChangeCommand::doAction()
 void UpdateTempoChangeCommand::undoAction()
 {
     doAction();
-}//undoAction/*}}}*/
+}//undoAction
 
 //AddTempoChangeCommand
-AddTempoChangeCommand::AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_,/*{{{*/
+AddTempoChangeCommand::AddTempoChangeCommand(std::shared_ptr<Tempo> tempo_, unsigned int tick_,
                                                 std::function<void (void)> updateTempoChangesUIData_, FMidiAutomationMainWindow *window) 
-                                                : Command("Add Tempo Change", window)
+                                                : Command("Add Tempo Change", window, CommandFilter::Both)
 {
     tempo = tempo_;
     tick = tick_;
@@ -184,12 +316,12 @@ void AddTempoChangeCommand::undoAction()
     assert(globals.projectData.HasTempoChangeAtTick(tick) == true);
     globals.projectData.removeTempoChange(tick);
     updateTempoChangesUIData();
-}//undoAction/*}}}*/
+}//undoAction
 
 //DeleteTempoChangeCommand
-DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,/*{{{*/
+DeleteTempoChangeCommand::DeleteTempoChangeCommand(unsigned int tick_,
                                                     std::function<void (void)> updateTempoChangesUIData_, FMidiAutomationMainWindow *window) 
-                                                    : Command("Delete Tempo Change", window)
+                                                    : Command("Delete Tempo Change", window, CommandFilter::Both)
 {
     tick = tick_;
     updateTempoChangesUIData = updateTempoChangesUIData_;
@@ -219,11 +351,11 @@ void DeleteTempoChangeCommand::undoAction()
     assert(globals.projectData.HasTempoChangeAtTick(tick) == false);
     globals.projectData.addTempoChange(tick, tempo);
     updateTempoChangesUIData();
-}//undoAction/*}}}*/
+}//undoAction
 
 //ProcessRecordedMidiCommand
 ProcessRecordedMidiCommand::ProcessRecordedMidiCommand(decltype(Sequencer::entries) &origEntryMap_, decltype(Sequencer::entries) &newEntryMap_,
-                                                        FMidiAutomationMainWindow *window) : Command("Process Recorded Midi", window)/*{{{*/
+                                                        FMidiAutomationMainWindow *window) : Command("Process Recorded Midi", window, CommandFilter::BothMainWindowOnly)
 {
     origEntryMap.swap(origEntryMap_);
     newEntryMap.swap(newEntryMap_);
@@ -261,7 +393,7 @@ void ProcessRecordedMidiCommand::undoAction()
         assert(newOldMap[entryIter.first->getBaseEntry()] != nullptr);
         entryIter.first->setBaseEntry(newOldMap[entryIter.first->getBaseEntry()]);
     }//for
-}//undoAction/*}}}*/
+}//undoAction
 
 
 

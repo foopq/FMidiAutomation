@@ -18,9 +18,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 //AddKeyframesCommand
-AddKeyframesCommand::AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, /*{{{*/
+AddKeyframesCommand::AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, 
                                             std::map<int, std::shared_ptr<Keyframe> > &origKeyframes, int newTick,
-                                            FMidiAutomationMainWindow *window) : Command("Add Keyframe", window)
+                                            FMidiAutomationMainWindow *window) : Command("Add Keyframe", window, CommandFilter::CurveEditorOnly)
 {
     if (origKeyframes.empty() == true) {
         return;
@@ -46,7 +46,7 @@ AddKeyframesCommand::AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> cu
 }//constructor
 
 AddKeyframesCommand::AddKeyframesCommand(std::shared_ptr<SequencerEntryBlock> currentlySelectedEntryBlock_, int curMouseUnderTick_, int curMouseUnderValue_,
-                                            FMidiAutomationMainWindow *window) : Command("Add Keyframe", window)
+                                            FMidiAutomationMainWindow *window) : Command("Add Keyframe", window, CommandFilter::CurveEditorOnly)
 {
     currentlySelectedEntryBlock = currentlySelectedEntryBlock_;
     //curMouseUnderTick = curMouseUnderTick_;
@@ -85,12 +85,12 @@ void AddKeyframesCommand::undoAction()
         std::shared_ptr<Keyframe> keyframe = keyIter->second;
         currentlySelectedEntryBlock->getCurve()->deleteKey(keyframe);
     }//for
-}//undoAction/*}}}*/
+}//undoAction
 
 //DeleteKeyframesCommand
-DeleteKeyframesCommand::DeleteKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
+DeleteKeyframesCommand::DeleteKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, 
                                                 std::map<int, std::shared_ptr<Keyframe> > keyframes_,
-                                                FMidiAutomationMainWindow *window) : Command("Delete Keyframe", window)
+                                                FMidiAutomationMainWindow *window) : Command("Delete Keyframe", window, CommandFilter::CurveEditorOnly)
 {
     entryBlock = entryBlock_;
     keyframes = keyframes_;
@@ -115,12 +115,12 @@ void DeleteKeyframesCommand::undoAction()
         std::shared_ptr<Keyframe> keyframe = keyIter->second;
         entryBlock->getCurve()->addKey(keyframe);
     }//for
-}//undoAction/*}}}*/
+}//undoAction
 
 //MoveKeyframesCommand
-MoveKeyframesCommand::MoveKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, /*{{{*/
+MoveKeyframesCommand::MoveKeyframesCommand(std::shared_ptr<SequencerEntryBlock> entryBlock_, 
                                             std::vector<std::shared_ptr<KeyInfo> > &keyframes_,
-                                            FMidiAutomationMainWindow *window) : Command("Move Keyframe", window)
+                                            FMidiAutomationMainWindow *window) : Command("Move Keyframe", window, CommandFilter::CurveEditorOnly)
 {
     entryBlock = entryBlock_;
     keyframes = keyframes_;
@@ -146,7 +146,7 @@ void MoveKeyframesCommand::doAction()
 void MoveKeyframesCommand::undoAction()
 {
     doAction();
-}//undoAction/*}}}*/
+}//undoAction
 
 
 
