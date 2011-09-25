@@ -85,6 +85,7 @@ public:
 
     void setTitleStar(std::function<void (void)> titleStarFunc);
     void updateUndoRedoMenus();
+    void clearCommands();
 
     void registerMenuItems(FMidiAutomationMainWindow *window, Gtk::ImageMenuItem *menuUndo, Gtk::ImageMenuItem *menuRedo);
     void unregisterMenuItems(FMidiAutomationMainWindow *window);

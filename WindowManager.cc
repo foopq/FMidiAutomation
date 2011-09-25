@@ -16,6 +16,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "SerializationHelper.h"
 #include "Globals.h"
 #include "Command_Other.h"
+#include "PasteManager.h"
 
 namespace
 {
@@ -82,6 +83,9 @@ void WindowManager::unregisterWindow(std::shared_ptr<FMidiAutomationMainWindow> 
 
     CommandManager &commandManager = CommandManager::Instance();
     commandManager.unregisterMenuItems(window.get());
+
+    PasteManager &pasteManager = PasteManager::Instance();
+    pasteManager.unregisterMenuItems(window.get());
 
     /* -- reenable if we ever do multiple sequencer windows
     if (windows.empty() == true) {

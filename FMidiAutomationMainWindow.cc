@@ -358,6 +358,10 @@ WindowMode FMidiAutomationMainWindow::getWindowMode()
 
 bool FMidiAutomationMainWindow::IsInSequencer()
 {
+    if (graphState == nullptr) {
+        return true;
+    }//if
+
     if (getGraphState().displayMode == DisplayMode::Sequencer) {
         return true;
     } else {
@@ -403,7 +407,8 @@ void FMidiAutomationMainWindow::init(bool curveEditorOnlyMode_, std::shared_ptr<
 
     uiXml->get_widget("menu_pasteSEBToSelectedEntry", menu_pasteSEBToSelectedEntry);
 
-    PasteManager::Instance().setMenuItems(menuPaste, menuPasteInstance, menu_pasteSEBToSelectedEntry, menu_pasteSEBInstancesToSelectedEntry);
+    PasteManager &pasteManager = PasteManager::Instance();
+    pasteManager.registerMenuItems(this, menuPaste, menuPasteInstance, menu_pasteSEBToSelectedEntry, menu_pasteSEBInstancesToSelectedEntry);
 
     //Globals &globals = Globals::Instance();
     //std::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
@@ -1013,8 +1018,6 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
 
     positionTickEntry->property_editable() = true;
 
-    PasteManager::Instance().clearCommand();
-
     if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
         positionTickEntry->set_text(boost::lexical_cast<Glib::ustring>(getGraphState().entryBlockSelectionState.GetFirstEntryBlock()->getBaseEntryBlock()->getStartTick()));
     } else {
@@ -1041,6 +1044,7 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     updateCursorTick(getGraphState().curPointerTick, false);
 
     CommandManager::Instance().updateUndoRedoMenus();
+    PasteManager::Instance().updateMenus();
 
     queue_draw();
 }//handleSequencerButtonPressed
@@ -1050,6 +1054,7 @@ void FMidiAutomationMainWindow::handleCurveButtonPressed()
     std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock = sequencer->getSelectedEntryBlock();
     handleCurveButtonPressedHelper(selectedEntryBlock);
     CommandManager::Instance().updateUndoRedoMenus();
+    PasteManager::Instance().updateMenus();
 }//handleCurveButtonPressed
 
 void FMidiAutomationMainWindow::handleCurveButtonPressedHelper(std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock)
@@ -1093,7 +1098,7 @@ void FMidiAutomationMainWindow::handleCurveButtonPressedHelper(std::shared_ptr<S
         curveEditor->setKeyUIValues(uiXml, std::shared_ptr<Keyframe>());
     }//if
 
-    PasteManager::Instance().clearCommand();
+    PasteManager::Instance().updateMenus();
 
     //Update edit menu
     Gtk::MenuItem *menuItem;
@@ -1293,16 +1298,14 @@ std::cout << "drawingAreaWidth: " << drawingAreaWidth << " - " << "drawingAreaHe
 void FMidiAutomationMainWindow::on_menuCopy()
 {
     if (getGraphState().displayMode == DisplayMode::Sequencer) {
-        PasteManager::Instance().setPasteOnly(false);
         if (getGraphState().entryBlockSelectionState.HasSelected() == true) {
             std::shared_ptr<PasteSequencerEntryBlocksCommand> pasteSequencerEntryBlocksCommand(new PasteSequencerEntryBlocksCommand(getGraphState().entryBlockSelectionState.GetEntryBlocksMapCopy()));
-            PasteManager::Instance().setNewCommand(pasteSequencerEntryBlocksCommand);
+            PasteManager::Instance().setNewCommand(this, pasteSequencerEntryBlocksCommand);
         }//if
     } else {
-        PasteManager::Instance().setPasteOnly(true);
         if (getGraphState().keyframeSelectionState.HasSelected() == true) {
             std::shared_ptr<PasteSequencerKeyframesCommand> pasteSequencerKeyframesCommand(new PasteSequencerKeyframesCommand(getGraphState().keyframeSelectionState.GetSelectedKeyframesCopy()));
-            PasteManager::Instance().setNewCommand(pasteSequencerKeyframesCommand);
+            PasteManager::Instance().setNewCommand(this, pasteSequencerKeyframesCommand);
         }//if
     }//if
 }//on_menuCopy
@@ -1564,6 +1567,9 @@ void FMidiAutomationMainWindow::on_menuNew()
     //mainWindow->getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     //mainWindow->getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
 
+    CommandManager::Instance().clearCommands();
+    PasteManager::Instance().clearCommands();
+
     mainWindow->queue_draw();
 }//on_menuNew
 
@@ -1744,6 +1750,9 @@ globals.projectData.getSequencer()->doLoad(inputArchive);
     if (entryScrollWindow->get_vscrollbar() != nullptr) {
         entryScrollWindow->get_vscrollbar()->signal_change_value().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleEntryWindowScroll) );
     }//if
+
+    CommandManager::Instance().clearCommands();
+    PasteManager::Instance().clearCommands();
 }//actuallyLoadFile
 
 void FMidiAutomationMainWindow::on_menuOpen()

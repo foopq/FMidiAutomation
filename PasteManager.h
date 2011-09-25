@@ -28,33 +28,38 @@ class FMidiAutomationMainWindow;
 
 struct PasteCommand
 {
+    Glib::ustring pasteStr;
+
+    PasteCommand(const Glib::ustring &pasteStr);
+
     virtual void doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow) = 0;
     virtual void doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow) = 0;
 };//PasteCommand
 
 class PasteManager
 {
-    Gtk::ImageMenuItem *menuPaste;
-    Gtk::ImageMenuItem *menuPasteInstance;
-    Gtk::MenuItem *pasteBlocksToEntry;
-    Gtk::MenuItem *pasteInstanceBlocksToEntry;
-    bool pasteOnly;
+    std::map<FMidiAutomationMainWindow *, Gtk::ImageMenuItem *> menuPasteMap;
+    std::map<FMidiAutomationMainWindow *, Gtk::ImageMenuItem *> menuPasteInstanceMap;
+    std::map<FMidiAutomationMainWindow *, Gtk::MenuItem *> pasteBlocksToEntryMap;
+    std::map<FMidiAutomationMainWindow *, Gtk::MenuItem *> pasteInstanceBlocksToEntryMap;
 
-    std::shared_ptr<PasteCommand> command;
+    std::shared_ptr<PasteCommand> sequencerPasteCommand;
+    std::shared_ptr<PasteCommand> curveEditorPasteCommand;
 
 public:
     static PasteManager &Instance();
 
     PasteManager();
 
-    void setMenuItems(Gtk::ImageMenuItem *menuPaste, Gtk::ImageMenuItem *menuPasteInstance,
-                        Gtk::MenuItem *pasteBlocksToEntry, Gtk::MenuItem *pasteInstanceBlocksToEntry);
-    void setPasteOnly(bool pasteOnly);
-    void clearCommand();
+    void registerMenuItems(FMidiAutomationMainWindow *window, Gtk::ImageMenuItem *menuPaste, Gtk::ImageMenuItem *menuPasteInstance,
+                            Gtk::MenuItem *pasteBlocksToEntry, Gtk::MenuItem *pasteInstanceBlocksToEntry);
+    void unregisterMenuItems(FMidiAutomationMainWindow *window);
+    void clearCommands();
+    void updateMenus();
 
     void doPaste(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
     void doPasteInstance(boost::any contextData, FMidiAutomationMainWindow *targetWindow);
-    void setNewCommand(std::shared_ptr<PasteCommand> command);
+    void setNewCommand(FMidiAutomationMainWindow *window, std::shared_ptr<PasteCommand> command);
 };//PasteManager
 
 struct PasteSequencerEntryBlocksCommand : public PasteCommand

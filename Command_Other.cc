@@ -143,6 +143,12 @@ CommandManager &CommandManager::Instance()
     return manager;
 }//Instance
 
+void CommandManager::clearCommands()
+{
+    undoStack.clear();
+    redoStack.clear();
+}//clearCommands
+
 void CommandManager::setTitleStar(std::function<void (void)> titleStarFunc_)
 {
     titleStarFunc = titleStarFunc_;
