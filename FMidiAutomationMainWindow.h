@@ -48,29 +48,18 @@ class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutom
 {
     Glib::RefPtr<Gtk::Builder> uiXml;
     Gtk::Window *mainWindow;
-    std::shared_ptr<CurveEditor> curveEditor;
+
     Gtk::ScrolledWindow *trackListWindow;
     Gtk::DrawingArea *graphDrawingArea;
-    Gtk::ImageMenuItem *menuOpen;
-    Gtk::MenuItem *menuOpenRecent;
-    Gtk::ImageMenuItem *menuSave;
-    Gtk::ImageMenuItem *menuSaveAs;
-    Gtk::ImageMenuItem *menuNew;
-    Gtk::ImageMenuItem *menuQuit;
     Gtk::ImageMenuItem *menuCopy;
     Gtk::ImageMenuItem *menuCut;
     Gtk::ImageMenuItem *menuPaste;
     Gtk::ImageMenuItem *menuRedo;
     Gtk::ImageMenuItem *menuUndo;
     Gtk::ImageMenuItem *menuPasteInstance;
-    Gtk::MenuItem *menuSplitEntryBlock;
-    Gtk::MenuItem *menuJoinEntryBlocks;
     Gtk::Entry *leftTickEntryBox;
     Gtk::Entry *rightTickEntryBox;
-    Gtk::Entry *cursorTickEntryBox;
-    Gtk::Entry *leftBarEntryBox;
-    Gtk::Entry *rightBarEntryBox;
-    Gtk::Entry *cursorBarEntryBox;
+    Gtk::Entry *cursorTickEntryBox;    
     Gtk::Button *focusStealingButton;
     Gtk::Entry *bpmEntry;
     Gtk::Entry *beatsPerBarEntry;
@@ -112,7 +101,8 @@ class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutom
     std::shared_ptr<Gtk::Image> origBackingTexture;
 
     std::vector <Gtk::Window *> automationTrackWindows;
-    
+ 
+    std::shared_ptr<CurveEditor> curveEditor;
     std::shared_ptr<GraphState> graphState;
     std::shared_ptr<SequencerUI> sequencer;
 

@@ -134,6 +134,19 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     graphDrawingArea->signal_motion_notify_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::mouseMoved) );
     graphDrawingArea->signal_scroll_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleScroll) );
 
+
+    Gtk::ImageMenuItem *menuOpen;
+    Gtk::MenuItem *menuOpenRecent;
+    Gtk::ImageMenuItem *menuSave;
+    Gtk::ImageMenuItem *menuSaveAs;
+    Gtk::ImageMenuItem *menuNew;
+    Gtk::ImageMenuItem *menuQuit;    
+    Gtk::MenuItem *menuSplitEntryBlock;
+    Gtk::MenuItem *menuJoinEntryBlocks;
+    Gtk::Entry *leftBarEntryBox;
+    Gtk::Entry *rightBarEntryBox;
+    Gtk::Entry *cursorBarEntryBox;
+
     uiXml->get_widget("menu_open", menuOpen);
     uiXml->get_widget("menu_recent", menuOpenRecent);
     uiXml->get_widget("menu_save", menuSave);
@@ -410,6 +423,10 @@ void FMidiAutomationMainWindow::init(bool curveEditorOnlyMode_, std::shared_ptr<
     PasteManager &pasteManager = PasteManager::Instance();
     pasteManager.registerMenuItems(this, menuPaste, menuPasteInstance, menu_pasteSEBToSelectedEntry, menu_pasteSEBInstancesToSelectedEntry);
 
+
+    Gtk::MenuItem *menuOpenRecent;
+    uiXml->get_widget("menu_recent", menuOpenRecent);
+
     //Globals &globals = Globals::Instance();
     //std::function<void (const std::string &)> loadCallback = [=](const Glib::ustring &filename) { actuallyLoadFile(filename); };
     //globals.config.getMRUList().setLoadCallback(loadCallback);
@@ -495,6 +512,7 @@ void FMidiAutomationMainWindow::setTitleChanged()
 
 void FMidiAutomationMainWindow::setThemeColours()
 {
+#if 0
 return;
 
     Globals &globals = Globals::Instance();
@@ -630,6 +648,7 @@ return;
     Gtk::Frame *bpmFrame;
     uiXml->get_widget("bpmFrame", bpmFrame);
     bpmFrame->modify_bg(Gtk::STATE_NORMAL, black);
+#endif
 }//setThemeColours
 
 Gtk::Window *FMidiAutomationMainWindow::MainWindow()
