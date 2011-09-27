@@ -108,6 +108,10 @@ void WindowManager::closeAllWindows()
         window->MainWindow()->hide();
     }//for
 
+    while (windows.empty() == false) {
+        unregisterWindow(*windows.begin());
+    }//while
+
     windows.clear();
 }//closeAllWindows
 

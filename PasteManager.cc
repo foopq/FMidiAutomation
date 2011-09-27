@@ -45,6 +45,8 @@ void PasteManager::registerMenuItems(FMidiAutomationMainWindow *window, Gtk::Ima
 
 void PasteManager::unregisterMenuItems(FMidiAutomationMainWindow *window)
 {
+std::cout << "^^^^ PasteManager::unregisterMenuItems" << std::endl;
+
     auto mapIter = menuPasteMap.find(window);
     if (mapIter != menuPasteMap.end()) {
         menuPasteMap.erase(mapIter);

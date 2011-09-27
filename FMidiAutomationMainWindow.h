@@ -178,6 +178,7 @@ class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutom
     void handleUpButtonPressed();
     void handleDownButtonPressed();
     void handleSequencerButtonPressed();
+    void handleSequencerButtonPressedNoGraphStateSelectedEntryBlock();
     void handleCurveButtonPressed();
     void handleCurveButtonPressedHelper(std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock);
 

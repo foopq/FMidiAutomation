@@ -436,6 +436,10 @@ void SequencerUI::doSave(boost::archive::xml_oarchive &outputArchive)
 
 void SequencerUI::doLoad(boost::archive::xml_iarchive &inputArchive)
 {
+    selectedEntry.reset();
+    selectedEntryBlock.reset();
+    selectionInfos.clear();
+
     int SequencerUIVersion = 0;
     inputArchive & BOOST_SERIALIZATION_NVP(SequencerUIVersion);
 

@@ -456,6 +456,11 @@ void FMidiAutomationMainWindow::init(bool curveEditorOnlyMode_, std::shared_ptr<
         mergeReplaceButtonBox->set_visible(false);
 
         setTitle(editingEntryBlock->getBaseEntryBlock()->getTitle());
+
+        //Load/new from other windows was giving me trouble..
+        Gtk::MenuItem *fileMenu;
+        uiXml->get_widget("menuitem_file", fileMenu);
+        fileMenu->set_visible(false);
     } else {
         JackSingleton &jackSingleton = JackSingleton::Instance();
         jackSingleton.setTime(0);
@@ -1005,7 +1010,7 @@ void FMidiAutomationMainWindow::handleDownButtonPressed()
     }//if
 }//handleDownButtonPressed
 
-void FMidiAutomationMainWindow::handleSequencerButtonPressed()
+void FMidiAutomationMainWindow::handleSequencerButtonPressedNoGraphStateSelectedEntryBlock()
 {
     Gtk::Frame *frame;
     uiXml->get_widget("selectedKeyframeFrame", frame);
@@ -1013,16 +1018,8 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     uiXml->get_widget("selectedEntryBlockFrame", frame);
     frame->set_visible(true);
 
-    std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock = sequencer->getSelectedEntryBlock();
-    assert(selectedEntryBlock != nullptr);
-
-    selectedEntryBlock->setValuesPerPixel(getGraphState().valuesPerPixel);
-    selectedEntryBlock->setOffsetY(getGraphState().offsetY);
-
     getGraphState().displayMode = DisplayMode::Sequencer;
 
-    selectedEntryBlock->setUITickPositions(getGraphState().curPointerTick, getGraphState().leftMarkerTick, 
-                                            getGraphState().rightMarkerTick );
     getGraphState().curPointerTick = getGraphState().lastSequencerPointerTick;
     getGraphState().leftMarkerTick = getGraphState().lastSequencerLeftPointerTick;
     getGraphState().rightMarkerTick = getGraphState().lastSequencerRightPointerTick;
@@ -1066,11 +1063,28 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressed()
     PasteManager::Instance().updateMenus();
 
     queue_draw();
+}//handleSequencerButtonPressedNoGraphStateSelectedEntryBlock
+
+void FMidiAutomationMainWindow::handleSequencerButtonPressed()
+{
+    std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+    assert(selectedEntryBlock != nullptr);
+
+    selectedEntryBlock->setValuesPerPixel(getGraphState().valuesPerPixel);
+    selectedEntryBlock->setOffsetY(getGraphState().offsetY);
+
+    selectedEntryBlock->setUITickPositions(getGraphState().curPointerTick, getGraphState().leftMarkerTick, 
+                                            getGraphState().rightMarkerTick );
+
+    handleSequencerButtonPressedNoGraphStateSelectedEntryBlock();
 }//handleSequencerButtonPressed
 
 void FMidiAutomationMainWindow::handleCurveButtonPressed()
 {
     std::shared_ptr<SequencerEntryBlockUI> selectedEntryBlock = sequencer->getSelectedEntryBlock();
+
+    assert(selectedEntryBlock == graphState->entryBlockSelectionState.GetFirstEntryBlock());
+
     handleCurveButtonPressedHelper(selectedEntryBlock);
     CommandManager::Instance().updateUndoRedoMenus();
     PasteManager::Instance().updateMenus();
@@ -1289,12 +1303,12 @@ bool FMidiAutomationMainWindow::handleKeyEntryOnSelectedEntryBlockNameEntryBox(G
 
 void FMidiAutomationMainWindow::handleGraphResize(Gtk::Allocation &allocation)
 {
-std::cout << "**************************************************FMidiAutomationMainWindow::handleGraphResize " << this << std::endl;
+//std::cout << "**************************************************FMidiAutomationMainWindow::handleGraphResize " << this << std::endl;
 
     drawingAreaWidth = allocation.get_width();
     drawingAreaHeight = allocation.get_height();
  
-std::cout << "drawingAreaWidth: " << drawingAreaWidth << " - " << "drawingAreaHeight: " << drawingAreaHeight << std::endl;
+//std::cout << "drawingAreaWidth: " << drawingAreaWidth << " - " << "drawingAreaHeight: " << drawingAreaHeight << std::endl;
 
     //getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     //getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
@@ -1567,29 +1581,36 @@ void FMidiAutomationMainWindow::on_menuAlignRightCursor()
 void FMidiAutomationMainWindow::on_menuNew()
 {
     WindowManager &windowManager = WindowManager::Instance();
-    std::shared_ptr<FMidiAutomationMainWindow> mainWindow = windowManager.getMainWindow();
-    windowManager.closeAllWindows();
+    std::shared_ptr<FMidiAutomationMainWindow> mainAppWindow = windowManager.getMainWindow();
+
+    //if (mainAppWindow != shared_from_this()) {
+    //    mainAppWindow->on_menuNew();
+    //    return;
+    //}//if
 
     Globals::ResetInstance();
     Globals &globals = Globals::Instance();
 
-    mainWindow->currentFilename = "";
-    mainWindow->setTitle("Unknown");
+    mainAppWindow->currentFilename = "";
+    mainAppWindow->setTitle("Unknown");
 
-    mainWindow->getGraphState().doInit();
+    mainAppWindow->getGraphState().doInit();
 
     Gtk::VBox *entryVBox;
-    mainWindow->uiXml->get_widget("entryVBox", entryVBox);
-    mainWindow->sequencer.reset(new SequencerUI(globals.projectData.getEntryGlade(), entryVBox, this));
+    mainAppWindow->uiXml->get_widget("entryVBox", entryVBox);
+    mainAppWindow->sequencer.reset(new SequencerUI(globals.projectData.getEntryGlade(), entryVBox, this));
 
-    mainWindow->getGraphState().entryBlockSelectionState.ClearSelected();
+    mainAppWindow->getGraphState().entryBlockSelectionState.ClearSelected();
     //mainWindow->getGraphState().refreshVerticalLines(drawingAreaWidth, drawingAreaHeight);
     //mainWindow->getGraphState().refreshHorizontalLines(drawingAreaWidth, drawingAreaHeight);
 
     CommandManager::Instance().clearCommands();
     PasteManager::Instance().clearCommands();
 
-    mainWindow->queue_draw();
+    mainAppWindow->handleSequencerButtonPressedNoGraphStateSelectedEntryBlock();
+    mainAppWindow->queue_draw();
+
+    windowManager.closeAllWindows();
 }//on_menuNew
 
 void FMidiAutomationMainWindow::on_menuSave()
@@ -1702,6 +1723,14 @@ void FMidiAutomationMainWindow::on_menuSaveAs()
 
 void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFilename_)
 {
+    WindowManager &windowManager = WindowManager::Instance();
+    std::shared_ptr<FMidiAutomationMainWindow> mainAppWindow = windowManager.getMainWindow();
+
+    //if (mainAppWindow != shared_from_this()) {
+    //    mainAppWindow->actuallyLoadFile(currentFilename_);
+    //    return;
+    //}//if
+
     std::string filename = Glib::locale_from_utf8(currentFilename_);
 
     std::ifstream inputStream(filename.c_str());
@@ -1710,8 +1739,6 @@ void FMidiAutomationMainWindow::actuallyLoadFile(const Glib::ustring &currentFil
         return;
     }//if
 
-    WindowManager &windowManager = WindowManager::Instance();
-    std::shared_ptr<FMidiAutomationMainWindow> mainWindow = windowManager.getMainWindow();
     windowManager.closeAllWindows();
 
     Globals::ResetInstance();
@@ -1772,6 +1799,10 @@ globals.projectData.getSequencer()->doLoad(inputArchive);
 
     CommandManager::Instance().clearCommands();
     PasteManager::Instance().clearCommands();
+
+    mainAppWindow = windowManager.getMainWindow(); //might be unnecessary
+    mainAppWindow->handleSequencerButtonPressedNoGraphStateSelectedEntryBlock();
+    mainAppWindow->queue_draw();
 }//actuallyLoadFile
 
 void FMidiAutomationMainWindow::on_menuOpen()
