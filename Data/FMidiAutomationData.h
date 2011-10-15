@@ -45,8 +45,11 @@ public:
     fmaipair<TempoChangesIter, TempoChangesIter> getTempoChanges();
     FMidiAutomationData::TempoChangesIter getTempoChangesLowerBound(int tick);
 
-    template<class Archive> void serialize(Archive &ar, const unsigned int version);
-    friend class boost::serialization::access;
+    //template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    //friend class boost::serialization::access;
+    
+    void doLoad(boost::archive::xml_iarchive &inputArchive);
+    void doSave(boost::archive::xml_oarchive &outputArchive);
 };//FMidiAutomationData
 
 BOOST_CLASS_VERSION(FMidiAutomationData, 1);

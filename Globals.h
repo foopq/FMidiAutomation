@@ -52,8 +52,10 @@ struct Globals
 
     TempoGlobals tempoGlobals;
 
-    template<class Archive> void serialize(Archive &ar, const unsigned int version);
-    friend class boost::serialization::access;
+    //template<class Archive> void serialize(Archive &ar, const unsigned int version);
+    //friend class boost::serialization::access;
+    void doLoad(boost::archive::xml_iarchive &inputArchive);
+    void doSave(boost::archive::xml_oarchive &outputArchive);
 private:
 
     static std::shared_ptr<Globals> instance;

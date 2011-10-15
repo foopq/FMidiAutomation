@@ -89,6 +89,23 @@ void Globals::ResetInstance()
     instance.reset(new Globals());
 }//ResetInstance
 
+void Globals::doLoad(boost::archive::xml_iarchive &inputArchive)
+{
+    int globalsVersion = 1; 
+
+    inputArchive & BOOST_SERIALIZATION_NVP(globalsVersion);
+    projectData.doLoad(inputArchive);
+}//doLoad
+
+void Globals::doSave(boost::archive::xml_oarchive &outputArchive)
+{
+    int globalsVersion = 1;
+
+    outputArchive & BOOST_SERIALIZATION_NVP(globalsVersion);
+    projectData.doSave(outputArchive);
+}//doSave
+
+/*
 template<class Archive>
 void Globals::serialize(Archive &ar, const unsigned int version)
 {
@@ -98,10 +115,12 @@ void Globals::serialize(Archive &ar, const unsigned int version)
 
 template void Globals::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
 template void Globals::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
-
+*/
 
 FMidiAutomationMainWindow::FMidiAutomationMainWindow()
 {
+    std::cout << "FMidiAutomationMainWindow::FMidiAutomationMainWindow()" << std::endl;
+
     lastHandledTime = 0;
     isExiting = false;
 
@@ -1630,7 +1649,8 @@ void FMidiAutomationMainWindow::on_menuSave()
         outputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationVersion);
 
         Globals &globals = Globals::Instance();        
-        outputArchive & BOOST_SERIALIZATION_NVP(globals);
+        //outputArchive & BOOST_SERIALIZATION_NVP(globals);
+        globals.doSave(outputArchive);
 
         JackSingleton &jackSingleton = JackSingleton::Instance();
         jackSingleton.doSave(outputArchive);
@@ -1767,7 +1787,8 @@ globals.projectData.getSequencer()->doLoad(inputArchive);
 */
 
     Globals &globals = Globals::Instance();        
-    inputArchive & BOOST_SERIALIZATION_NVP(globals);
+    //inputArchive & BOOST_SERIALIZATION_NVP(globals);
+    globals.doLoad(inputArchive);
 
     JackSingleton &jackSingleton = JackSingleton::Instance();
     jackSingleton.doLoad(inputArchive);
@@ -1803,6 +1824,8 @@ globals.projectData.getSequencer()->doLoad(inputArchive);
     mainAppWindow = windowManager.getMainWindow(); //might be unnecessary
     mainAppWindow->handleSequencerButtonPressedNoGraphStateSelectedEntryBlock();
     mainAppWindow->queue_draw();
+
+    std::cout << "actuallyLoadFile sequencer: " << globals.projectData.getSequencer().get() << std::endl;
 }//actuallyLoadFile
 
 void FMidiAutomationMainWindow::on_menuOpen()

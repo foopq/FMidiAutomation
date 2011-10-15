@@ -96,11 +96,32 @@ FMidiAutomationData::TempoChangesIter FMidiAutomationData::getTempoChangesLowerB
     return tempoChanges.lower_bound(tick);
 }//getTempoChangesLowerBound
 
+/*
 template<class Archive>
 void FMidiAutomationData::serialize(Archive &ar, const unsigned int version)
 {
     ar & BOOST_SERIALIZATION_NVP(tempoChanges);
+    ar & BOOST_SERIALIZATION_NVP(sequencer);
 }//serialize
+*/
+
+void FMidiAutomationData::doLoad(boost::archive::xml_iarchive &inputArchive)
+{
+    int FMidiAutomationDataVersion = 1; 
+
+    inputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationDataVersion);
+    inputArchive & BOOST_SERIALIZATION_NVP(tempoChanges);
+    sequencer->doLoad(inputArchive);
+}//doLoad
+
+void FMidiAutomationData::doSave(boost::archive::xml_oarchive &outputArchive)
+{
+    int FMidiAutomationDataVersion = 1;
+
+    outputArchive & BOOST_SERIALIZATION_NVP(FMidiAutomationDataVersion);
+    outputArchive & BOOST_SERIALIZATION_NVP(tempoChanges);
+    sequencer->doSave(outputArchive);
+}//doSave
 
 template<class Archive> 
 void GraphState::serialize(Archive &ar, const unsigned int version)
@@ -137,10 +158,10 @@ void GraphState::serialize(Archive &ar, const unsigned int version)
     ar & BOOST_SERIALIZATION_NVP(insertMode);
 }//serialize
 
-template void FMidiAutomationData::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
+//template void FMidiAutomationData::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
 template void GraphState::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive &ar, const unsigned int version);
 
-template void FMidiAutomationData::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
+//template void FMidiAutomationData::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
 template void GraphState::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive &ar, const unsigned int version);
 
 

@@ -29,6 +29,7 @@ static const unsigned int smallEntryWindowHeight = 46 + 4; //size plus padding
 
 Sequencer::Sequencer()
 {
+    std::cout << "Sequencer::Sequencer() - " << this << std::endl;
 }//constructor
 
 unsigned int Sequencer::getNumEntries() const
@@ -56,6 +57,8 @@ fmaipair<decltype(Sequencer::entries.begin()), decltype(Sequencer::entries.end()
 void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
 {
     inputArchive & BOOST_SERIALIZATION_NVP(entries);
+
+    std::cout << "Sequencer::doLoad: " << this << std::endl;
 }//doLoad
 
 void Sequencer::doSave(boost::archive::xml_oarchive &outputArchive)
