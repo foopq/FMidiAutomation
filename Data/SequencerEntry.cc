@@ -221,6 +221,14 @@ std::shared_ptr<SequencerEntry> SequencerEntry::deepClone()
     clone->outputPorts = outputPorts;
 
     clone->recordTokenBuffer = recordTokenBuffer;
+    //for (std::shared_ptr<MidiToken> token : recordTokenBuffer) {
+//    }//for
+
+    for (auto token : recordTokenBuffer) {
+        std::cout << "token: " << token->curFrame << " - " << (int)token->value << std::endl;
+    }//for
+
+    std::cout << "deepClone: " << this << " to " << clone.get() << std::endl;
 
     return clone;
 }//deepClone
@@ -360,6 +368,11 @@ void SequencerEntryImpl::serialize(Archive &ar, const unsigned int version)
 //    std::cout << "TITLE: " << title << std::endl;
 }//serialize
 
+fmaipair<decltype(SequencerEntry::entryBlocks.begin()), decltype(SequencerEntry::entryBlocks.end())> SequencerEntry::getEntryBlocksPair()
+{
+    return fmai_make_pair(entryBlocks.begin(), entryBlocks.end());
+}//getEntryBlocksPair
+
 std::shared_ptr<SequencerEntryBlock> SequencerEntry::getEntryBlock(int tick)
 {
     if (entryBlocks.find(tick) != entryBlocks.end()) {
@@ -451,8 +464,11 @@ void SequencerEntry::addRecordToken(std::shared_ptr<MidiToken> token)
         return;
     }//if
 
-    std::cout << "add token" << std::endl;
-    recordTokenBuffer.push_back(token);
+    std::shared_ptr<MidiToken> tokenClone(new MidiToken);
+    *tokenClone = *token;
+
+    std::cout << this << ": add token: " << tokenClone->channel << " - " << tokenClone->curFrame << " - " << (int)tokenClone->controller << " - " << (int)tokenClone->value << std::endl;
+    recordTokenBuffer.push_back(tokenClone);
 }//addRecordToken
 
 std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > SequencerEntry::splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick)
@@ -540,12 +556,12 @@ void SequencerEntry::commitRecordedTokens()
         return;
     }//if
 
-    std::cout << "commitRecodedTokens" << std::endl;
-
     static const int separationTickTime = 2000;
 
     int startTick = recordTokenBuffer[0]->curFrame;
     int lastTickTime = startTick;
+
+    std::cout << this << ": commitRecodedTokens: " << recordTokenBuffer.size() << " - " << startTick << std::endl;
 
     std::deque<std::shared_ptr<SequencerEntryBlock> > newEntryBlocks;
 
@@ -569,6 +585,7 @@ void SequencerEntry::commitRecordedTokens()
             newEntryBlocks.push_back(entryBlock);
         }//if
 
+//        std::cout << "tick: " << keyframe->tick << " - value: " << keyframe->value << " - curFrame: " << token->curFrame << std::endl;
         animCurve->addKey(keyframe);
     }//foreach
 

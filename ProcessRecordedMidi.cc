@@ -11,6 +11,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "jack.h"
 #include "Data/Sequencer.h"
 #include "Data/SequencerEntry.h"
+#include "UI/SequencerUI.h"
 #include "Animation.h"
 #include "Command_Other.h"
 #include <jack/jack.h>
@@ -272,7 +273,7 @@ void FMidiAutomationMainWindow::finishProcessRecordedMidi()
     Globals &globals = Globals::Instance();
 
     auto origEntryMap = globals.projectData.getSequencer()->getEntryMap();
-    globals.projectData.getSequencer()->cloneEntryMap();
+    std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntry>> oldNewEntryMap = globals.projectData.getSequencer()->cloneEntryMap();
 
     std::cout << "2.5" << std::endl;
 
@@ -281,6 +282,8 @@ void FMidiAutomationMainWindow::finishProcessRecordedMidi()
     }//foreach
 
     std::cout << "3" << std::endl;
+
+    sequencer->cloneEntryMap(oldNewEntryMap);
 
     auto newEntryMap = globals.projectData.getSequencer()->getEntryMap();
 

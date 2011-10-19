@@ -48,7 +48,7 @@ public:
     void doSave(boost::archive::xml_oarchive &outputArchive);
 
     //For midi processing
-    void cloneEntryMap();
+    std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntry>> cloneEntryMap();
     decltype(entries) getEntryMap();    
 
 //    std::shared_ptr<VectorStreambuf> serializeEntryMap();

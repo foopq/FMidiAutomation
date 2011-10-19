@@ -229,6 +229,15 @@ void SequencerEntryUI::setBaseEntry(std::shared_ptr<SequencerEntry> baseEntry_)
 {
     baseEntry = baseEntry_;
     assert(baseEntry != nullptr);
+
+    entryBlocks.clear();
+
+    for (auto entryBlockBase : baseEntry->getEntryBlocksPair()) {
+        std::shared_ptr<SequencerEntryBlockUI> entryBlock(new SequencerEntryBlockUI(entryBlockBase.second, shared_from_this()));
+        addEntryBlock(entryBlock);
+    }//for
+
+std::cout << "SequencerEntryUI::setBaseEntry: " << entryBlocks.size() << std::endl;
 }//setBaseEntry
 
 std::shared_ptr<SequencerEntryUI> SequencerEntryUI::deepClone(const Glib::ustring &entryGlade)

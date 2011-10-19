@@ -22,6 +22,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <tuple>
 #include <jack/jack.h>
 #include "SequencerEntryBlock.h"
+#include "fmaipair.h"
 
 class Sequencer;
 class SequencerEntryBlock;
@@ -104,6 +105,7 @@ public:
     void addEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
     void removeEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock);
     std::shared_ptr<SequencerEntryBlock> getEntryBlock(int tick);
+    fmaipair<decltype(entryBlocks.begin()), decltype(entryBlocks.end())> getEntryBlocksPair();
     std::pair<std::shared_ptr<SequencerEntryBlock>, std::shared_ptr<SequencerEntryBlock> > splitEntryBlock(std::shared_ptr<SequencerEntryBlock> entryBlock, int tick);
 
     std::set<jack_port_t *> getInputPorts() const;

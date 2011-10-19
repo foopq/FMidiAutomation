@@ -348,41 +348,17 @@ void SequencerUI::editSequencerEntryProperties(std::shared_ptr<SequencerEntryUI>
     mainWindow->editSequencerEntryProperties(entry->getBaseEntry(), createUpdatePoint);
 }//editSequencerEntryProperties
 
-/*
-void SequencerUI::cloneEntryMap()
+void SequencerUI::cloneEntryMap(std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntry>> &oldNewEntryMap)
 {
-    std::map<std::shared_ptr<SequencerEntry>, int > entriesClone;
-    std::map<int, std::shared_ptr<SequencerEntry> > entriesCloneRev;
-    for (std::map<std::shared_ptr<SequencerEntry>, int >::iterator mapIter = entries.begin(); mapIter != entries.end(); ++mapIter) {
-        std::shared_ptr<SequencerEntry> entryClone = mapIter->first->deepClone();
-        entriesClone[entryClone] = mapIter->second;
-        entriesCloneRev[mapIter->second] = entryClone;
+    for (auto entry : entries) {
+        std::shared_ptr<SequencerEntry> baseEntry = entry.first->getBaseEntry();
+        assert(oldNewEntryMap.find(baseEntry) != oldNewEntryMap.end());
+        entry.first->setBaseEntry(oldNewEntryMap[baseEntry]);
+    }//foreach
 
-        //parentWidget->children().remove(*mapIter->first->getHookWidget());
-    }//for
-
-    entries.swap(entriesClone);
-
-    assert(entries.size() == entriesCloneRev.size());
-
-    parentWidget->children().clear();
-
-    for (std::map<int, std::shared_ptr<SequencerEntry> >::iterator mapIter = entriesCloneRev.begin(); mapIter != entriesCloneRev.end(); ++mapIter) {
-        Gtk::Widget *entryHookWidget = mapIter->second->getHookWidget();
-        parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
-    }//for
-
-    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
-
-    adjustFillerHeight();
-    adjustEntryIndices();
-    notifyOnScroll(-1);
-
-    selectedEntry = nullptr;
-
- std::cout << "cEM 5" << std::endl;   
+std::cout << "cEMui 5" << std::endl;   
 }//cloneEntryMap
-*/
+
 
 void SequencerUI::setEntryMap(std::map<std::shared_ptr<SequencerEntryUI>, int > entryMap)
 {

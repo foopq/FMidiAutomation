@@ -56,6 +56,9 @@ fmaipair<decltype(Sequencer::entries.begin()), decltype(Sequencer::entries.end()
 
 void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
 {
+    int serializationVersion = 1; 
+
+    inputArchive & BOOST_SERIALIZATION_NVP(serializationVersion);
     inputArchive & BOOST_SERIALIZATION_NVP(entries);
 
     std::cout << "Sequencer::doLoad: " << this << std::endl;
@@ -63,12 +66,15 @@ void Sequencer::doLoad(boost::archive::xml_iarchive &inputArchive)
 
 void Sequencer::doSave(boost::archive::xml_oarchive &outputArchive)
 {
+    int serializationVersion = 1;
+
+    outputArchive & BOOST_SERIALIZATION_NVP(serializationVersion);
     outputArchive & BOOST_SERIALIZATION_NVP(entries);
 }//doSave
 
-void Sequencer::cloneEntryMap()
+std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntry>> Sequencer::cloneEntryMap()
 {
-    assert(!"cloneEntryMap needs UI hooks");
+    std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntry>> oldNewEntryMap;
 
     //std::map<std::shared_ptr<SequencerEntry>, int > entriesClone;
     //std::map<int, std::shared_ptr<SequencerEntry> > entriesCloneRev;
@@ -80,6 +86,8 @@ void Sequencer::cloneEntryMap()
         entriesClone.push_back(entryClone);
 
         //parentWidget->children().remove(*mapIter->first->getHookWidget());
+        
+        oldNewEntryMap[mapIter] = entryClone;
     }//for
 
     entries.swap(entriesClone);
@@ -106,6 +114,8 @@ void Sequencer::cloneEntryMap()
 */
 
  std::cout << "cEM 5" << std::endl;   
+
+    return oldNewEntryMap;
 }//cloneEntryMap
 
 void Sequencer::setEntryMap(SequencerEntriesType &entryMap)

@@ -111,6 +111,7 @@ public:
     void doLoad(boost::archive::xml_iarchive &inputArchive);
 
     friend struct ProcessRecordedMidiCommand;
+    friend class SequencerUI;
 };//SequencerEntry
 
 

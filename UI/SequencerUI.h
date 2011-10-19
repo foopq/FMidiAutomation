@@ -26,6 +26,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 class Sequencer;
 struct GraphState;
+class SequencerEntry;
 class SequencerEntryUI;
 class SequencerEntryBlockUI;
 class FMidiAutomationMainWindow;
@@ -87,7 +88,7 @@ public:
     //Public because we need to do this when we resize the window
     void adjustFillerHeight();
 
-//    void cloneEntryMap();
+    void cloneEntryMap(std::map<std::shared_ptr<SequencerEntry>, std::shared_ptr<SequencerEntry>> &oldNewEntryMap);
 //    std::map<std::shared_ptr<SequencerEntry>, int > getEntryMap();    
 
     void doSave(boost::archive::xml_oarchive &outputArchive);

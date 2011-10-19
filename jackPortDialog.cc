@@ -96,7 +96,9 @@ public:
 
 private:    
 	////void create_menu();
+    virtual bool show_menu(GdkEventButton *ev);
 
+    std::shared_ptr<Gtk::Menu> _menu;
     bool inputs;
     Glib::RefPtr<Gtk::Builder> uiXml;
     std::vector<std::string> ports;
@@ -136,9 +138,11 @@ public:
 
 private:    
 	////void create_menu();
+    virtual bool show_menu(GdkEventButton *ev);
     void menu_renamePort();
     void menu_removePort();
 
+    std::shared_ptr<Gtk::Menu> _menu;
     JackPortModule *module;
     std::string title;
     Glib::RefPtr<Gtk::Builder> uiXml;
@@ -454,6 +458,16 @@ void JackPortModule::create_menu()
 }//create_menu
 */
 
+bool JackPortModule::show_menu(GdkEventButton *ev)
+{
+    _menu.reset(new Gtk::Menu());
+    Gtk::Menu::MenuList& items = _menu->items();
+
+    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(this, &JackPortModule::menu_addPort)));
+    _menu->popup(ev->button, ev->time);
+    return true;
+}//show_menu
+
 //////////////////////////////
 
 EntryModule::EntryModule(FlowCanvas::Canvas *canvas, const std::string& title, double x, double y, Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_ptr<SequencerEntry> entry_)
@@ -624,6 +638,20 @@ void JackPortPort::create_menu()
     items.push_back(Gtk::Menu_Helpers::MenuElem("Remove Port", sigc::mem_fun(this, &JackPortPort::menu_removePort)));
 }//create_menu
 */
+
+bool JackPortPort::show_menu(GdkEventButton *ev)
+{
+    _menu.reset(new Gtk::Menu());
+    Gtk::Menu::MenuList& items = _menu->items();
+
+    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(module, &JackPortModule::menu_addPort)));
+    items.push_back(Gtk::Menu_Helpers::MenuElem("Rename Port", sigc::mem_fun(this, &JackPortPort::menu_renamePort)));
+    items.push_back(Gtk::Menu_Helpers::SeparatorElem());
+    items.push_back(Gtk::Menu_Helpers::MenuElem("Remove Port", sigc::mem_fun(this, &JackPortPort::menu_removePort)));
+
+    _menu->popup(ev->button, ev->time);
+    return true;
+}//show_menu
 
 void JackPortPort::menu_renamePort()
 {
