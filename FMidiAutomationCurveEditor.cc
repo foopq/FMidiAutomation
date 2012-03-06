@@ -18,7 +18,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "Globals.h"
 #include "GraphState.h"
 #include "FMidiAutomationMainWindow.h"
-
+#include <gdk/gdkkeysyms-compat.h>
 
 bool CurveEditor::handleKeyEntryOnSelectedKeyTickEntryEntryBox(GdkEventKey *event)
 {

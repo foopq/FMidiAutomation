@@ -8,9 +8,9 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 
-#include <libglademm.h>
-#include <gdkmm/general.h>
-#include <cairomm/surface.h>
+//#include <libglademm.h>
+//#include <gdkmm/general.h>
+//#include <cairomm/surface.h>
 #include <iostream>
 #include <sstream>
 #include "UI/SequencerEntryUI.h"
@@ -1004,18 +1004,18 @@ void FMidiAutomationMainWindow::doUIQueuedThreadStuff()
     }//switch
 }//doUIQueuedThreadStuff
 
-bool FMidiAutomationMainWindow::updateGraph(GdkEventExpose*)
+bool FMidiAutomationMainWindow::updateGraph(const Cairo::RefPtr<Cairo::Context> &context)
 {
 //    std::cout << std::endl << std::endl << "updateGraph" << std::endl;
 
     doUIQueuedThreadStuff();
 
-    if (false == graphDrawingArea->is_realized()) {
+    if (false == graphDrawingArea->get_realized()) {
     	return false;
     }//if
 
     Glib::RefPtr<Gdk::Window> drawingAreaWindow = graphDrawingArea->get_window();
-    Cairo::RefPtr<Cairo::Context> context = drawingAreaWindow->create_cairo_context();
+    //Cairo::RefPtr<Cairo::Context> context = drawingAreaWindow->create_cairo_context();
     //Cairo::RefPtr<Cairo::Context> context = drawingAreaWindow->get_cairo_context();
     
     context->save();

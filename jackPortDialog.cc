@@ -7,12 +7,14 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 */
 
 
+#if 0
+
 #include <iostream>
 #include "jackPortDialog.h"
-#include <flowcanvas/Canvas.hpp>
-#include <flowcanvas/Ellipse.hpp>
-#include <flowcanvas/Module.hpp>
-#include <flowcanvas/Port.hpp>
+//#include <flowcanvas/Canvas.hpp>
+//#include <flowcanvas/Ellipse.hpp>
+//#include <flowcanvas/Module.hpp>
+//#include <flowcanvas/Port.hpp>
 #include "jack.h"
 #include "Data/Sequencer.h"
 #include "Data/SequencerEntry.h"
@@ -941,4 +943,5 @@ JackPortDialog::~JackPortDialog()
     //Nothing
 }//destructor
 
+#endif
 

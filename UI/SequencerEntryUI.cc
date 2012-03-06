@@ -27,6 +27,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 namespace
 {
 
+#if 0
 void setThemeColours(Gtk::Widget *widget)
 {
     Globals &globals = Globals::Instance();
@@ -128,6 +129,7 @@ void setThemeColours(Gtk::Widget *widget)
         }//forach
     }//if
 }//setThemeColours
+#endif
 
 }//anonymous namespace
 
@@ -206,7 +208,7 @@ SequencerEntryUI::SequencerEntryUI(const Glib::ustring &entryGlade, unsigned int
     curIndex = -1;
 
     deselect();
-    setThemeColours();
+    //setThemeColours();
 }//constructor
 
 SequencerEntryUI::~SequencerEntryUI()
@@ -263,6 +265,7 @@ std::shared_ptr<SequencerEntryUI> SequencerEntryUI::deepClone(const Glib::ustrin
     return clone;
 }//deepClone
 
+/*
 void SequencerEntryUI::setThemeColours()
 {
 return;
@@ -321,6 +324,7 @@ return;
         #endif
     }//if
 }//setThemeColours
+*/
 
 bool SequencerEntryUI::handleKeyEntryOnLargeTitleEntryBox(GdkEventKey *event)
 {
@@ -475,12 +479,12 @@ bool SequencerEntryUI::IsFullBox() const
     return isFullBox;
 }//IsFullBox
 
-void SequencerEntryUI::setLabelColour(Gdk::Color colour)
+void SequencerEntryUI::setLabelColour(Gdk::RGBA &colour)
 {
     Gtk::EventBox *labelBox;
     uiXml->get_widget("indexLabelEventBox", labelBox);
 
-    labelBox->modify_bg(Gtk::STATE_NORMAL, colour);
+    labelBox->override_background_color(colour, Gtk::STATE_FLAG_NORMAL);
 }//setLabelColour
 
 void SequencerEntryUI::setIndex(unsigned int index)
@@ -550,20 +554,19 @@ bool SequencerEntryUI::handleEntryFocus(GdkEventFocus*)
 
 bool SequencerEntryUI::mouseButtonPressed(GdkEventButton *event)
 {
-    Gdk::Color fgColour;
-    Gdk::Color bgColour;
+    Gdk::RGBA fgColour;
+    Gdk::RGBA bgColour;
 
-    fgColour.set_rgb(65535, 32768, 0);
-    bgColour.set_rgb(10000, 10000, 10000);
+    fgColour.set_rgba_u(65535, 32768, 0, 65535);
+    bgColour.set_rgba_u(10000, 10000, 10000, 65535);
 
-    largeFrame->modify_bg(Gtk::STATE_NORMAL, fgColour);
-    largeFrame->modify_fg(Gtk::STATE_NORMAL, fgColour);
-    largeFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
+    largeFrame->override_background_color(fgColour, Gtk::STATE_FLAG_NORMAL);
+    largeFrame->override_color(fgColour, Gtk::STATE_FLAG_NORMAL);
+    //largeFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
 
-
-    smallFrame->modify_bg(Gtk::STATE_NORMAL, fgColour);
-    smallFrame->modify_fg(Gtk::STATE_NORMAL, fgColour);
-    smallFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
+    smallFrame->override_background_color(fgColour, Gtk::STATE_FLAG_NORMAL);
+    smallFrame->override_color(fgColour, Gtk::STATE_FLAG_NORMAL);
+    //smallFrame->modify_base(Gtk::STATE_NORMAL, fgColour);
 
     owningSequencer.lock()->notifySelected(shared_from_this());
 
@@ -584,22 +587,22 @@ void SequencerEntryUI::select()
 
 void SequencerEntryUI::deselect()
 {
-    Gdk::Color fgColour;
-    Gdk::Color bgColour;
+    Gdk::RGBA fgColour;
+    Gdk::RGBA bgColour;
 
-    fgColour.set_rgb(52429, 42429, 52429);
-    bgColour.set_rgb(10000, 10000, 10000);
+    fgColour.set_rgba_u(52429, 42429, 52429, 65535);
+    bgColour.set_rgba_u(10000, 10000, 10000, 65535);
 
 //std::cout << "largeFrame2: " << largeFrame << "   ---   " << this << std::endl;
     largeFrame->get_label();
 
-    largeFrame->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    largeFrame->modify_fg(Gtk::STATE_NORMAL, bgColour);
-    largeFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
+    largeFrame->override_background_color(bgColour, Gtk::STATE_FLAG_NORMAL);
+    largeFrame->override_color(bgColour, Gtk::STATE_FLAG_NORMAL);
+    //largeFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
 
-    smallFrame->modify_bg(Gtk::STATE_NORMAL, bgColour);
-    smallFrame->modify_fg(Gtk::STATE_NORMAL, bgColour);
-    smallFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
+    smallFrame->override_background_color(bgColour, Gtk::STATE_FLAG_NORMAL);
+    smallFrame->override_color(bgColour, Gtk::STATE_FLAG_NORMAL);
+    //smallFrame->modify_base(Gtk::STATE_NORMAL, bgColour);
 
     activeCheckButton->set_active(false);
 //    std::cout << "deselect: " << getTitle() << std::endl;

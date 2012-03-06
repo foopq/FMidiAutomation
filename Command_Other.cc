@@ -8,7 +8,6 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include <gtkmm.h>
-#include <libglademm.h>
 #include "Command_Other.h"
 #include "Tempo.h"
 #include "Data/Sequencer.h"

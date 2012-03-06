@@ -28,6 +28,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 namespace
 {
 
+#if 0
 void setThemeColours(Gtk::Widget *widget)
 {
     Globals &globals = Globals::Instance();
@@ -129,6 +130,7 @@ void setThemeColours(Gtk::Widget *widget)
         }//forach
     }//if
 }//setThemeColours
+#endif
 
 }//anonymous namespace
 

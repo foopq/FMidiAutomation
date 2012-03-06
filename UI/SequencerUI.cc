@@ -49,8 +49,15 @@ void SequencerUI::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidg
 
     selectedEntry = nullptr;
 
-    parentWidget->children().clear();
-    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+    std::vector<Gtk::Widget *> parentWidgetChildren = parentWidget->get_children();
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->remove(*widget);
+    }//foreach
+
+    parentWidget->add(tmpLabel);
+
+    //parentWidget->children().clear();
+    //parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
 
     adjustFillerHeight();
     adjustEntryIndices();
@@ -93,10 +100,10 @@ void SequencerUI::adjustFillerHeight()
 
 void SequencerUI::adjustEntryIndices()
 {
-    int index = 0;
-    for (Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().begin(); entryIter != parentWidget->children().end(); ++entryIter, ++index) {
-        Gtk::Widget *curWidget = entryIter->get_widget();
+    std::vector<Gtk::Widget *> parentWidgetChildren = parentWidget->get_children();
 
+    int index = 0;
+    for (Gtk::Widget *curWidget : parentWidgetChildren) {
         for (auto mapIter : entries) {
             Gtk::Widget *entryHookWidget = mapIter.first->getHookWidget();
 
@@ -105,6 +112,8 @@ void SequencerUI::adjustEntryIndices()
                 mapIter.second = index;
             }//if
         }//for
+
+        ++index;
     }//for
 }//adjustEntryIndices
 
@@ -154,12 +163,20 @@ void SequencerUI::addEntry(int index, std::shared_ptr<SequencerEntryUI> entry)
 
     Gtk::Widget *entryHookWidget = entry->getHookWidget();
 
-    Glib::List_Iterator<Gtk::Box_Helpers::Child> entryIter = parentWidget->children().begin();
-    for (int pos = 0; pos < index; ++pos) {
-        entryIter++;
+    std::vector<Gtk::Widget *> parentWidgetChildren = parentWidget->get_children();
+    std::vector<Gtk::Widget *>::iterator widgetIter = parentWidgetChildren.begin();
+    std::advance(widgetIter, index);
+
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->remove(*widget);
+    }//foreach
+
+    parentWidgetChildren.insert(widgetIter, entryHookWidget);
+
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->add(*widget);
     }//for
 
-    parentWidget->children().insert(entryIter, Gtk::Box_Helpers::Element(*entryHookWidget));
     entries[entry] = index;
 
     adjustFillerHeight();
@@ -185,7 +202,7 @@ void SequencerUI::deleteEntry(std::shared_ptr<SequencerEntryUI> entry)
 {
     assert(entries.find(entry) != entries.end());
 
-    parentWidget->children().remove(*entry->getHookWidget());
+    parentWidget->remove(*entry->getHookWidget());
     entries.erase(entries.find(entry));
     adjustFillerHeight();
     adjustEntryIndices();
@@ -215,12 +232,30 @@ fmaipair<decltype(SequencerUI::entries.begin()), decltype(SequencerUI::entries.e
 
 void SequencerUI::doSwapEntryBox(Gtk::Viewport *current, Gtk::Viewport *next)
 {
+    std::vector<Gtk::Widget *> parentWidgetChildren = parentWidget->get_children();
+    std::vector<Gtk::Widget *>::iterator foundWidget = std::find(parentWidgetChildren.begin(), parentWidgetChildren.end(), current);
+
+    parentWidgetChildren.insert(foundWidget, next);
+
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->remove(*widget);
+    }//foreach
+
+    parentWidgetChildren = parentWidget->get_children();
+    foundWidget = std::find(parentWidgetChildren.begin(), parentWidgetChildren.end(), current);
+
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->add(*widget);
+    }//foreach
+
+/*
     Glib::List_Iterator<Gtk::Box_Helpers::Child> foundWidget = parentWidget->children().find(*current);
 
     parentWidget->children().insert(foundWidget, Gtk::Box_Helpers::Element(*next));    
 
     foundWidget = parentWidget->children().find(*current);
     parentWidget->children().erase(foundWidget);
+*/
 
     adjustFillerHeight();
     adjustEntryIndices();
@@ -374,14 +409,18 @@ void SequencerUI::setEntryMap(std::map<std::shared_ptr<SequencerEntryUI>, int > 
 
     entries = entryMap;
 
-    parentWidget->children().clear();
+
+    std::vector<Gtk::Widget *> parentWidgetChildren = parentWidget->get_children();
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->remove(*widget);
+    }//foreach
 
     for (auto mapIter : entriesRev) {
         Gtk::Widget *entryHookWidget = mapIter.second->getHookWidget();
-        parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
+        parentWidget->add(*entryHookWidget);
     }//for
 
-    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+    parentWidget->add(tmpLabel);
 
     adjustFillerHeight();
     adjustEntryIndices();
@@ -423,7 +462,11 @@ void SequencerUI::doLoad(boost::archive::xml_iarchive &inputArchive)
     inputArchive & BOOST_SERIALIZATION_NVP(numEntries);
 
     entries.clear();
-    parentWidget->children().clear();
+
+    std::vector<Gtk::Widget *> parentWidgetChildren = parentWidget->get_children();
+    for (Gtk::Widget *widget : parentWidgetChildren) {
+        parentWidget->remove(*widget);
+    }//foreach
 
     for (int entry = 0; entry < numEntries; ++entry) {
         int index = -1;
@@ -446,10 +489,10 @@ void SequencerUI::doLoad(boost::archive::xml_iarchive &inputArchive)
 
     for (auto mapIter : entriesRev) {
         Gtk::Widget *entryHookWidget = mapIter.second->getHookWidget();
-        parentWidget->children().push_back(Gtk::Box_Helpers::Element(*entryHookWidget));
+        parentWidget->add(*entryHookWidget);
     }//for
 
-    parentWidget->children().push_back(Gtk::Box_Helpers::Element(tmpLabel));
+    parentWidget->add(tmpLabel);
 
     adjustFillerHeight();
     adjustEntryIndices();
@@ -523,8 +566,7 @@ void SequencerUI::drawEntryBoxes(Gtk::DrawingArea *graphDrawingArea, Cairo::RefP
         int y;
         int width;
         int height;
-        int depth;
-        entryHookWidget->get_window()->get_geometry(x, y, width, height, depth);
+        entryHookWidget->get_window()->get_geometry(x, y, width, height);
 
         entryHookWidget->get_window()->get_origin(x1, y1);
         mapIter.second = y1;

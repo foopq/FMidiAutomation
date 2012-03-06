@@ -3,15 +3,15 @@
 TARGET=FMidiAutomation
 
 # Compiler name
-CXX=/bin/g++
+CXX=/bin/g++-color
 CXX2=/usr/bin/g++
 MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 
 # Libraries to be included
-LDLIBS=`pkg-config jack alsa flowcanvas gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 libgnomecanvasmm-2.6 --libs` -lboost_filesystem-mt -lboost_serialization-mt -lboost_thread-mt -ltcmalloc
+LDLIBS=`pkg-config jack alsa gtkmm-3.0 gdkmm-3.0 libxml++-2.6 --libs` -lboost_filesystem-mt -lboost_serialization-mt -lboost_thread-mt -ltcmalloc
 
-# Flagas
-CXXFLAGS=-Wall -g `pkg-config jack alsa flowcanvas gtkmm-2.4 pangomm-1.4 libglademm-2.4 gdkmm-2.4 libxml++-2.6 libgnomecanvasmm-2.6 --cflags` -I. -std=c++0x
+# Flags
+CXXFLAGS=-Wall -g `pkg-config jack alsa gtkmm-3.0 gdkmm-3.0 libxml++-2.6 --cflags` -I. -std=c++0x
 
 # Variables
 SRCS = main.cc WindowManager.cc \

@@ -90,7 +90,7 @@ public:
     Glib::ustring getTitle() const;
     void setTitle(Glib::ustring);
 
-    void setLabelColour(Gdk::Color colour);
+    void setLabelColour(Gdk::RGBA &colour);
 
     void setUIBounds(unsigned int relativeStartY, unsigned int relativeEndY);
     std::pair<unsigned int, unsigned int> getUIBounds();

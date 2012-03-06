@@ -12,7 +12,7 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include "WindowManager.h"
 #include "Globals.h"
 #include <iostream>
-#include <libgnomecanvasmm.h>
+//#include <libgnomecanvasmm.h>
 #include <glibmm/exception.h>
 
 
@@ -23,12 +23,19 @@ int main(int argc, char** argv)
 {
     srand(time(nullptr));
 
+std::cout << "here" << std::endl;
+
     Glib::thread_init();
-    Gnome::Canvas::init();
+
+std::cout << "here2" << std::endl;
+
+//    Gnome::Canvas::init();
 
 //    g_threads_init();
 //    gdk_threads_init();
 //    gtk_init();
+
+std::cout << "here3" << std::endl;
 
     //gdk_threads_enter();
     Gtk::Main kit(argc, argv);
@@ -37,6 +44,8 @@ int main(int argc, char** argv)
     //mainWindow = new FMidiAutomationMainWindow();
     //mainWindow->init();
 
+std::cout << "here4" << std::endl;
+
     WindowManager &windowManager = WindowManager::Instance();
     std::shared_ptr<FMidiAutomationMainWindow> mainWindow = windowManager.createMainWindow();
     //std::shared_ptr<FMidiAutomationMainWindow> mainWindow(new FMidiAutomationMainWindow);
@@ -44,6 +53,8 @@ int main(int argc, char** argv)
 
     (void)JackSingleton::Instance();
     Globals::ResetInstance();
+
+std::cout << "here5" << std::endl;
 
     kit.run(*mainWindow->MainWindow());
 

@@ -8,7 +8,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 
 
 #include <gtkmm.h>
-#include <libglademm.h>
+#include <gdk/gdkkeysyms-compat.h>
+//#include <libglademm.h>
 #include <iostream>
 #include <fstream>
 #include "FMidiAutomationMainWindow.h"
@@ -147,7 +148,7 @@ FMidiAutomationMainWindow::FMidiAutomationMainWindow()
     uiXml->get_widget("graphDrawingArea", graphDrawingArea);
     graphDrawingArea->add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK | Gdk::SCROLL_MASK);
     graphDrawingArea->signal_size_allocate().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::handleGraphResize) );
-    graphDrawingArea->signal_expose_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::updateGraph) );
+    graphDrawingArea->signal_draw().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::updateGraph) );
     graphDrawingArea->signal_button_press_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::mouseButtonPressed) );
     graphDrawingArea->signal_button_release_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::mouseButtonReleased) );
     graphDrawingArea->signal_motion_notify_event().connect ( sigc::mem_fun(*this, &FMidiAutomationMainWindow::mouseMoved) );
@@ -1046,10 +1047,10 @@ void FMidiAutomationMainWindow::handleSequencerButtonPressedNoGraphStateSelected
     sequencerButton->set_sensitive(false);
     curveButton->set_sensitive(true);
 
-    selectedKeyframeFrame->hide_all();
+    selectedKeyframeFrame->hide();
 
-    positionValueEntry->hide_all();
-    positionValueLabel->hide_all();
+    positionValueEntry->hide();
+    positionValueLabel->hide();
 
     positionTickEntry->property_editable() = true;
 
@@ -1418,7 +1419,7 @@ void FMidiAutomationMainWindow::on_menupasteSEBInstancesToSelectedEntry()
 
 void FMidiAutomationMainWindow::on_menuPorts()
 {
-    JackPortDialog portsDialog(uiXml);
+//    JackPortDialog portsDialog(uiXml);
 }//on_menuPorts
 
 void FMidiAutomationMainWindow::on_menuQuit()
@@ -1713,14 +1714,14 @@ void FMidiAutomationMainWindow::on_menuSaveAs()
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button(Gtk::Stock::SAVE, Gtk::RESPONSE_OK);
 
-    Gtk::FileFilter filter_normal;
-    filter_normal.set_name("Automation files (*.fma)");
-    filter_normal.add_pattern("*.fma");
+    Glib::RefPtr<Gtk::FileFilter> filter_normal = Gtk::FileFilter::create();
+    filter_normal->set_name("Automation files (*.fma)");
+    filter_normal->add_pattern("*.fma");
     dialog.add_filter(filter_normal);
 
-    Gtk::FileFilter filter_any;
-    filter_any.set_name("Any files");
-    filter_any.add_pattern("*");
+    Glib::RefPtr<Gtk::FileFilter> filter_any = Gtk::FileFilter::create();
+    filter_any->set_name("Any files");
+    filter_any->add_pattern("*");
     dialog.add_filter(filter_any);
 
     int result = dialog.run();
@@ -1835,14 +1836,14 @@ void FMidiAutomationMainWindow::on_menuOpen()
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
 
-    Gtk::FileFilter filter_normal;
-    filter_normal.set_name("Automation files (*.fma)");
-    filter_normal.add_pattern("*.fma");
+    Glib::RefPtr<Gtk::FileFilter> filter_normal = Gtk::FileFilter::create();
+    filter_normal->set_name("Automation files (*.fma)");
+    filter_normal->add_pattern("*.fma");
     dialog.add_filter(filter_normal);
 
-    Gtk::FileFilter filter_any;
-    filter_any.set_name("Any files");
-    filter_any.add_pattern("*");
+    Glib::RefPtr<Gtk::FileFilter> filter_any = Gtk::FileFilter::create();
+    filter_any->set_name("Any files");
+    filter_any->add_pattern("*");
     dialog.add_filter(filter_any);
 
     int result = dialog.run();
@@ -2003,11 +2004,10 @@ bool FMidiAutomationMainWindow::on_idle()
         std::lock_guard<std::mutex> dataLock(statusTextDataMutex);
         statusBar->set_text(currentStatusText);
 
-        Gdk::Color textColour;
-        int colourComponent = 65535.0 * statusTextAlpha;
-        textColour.set_rgb(colourComponent, colourComponent, colourComponent);
+        Gdk::RGBA textColour;
+        textColour.set_rgba_u(65535, 65535, 65535, statusTextAlpha);
 
-        statusBar->modify_fg(Gtk::STATE_NORMAL, textColour);
+        statusBar->override_color(textColour, Gtk::STATE_FLAG_NORMAL);
         needsStatusTextUpdate = false;
     }//if
 

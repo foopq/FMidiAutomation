@@ -131,7 +131,7 @@ class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutom
     void handleGraphResize(Gtk::Allocation&);
     
     void refreshGraphBackground();
-    bool updateGraph(GdkEventExpose*);   
+    bool updateGraph(const Cairo::RefPtr<Cairo::Context> &context);   
 
     void on_menuOpen();
     void on_menuSave();

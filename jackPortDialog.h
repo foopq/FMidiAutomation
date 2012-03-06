@@ -6,6 +6,7 @@ Copyright (C) 2011 Chris A. Mennie
 License: Released under the GPL version 3 license. See the included LICENSE.
 */
 
+#if 0
 
 #include <gtkmm.h>
 
@@ -18,4 +19,5 @@ public:
 
 };//JackPortDialog
 
+#endif
 
