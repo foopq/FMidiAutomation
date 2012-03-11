@@ -6,15 +6,9 @@ Copyright (C) 2011 Chris A. Mennie
 License: Released under the GPL version 3 license. See the included LICENSE.
 */
 
-
-#if 0
-
+#include <gtk/gtk.h>
 #include <iostream>
 #include "jackPortDialog.h"
-//#include <flowcanvas/Canvas.hpp>
-//#include <flowcanvas/Ellipse.hpp>
-//#include <flowcanvas/Module.hpp>
-//#include <flowcanvas/Port.hpp>
 #include "jack.h"
 #include "Data/Sequencer.h"
 #include "Data/SequencerEntry.h"
@@ -23,483 +17,19 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <math.h>
 #include "Globals.h"
 
-/*
-//FIXME: This is a horrible hack!
-void FlowCanvas::Canvas::arrange(bool) 
-{
-    //Nothing
-}//arrange
-*/   
+
 
 
 namespace
 {
-class JackPortFlowCanvas;
-class JackPortModule;
-class EntryModule;
-class EntryPort;
-
-JackPortFlowCanvas *flowCanvas = nullptr;
+std::shared_ptr<JackPortFlowCanvas> flowCanvas;
 std::vector<std::string> *curNamingPorts = nullptr;
-JackPortModule *jackInputModule = nullptr;
-JackPortModule *jackOutputModule = nullptr;
-std::vector<EntryModule *> entryModules;
-
-struct CanvasPositions
-{
-    std::pair<double, double> jackInputPosition;
-    std::pair<double, double> jackOutputPosition;
-    std::map<SequencerEntry *, std::pair<unsigned int, unsigned int> > entryPositions; //XXX: Can't use a weak_ptr since operator< is deleted
-
-    CanvasPositions()
-    {
-        jackInputPosition.first = -1;
-        jackInputPosition.second = -1;
-        jackOutputPosition.first = -1;
-        jackOutputPosition.second = -1;
-    }//constructor
-};//CanvasPositions
+std::shared_ptr<JackPortModule> jackInputModule;
+std::shared_ptr<JackPortModule> jackOutputModule;
+std::vector<std::shared_ptr<EntryModule>> entryModules;
 
 static CanvasPositions canvasPositions;
 
-class JackPortFlowCanvas : public virtual FlowCanvas::Canvas
-{
-public:    
-    JackPortFlowCanvas();
-    virtual ~JackPortFlowCanvas();
-
-    void addModule(FlowCanvas::Module *module);
-    void clearModules();
-
-    virtual void connect(FlowCanvas::Connectable *c1, FlowCanvas::Connectable *c2);
-    virtual void disconnect(FlowCanvas::Connectable *c1, FlowCanvas::Connectable *c2);
-
-private:
-    std::set<FlowCanvas::Module *> modules;
-};//JackPortFlowCanvas
-
-class JackPortModule : public FlowCanvas::Module
-{
-public:
-	JackPortModule(FlowCanvas::Canvas *canvas, const std::string& title, double x, double y, bool inputs_, Glib::RefPtr<Gtk::Builder> uiXml_, std::vector<std::string> &ports_);
-    ~JackPortModule();
-
-    void menu_addPort();
-    void removePort(const std::string &name);
-    virtual void move(double dx, double dy);
-    bool checkPortName(GdkEventKey *event);
-    void setCurNamingPorts();
-    void restorePosition();
-
-    void doresize();
-    void do_add_port(FlowCanvas::Port *port);
-
-    std::vector<std::string> getPorts();
-
-private:    
-	////void create_menu();
-    virtual bool show_menu(GdkEventButton *ev);
-
-    std::shared_ptr<Gtk::Menu> _menu;
-    bool inputs;
-    Glib::RefPtr<Gtk::Builder> uiXml;
-    std::vector<std::string> ports;
-};//JackPortModule
-
-class EntryModule : public FlowCanvas::Module
-{
-public:
-	EntryModule(FlowCanvas::Canvas *canvas, const std::string& title, double x, double y, Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_ptr<SequencerEntry> entry_);
-    ~EntryModule();
-
-    virtual void move(double dx, double dy);
-    void restorePosition();
-
-    void addPortConnection(EntryPort *entryPort, const std::string &jackTitle);
-    void removePortConnection(EntryPort *entryPort, const std::string &jackTitle);
-
-    std::shared_ptr<SequencerEntry> getEntry() const;
-
-    void doresize();
-    void do_add_port(FlowCanvas::Port *port);
-
-private:    
-    std::shared_ptr<SequencerEntry> entry;
-    Glib::RefPtr<Gtk::Builder> uiXml;
-    std::set<std::string> inputConnections;
-    std::set<std::string> outputConnections;
-};//EntryModule
-
-class JackPortPort : public FlowCanvas::Port
-{
-public:
-	JackPortPort(JackPortModule *module_, const std::string& title_, bool isInput, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_);
-    ~JackPortPort();
-
-    std::string getTitle() const;
-
-private:    
-	////void create_menu();
-    virtual bool show_menu(GdkEventButton *ev);
-    void menu_renamePort();
-    void menu_removePort();
-
-    std::shared_ptr<Gtk::Menu> _menu;
-    JackPortModule *module;
-    std::string title;
-    Glib::RefPtr<Gtk::Builder> uiXml;
-    bool isInput;
-};//JackPortPort
-
-class EntryPort : public FlowCanvas::Port
-{
-public:
-	EntryPort(EntryModule *module_, const std::string& title_, bool isInput, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_);
-    ~EntryPort();
-
-    bool isInput() const;
-
-private:    
-    EntryModule *entryModule;
-    std::string title;
-    Glib::RefPtr<Gtk::Builder> uiXml;
-    bool isThisInput;
-};//JackPortPort
-
-//////////////////////////////
-
-JackPortFlowCanvas::JackPortFlowCanvas() : FlowCanvas::Canvas(3000, 3000)
-{
-    //Nothing
-}//constructor
-
-JackPortFlowCanvas::~JackPortFlowCanvas()
-{
-    //Nothing
-}//destructor
-
-void JackPortFlowCanvas::addModule(FlowCanvas::Module *module)
-{
-    modules.insert(module);
-    this->add_item(module);
-}//addModule
-
-void JackPortFlowCanvas::clearModules()
-{
-    for (auto item : modules) {
-        remove_item(item);
-    }//foreach
-
-    //_items.clear();
-
-    modules.clear();
-}//clearModules
-
-void JackPortFlowCanvas::disconnect(FlowCanvas::Connectable *c1, FlowCanvas::Connectable *c2)
-{
-    JackPortPort *jackPort = nullptr;
-    EntryPort *entryPort = nullptr;
-    EntryModule *entryModule = nullptr;    
-
-    jackPort = dynamic_cast<JackPortPort *>(c1);
-    entryPort = dynamic_cast<EntryPort *>(c2);
-    if (jackPort == nullptr) {
-        jackPort = dynamic_cast<JackPortPort *>(c2);
-        if (jackPort == nullptr) {
-            return;
-        }//if
-        entryPort = dynamic_cast<EntryPort *>(c1);
-    }//if
-
-    if (entryPort == nullptr) {
-        return;
-    }//if
-
-    for (auto curEntryModule : entryModules) {
-        for (auto port : curEntryModule->ports()) {
-            if (port == entryPort) {
-                entryModule = curEntryModule;
-                break;
-            }//if
-        }//foreach
-
-        if (entryModule != nullptr) {
-            break;
-        }//if
-    }//forach
-
-    if (entryModule == nullptr) {
-        //Shouldn't happen...
-        return;
-    }//if
-
-    entryModule->removePortConnection(entryPort, jackPort->getTitle());
-
-    if (true == entryPort->isInput()) {
-        flowCanvas->remove_connection(jackPort, entryPort);
-    } else {
-        flowCanvas->remove_connection(entryPort, jackPort);
-    }//if    
-}//disconnect
-
-void JackPortFlowCanvas::connect(FlowCanvas::Connectable *c1, FlowCanvas::Connectable *c2)
-{
-    JackPortPort *jackPort = nullptr;
-    EntryPort *entryPort = nullptr;
-    EntryModule *entryModule = nullptr;
-
-    jackPort = dynamic_cast<JackPortPort *>(c1);
-    entryPort = dynamic_cast<EntryPort *>(c2);
-    if (jackPort == nullptr) {
-        jackPort = dynamic_cast<JackPortPort *>(c2);
-        if (jackPort == nullptr) {
-            return;
-        }//if
-        entryPort = dynamic_cast<EntryPort *>(c1);
-    }//if
-
-    if (entryPort == nullptr) {
-        return;
-    }//if
-
-    for (auto curEntryModule : entryModules) {
-        for (auto port : curEntryModule->ports()) {
-            if (port == entryPort) {
-                entryModule = curEntryModule;
-                break;
-            }//if
-        }//foreach
-
-        if (entryModule != nullptr) {
-            break;
-        }//if
-    }//forach
-
-    if (entryModule == nullptr) {
-        //Shouldn't happen...
-        return;
-    }//if
-
-    entryModule->addPortConnection(entryPort, jackPort->getTitle());
-
-    if (true == entryPort->isInput()) {
-        unsigned int colour = 0x953c02ff;
-        flowCanvas->add_connection(jackPort, entryPort, colour);
-    } else {
-        unsigned int colour = 0x027055ff;
-        flowCanvas->add_connection(entryPort, jackPort, colour);
-    }//if
-}//connect
-
-//////////////////////////////
-
-JackPortModule::JackPortModule(FlowCanvas::Canvas *canvas, const std::string& title, double x, double y, bool inputs_, Glib::RefPtr<Gtk::Builder> uiXml_, std::vector<std::string> &ports_)
-                : FlowCanvas::Module(*canvas, title, x, y, true, true)
-{
-    uiXml = uiXml_;
-    inputs = inputs_;
-    ports = ports_;
-
-    Gtk::Entry *entry;
-    uiXml->get_widget("portNameEntry", entry);
-    entry->signal_key_release_event().connect(sigc::mem_fun(*this, &JackPortModule::checkPortName));
-
-    ////create_menu();
-}//constructor
-
-JackPortModule::~JackPortModule()
-{
-    //Nothing
-}//destructor
-
-void JackPortModule::doresize()
-{
-    resize();
-}//doresize
-
-void JackPortModule::do_add_port(FlowCanvas::Port *port)
-{
-    add_port(port);
-}//do_add_port
-
-std::vector<std::string> JackPortModule::getPorts()
-{
-    return ports;
-}//getPorts
-
-void JackPortModule::restorePosition()
-{
-    if (true == inputs) {
-        if (canvasPositions.jackInputPosition.first < 1) {
-            FlowCanvas::Module::move(1250, 1500);
-            canvasPositions.jackInputPosition.first = 1250;
-            canvasPositions.jackInputPosition.second = 1500;
-        } else {
-            FlowCanvas::Module::move(canvasPositions.jackInputPosition.first, canvasPositions.jackInputPosition.second);
-        }//if
-    } else {
-        if (canvasPositions.jackOutputPosition.first < 1) {
-            FlowCanvas::Module::move(1550, 1500);
-            canvasPositions.jackOutputPosition.first = 1550;
-            canvasPositions.jackOutputPosition.second = 1500;
-        } else {
-            FlowCanvas::Module::move(canvasPositions.jackOutputPosition.first, canvasPositions.jackOutputPosition.second);
-        }//if
-    }//if
-}//restorePosition
-
-void JackPortModule::move(double dx, double dy) {
-    FlowCanvas::Module::move(dx, dy);
-
-    if (false == inputs) {
-        canvasPositions.jackOutputPosition.first += dx;
-        canvasPositions.jackOutputPosition.second += dy;
-    } else {
-        canvasPositions.jackInputPosition.first += dx;
-        canvasPositions.jackInputPosition.second += dy;
-    }//if
-}//move
-
-void JackPortModule::setCurNamingPorts()
-{
-    curNamingPorts = &ports;
-}//setCurNamingPorts
-
-void JackPortModule::menu_addPort()
-{
-    setCurNamingPorts();
-
-    Gtk::Entry *entry = nullptr;
-    uiXml->get_widget("portNameEntry", entry);
-    entry->set_text("");
-
-    Gtk::Label *label = nullptr;
-    uiXml->get_widget("portNameDialogTitle", label);
-    label->set_text("Add Port");
-
-    Gtk::Button *button = nullptr;
-    uiXml->get_widget("portNameDialogOKButton", button);
-    button->set_sensitive(false);
-
-    Gtk::Dialog *dialog = nullptr;
-    uiXml->get_widget("portNameDialog", dialog);
-
-    int result = dialog->run();
-
-    if (result == 1) { //OK
-        std::string portName = entry->get_text();
-        if (portName.empty() == false) {
-            ports.push_back(portName);
-
-            unsigned int colour = 0x027055ff;
-            if (true == inputs) {
-                colour = 0x953c02ff;
-            }//if
-
-            JackPortPort *port = new JackPortPort(this, portName, inputs, colour, uiXml);
-
-            this->add_port(port);
-            this->resize();
-        }//if
-    }//if
-
-    dialog->hide();
-}//menu_addPort
-
-void JackPortModule::removePort(const std::string &title)
-{
-    if (ports.size() == 1) {
-        return;
-    }//if
-
-    FlowCanvas::Port *port = get_port(title);
-
-    while (port->connections().empty() == false) {
-        FlowCanvas::Connection *connection = *port->connections().begin();
-        flowCanvas->remove_connection(connection->source(), connection->dest());
-        port->remove_connection(connection);
-    }//foreach
-
-    if (port != nullptr) {
-        remove_port(port);
-        resize();
-    }//if
-
-    std::vector<std::string>::iterator oldIter = std::find(ports.begin(), ports.end(), title);
-    if (oldIter != ports.end()) {
-        ports.erase(oldIter);
-    }//if
-}//removeModule
-
-bool JackPortModule::checkPortName(GdkEventKey *event)
-{
-    Gtk::Entry *entry = nullptr;
-    uiXml->get_widget("portNameEntry", entry);
-
-    Gtk::Button *button = nullptr;
-    uiXml->get_widget("portNameDialogOKButton", button);
-
-    std::string portName = entry->get_text();
-
-    if ((portName.empty() == true) || (std::find(curNamingPorts->begin(), curNamingPorts->end(), portName) != curNamingPorts->end())) {
-        button->set_sensitive(false);
-    } else {
-        button->set_sensitive(true);
-    }//if
-
-    return true;
-}//checkPortName
-
-/*
-void JackPortModule::create_menu()
-{
-    _menu = new Gtk::Menu();
-    Gtk::Menu::MenuList& items = _menu->items();
-
-    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(this, &JackPortModule::menu_addPort)));
-}//create_menu
-*/
-
-bool JackPortModule::show_menu(GdkEventButton *ev)
-{
-    _menu.reset(new Gtk::Menu());
-    Gtk::Menu::MenuList& items = _menu->items();
-
-    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(this, &JackPortModule::menu_addPort)));
-    _menu->popup(ev->button, ev->time);
-    return true;
-}//show_menu
-
-//////////////////////////////
-
-EntryModule::EntryModule(FlowCanvas::Canvas *canvas, const std::string& title, double x, double y, Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_ptr<SequencerEntry> entry_)
-                            : FlowCanvas::Module(*canvas, title, x, y, true, true)
-{
-    std::cout << "EntryModule() constructor: " << this << std::endl;
-
-    uiXml = uiXml_;
-    entry = entry_;
-}//constructor
-
-EntryModule::~EntryModule()
-{
-    std::cout << "~EntryModule(): " << this << std::endl;
-
-    //Nothing
-}//destructor
-
-void EntryModule::doresize()
-{
-    resize();
-}//doresize
-
-void EntryModule::do_add_port(FlowCanvas::Port *port)
-{
-    add_port(port);
-}//do_add_port
-
-namespace 
-{
 void readjustPosition(unsigned int &posx, unsigned int &posy)
 {
     if (posy > 2800) {
@@ -545,13 +75,489 @@ void readjustPosition(unsigned int &posx, unsigned int &posy)
         }//if
     }//for
 }//readjustPosition
+
+void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
+{
+    static bool replacedPlaceholder = false;
+
+    ::flowCanvas.reset(new JackPortFlowCanvas());
+    ::flowCanvas->clearModules();
+
+    JackSingleton &jackSingleton = JackSingleton::Instance();
+    std::vector<std::string> inputPorts = jackSingleton.getInputPorts();
+    std::vector<std::string> outputPorts = jackSingleton.getOutputPorts();
+
+    jackInputModule.reset(new JackPortModule(::flowCanvas, "Jack Input", 0, 0, true, uiXml, inputPorts));
+    jackOutputModule.reset(new JackPortModule(::flowCanvas, "Jack Output", 0, 0, false, uiXml, outputPorts));
+
+    std::map<std::string, std::shared_ptr<JackPortPort>> inputPortNameMap;
+    std::map<std::string, std::shared_ptr<JackPortPort>> outputPortNameMap;
+
+    for (std::string portName : inputPorts) {
+        std::shared_ptr<JackPortPort> port(new JackPortPort(jackInputModule, portName, true, 0x953c02ff, uiXml));
+        jackInputModule->add_port(port);
+        inputPortNameMap[portName] = port;
+    }//foreach
+
+    for (std::string portName : outputPorts) {
+        std::shared_ptr<JackPortPort> port(new JackPortPort(jackOutputModule, portName, false, 0x027055ff, uiXml));
+        jackOutputModule->add_port(port);
+        outputPortNameMap[portName] = port;
+    }//foreach
+
+    //jackInputModule->doresize();
+    //jackOutputModule->doresize();
+
+    ::flowCanvas->addModule(jackInputModule);
+    ::flowCanvas->addModule(jackOutputModule);
+
+    jackInputModule->restorePosition();
+    jackOutputModule->restorePosition();
+
+    Globals &globals = Globals::Instance();
+
+    entryModules.clear();
+    auto entryPair = globals.projectData.getSequencer()->getEntryPair();
+
+    std::cout << "setUpFlowCanvas: " << std::distance(entryPair.first, entryPair.second) << " - " << globals.projectData.getSequencer().get() << std::endl;
+
+    for (auto entryMapIter : entryPair) {
+        std::shared_ptr<EntryModule> entryModule(new EntryModule(::flowCanvas, entryMapIter->getTitle(), 0, 0, uiXml, entryMapIter));
+
+        std::shared_ptr<EntryPort> inputPort(new EntryPort(entryModule, "Input", true, 0x953c02ff, uiXml));
+        entryModule->do_add_port(inputPort);
+
+        std::shared_ptr<EntryPort> outputPort(new EntryPort(entryModule, "Output", false, 0x027055ff, uiXml));
+        entryModule->do_add_port(outputPort);
+
+        entryModule->doresize();
+        ::flowCanvas->addModule(entryModule);
+        entryModule->restorePosition();
+
+        entryModules.push_back(entryModule);
+
+        //Set up connections for this module
+        std::set<jack_port_t *> jackInputMap = entryMapIter->getInputPorts();
+        std::set<jack_port_t *> jackOutputMap = entryMapIter->getOutputPorts();
+
+        for (jack_port_t *jackPort : jackInputMap) {
+            std::string portName = jackSingleton.getInputPortName(jackPort);
+            assert(portName.empty() == false);
+
+            std::shared_ptr<JackPortPort> jackPortPort = inputPortNameMap[portName];
+            flowCanvas->connect(jackPortPort, inputPort);
+        }//foreach
+
+        for (jack_port_t *jackPort : jackOutputMap) {
+            std::string portName = jackSingleton.getOutputPortName(jackPort);
+            assert(portName.empty() == false);
+
+            std::shared_ptr<JackPortPort> jackPortPort = outputPortNameMap[portName];
+            flowCanvas->connect(jackPortPort, outputPort);
+        }//foreach
+    }//for
+
+    //::flowCanvas->show_all();
+
+    if (false == replacedPlaceholder) {        
+        std::cout << "HERE ^^^^^^^^^^^^" << std::endl;
+
+        Gtk::ScrolledWindow *scrolledWindow;
+        uiXml->get_widget("jackPortScrolledWindow", scrolledWindow);
+
+        assert(scrolledWindow != nullptr);
+
+        if (scrolledWindow->get_hscrollbar() != nullptr) { //some gtkmm versions return null with get_[hv]scrollbar()
+            scrolledWindow->get_hscrollbar()->set_range(0, 3000);
+            scrolledWindow->get_vscrollbar()->set_range(0, 3000);
+
+            scrolledWindow->get_hscrollbar()->set_value(1200);
+            scrolledWindow->get_vscrollbar()->set_value(1300);        
+        } else {
+            std::cout << "Using buggy gtkmm" << std::endl;
+        }//if
+    }//if
+
+    if (false == replacedPlaceholder) {        
+        replacedPlaceholder = true;
+    }//if
+}//setUpFlowCanvas
+
 }//anonymous namespace
+
+//////////////////////////////
+
+JackPortFlowCanvas::JackPortFlowCanvas()
+{
+    //Nothing
+}//constructor
+
+JackPortFlowCanvas::~JackPortFlowCanvas()
+{
+    //Nothing
+}//destructor
+
+void JackPortFlowCanvas::addModule(std::shared_ptr<JackModuleBase> module)
+{
+    modules.insert(module);
+}//addModule
+
+void JackPortFlowCanvas::clearModules()
+{
+    modules.clear();
+}//clearModules
+
+void JackPortFlowCanvas::disconnect(std::shared_ptr<JackPortBase> c1, std::shared_ptr<JackPortBase> c2)
+{
+    std::shared_ptr<JackPortPort> jackPort;
+    std::shared_ptr<EntryPort> entryPort;
+    std::shared_ptr<EntryModule> entryModule;    
+
+    jackPort = std::dynamic_pointer_cast<JackPortPort>(c1);
+    entryPort = std::dynamic_pointer_cast<EntryPort>(c2);
+    if (jackPort == nullptr) {
+        jackPort = std::dynamic_pointer_cast<JackPortPort>(c2);
+        if (jackPort == nullptr) {
+            return;
+        }//if
+        entryPort = std::dynamic_pointer_cast<EntryPort>(c1);
+    }//if
+
+    if (entryPort == nullptr) {
+        return;
+    }//if
+
+    for (auto curEntryModule : entryModules) {
+        for (auto port : curEntryModule->ports()) {
+            if (port == entryPort) {
+                entryModule = curEntryModule;
+                break;
+            }//if
+        }//foreach
+
+        if (entryModule != nullptr) {
+            break;
+        }//if
+    }//forach
+
+    if (entryModule == nullptr) {
+        //Shouldn't happen...
+        return;
+    }//if
+
+    entryModule->removePortConnection(entryPort, jackPort->getTitle());
+
+    if (true == entryPort->isInput()) {
+        flowCanvas->remove_connection(jackPort, entryPort);
+    } else {
+        flowCanvas->remove_connection(entryPort, jackPort);
+    }//if    
+}//disconnect
+
+void JackPortFlowCanvas::connect(std::shared_ptr<JackPortBase> c1, std::shared_ptr<JackPortBase> c2)
+{
+    std::shared_ptr<JackPortPort> jackPort;
+    std::shared_ptr<EntryPort> entryPort;
+    std::shared_ptr<EntryModule> entryModule;
+
+    jackPort = std::dynamic_pointer_cast<JackPortPort>(c1);
+    entryPort = std::dynamic_pointer_cast<EntryPort>(c2);
+    if (jackPort == nullptr) {
+        jackPort = std::dynamic_pointer_cast<JackPortPort>(c2);
+        if (jackPort == nullptr) {
+            return;
+        }//if
+        entryPort = std::dynamic_pointer_cast<EntryPort>(c1);
+    }//if
+
+    if (entryPort == nullptr) {
+        return;
+    }//if
+
+    for (auto curEntryModule : entryModules) {
+        for (auto port : curEntryModule->ports()) {
+            if (port == entryPort) {
+                entryModule = curEntryModule;
+                break;
+            }//if
+        }//foreach
+
+        if (entryModule != nullptr) {
+            break;
+        }//if
+    }//forach
+
+    if (entryModule == nullptr) {
+        //Shouldn't happen...
+        return;
+    }//if
+
+    entryModule->addPortConnection(entryPort, jackPort->getTitle());
+
+    if (true == entryPort->isInput()) {
+        unsigned int colour = 0x953c02ff;
+        flowCanvas->add_connection(jackPort, entryPort, colour);
+    } else {
+        unsigned int colour = 0x027055ff;
+        flowCanvas->add_connection(entryPort, jackPort, colour);
+    }//if
+}//connect
+
+//////////////////////////////
+
+JackPortModule::JackPortModule(std::shared_ptr<JackPortFlowCanvas> canvas, const std::string& title, double x, double y, bool inputs_, 
+                                Glib::RefPtr<Gtk::Builder> uiXml_, std::vector<std::string> &ports_)
+                //: FlowCanvas::Module(*canvas, title, x, y, true, true)
+{
+    uiXml = uiXml_;
+    inputs = inputs_;
+    ports = ports_;
+
+    Gtk::Entry *entry;
+    uiXml->get_widget("portNameEntry", entry);
+    entry->signal_key_release_event().connect(sigc::mem_fun(*this, &JackPortModule::checkPortName));
+
+    ////create_menu();
+}//constructor
+
+JackPortModule::~JackPortModule()
+{
+    //Nothing
+}//destructor
+
+/*
+void JackPortModule::doresize()
+{
+    resize();
+}//doresize
+*/
+
+void JackPortModule::add_port(std::shared_ptr<JackPortBase> port)
+{
+    //add_port(port);
+}//do_add_port
+
+std::vector<std::string> JackPortModule::getPorts()
+{
+    return ports;
+}//getPorts
+
+void JackPortModule::restorePosition()
+{
+    if (true == inputs) {
+        if (canvasPositions.jackInputPosition.first < 1) {
+            move(1250, 1500);
+            canvasPositions.jackInputPosition.first = 1250;
+            canvasPositions.jackInputPosition.second = 1500;
+        } else {
+            move(canvasPositions.jackInputPosition.first, canvasPositions.jackInputPosition.second);
+        }//if
+    } else {
+        if (canvasPositions.jackOutputPosition.first < 1) {
+            move(1550, 1500);
+            canvasPositions.jackOutputPosition.first = 1550;
+            canvasPositions.jackOutputPosition.second = 1500;
+        } else {
+            move(canvasPositions.jackOutputPosition.first, canvasPositions.jackOutputPosition.second);
+        }//if
+    }//if
+}//restorePosition
+
+void JackPortModule::move(double dx, double dy) {
+    if (false == inputs) {
+        canvasPositions.jackOutputPosition.first += dx;
+        canvasPositions.jackOutputPosition.second += dy;
+    } else {
+        canvasPositions.jackInputPosition.first += dx;
+        canvasPositions.jackInputPosition.second += dy;
+    }//if
+}//move
+
+void JackPortModule::setCurNamingPorts()
+{
+    curNamingPorts = &ports;
+}//setCurNamingPorts
+
+void JackPortModule::menu_addPort()
+{
+    setCurNamingPorts();
+
+    Gtk::Entry *entry = nullptr;
+    uiXml->get_widget("portNameEntry", entry);
+    entry->set_text("");
+
+    Gtk::Label *label = nullptr;
+    uiXml->get_widget("portNameDialogTitle", label);
+    label->set_text("Add Port");
+
+    Gtk::Button *button = nullptr;
+    uiXml->get_widget("portNameDialogOKButton", button);
+    button->set_sensitive(false);
+
+    Gtk::Dialog *dialog = nullptr;
+    uiXml->get_widget("portNameDialog", dialog);
+
+    int result = dialog->run();
+
+    if (result == 1) { //OK
+        std::string portName = entry->get_text();
+        if (portName.empty() == false) {
+            ports.push_back(portName);
+
+            unsigned int colour = 0x027055ff;
+            if (true == inputs) {
+                colour = 0x953c02ff;
+            }//if
+
+            std::shared_ptr<JackPortPort> port(new JackPortPort(shared_from_this(), portName, inputs, colour, uiXml));
+
+            this->add_port(port);
+            //this->resize();
+        }//if
+    }//if
+
+    dialog->hide();
+}//menu_addPort
+
+void JackPortModule::removePort(const std::string &title)
+{
+    if (ports.size() == 1) {
+        return;
+    }//if
+
+    std::shared_ptr<JackPortBase> port = get_port(title);
+
+    while (port->hasConnections() == false) {
+        std::shared_ptr<JackConnection> connection = port->getFirstConnection();
+        flowCanvas->remove_connection(connection->source(), connection->dest());
+        port->remove_connection(connection);
+    }//foreach
+
+    if (port != nullptr) {
+        remove_port(port);
+        //resize();
+    }//if
+
+    std::vector<std::string>::iterator oldIter = std::find(ports.begin(), ports.end(), title);
+    if (oldIter != ports.end()) {
+        ports.erase(oldIter);
+    }//if
+}//removeModule
+
+bool JackPortModule::checkPortName(GdkEventKey *event)
+{
+    Gtk::Entry *entry = nullptr;
+    uiXml->get_widget("portNameEntry", entry);
+
+    Gtk::Button *button = nullptr;
+    uiXml->get_widget("portNameDialogOKButton", button);
+
+    std::string portName = entry->get_text();
+
+    if ((portName.empty() == true) || (std::find(curNamingPorts->begin(), curNamingPorts->end(), portName) != curNamingPorts->end())) {
+        button->set_sensitive(false);
+    } else {
+        button->set_sensitive(true);
+    }//if
+
+    return true;
+}//checkPortName
+
+/*
+void JackPortModule::create_menu()
+{
+    _menu = new Gtk::Menu();
+    Gtk::Menu::MenuList& items = _menu->items();
+
+    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(this, &JackPortModule::menu_addPort)));
+}//create_menu
+*/
+
+bool JackPortModule::show_menu(GdkEventButton *ev)
+{
+    /*
+    _menu.reset(new Gtk::Menu());
+    Gtk::Menu::MenuList& items = _menu->items();
+
+    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(this, &JackPortModule::menu_addPort)));
+    _menu->popup(ev->button, ev->time);
+    */
+
+    Glib::ustring ui_info =
+                            "<ui>"
+                            "  <popup name='PopupMenu'>"
+                            "    <menuitem action='AddPort'/>"
+                            "  </popup>"
+                            "</ui>";
+
+    m_refActionGroup = Gtk::ActionGroup::create();
+    m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
+    m_refActionGroup->add(Gtk::Action::create("AddPort", "Add Port"), sigc::mem_fun(*this, &JackPortModule::menu_addPort));
+
+    m_refUIManager = Gtk::UIManager::create();
+    m_refUIManager->insert_action_group(m_refActionGroup);
+
+    #ifdef GLIBMM_EXCEPTIONS_ENABLED
+    try {
+        m_refUIManager->add_ui_from_string(ui_info);
+    } catch(const Glib::Error& ex) {
+        std::cerr << "building menus failed: " <<  ex.what();
+    } 
+    #else
+    std::auto_ptr<Glib::Error> ex;
+    m_refUIManager->add_ui_from_string(ui_info, ex);
+    if(ex.get()) {
+        std::cerr << "building menus failed: " <<  ex->what();
+    }
+    #endif //GLIBMM_EXCEPTIONS_ENABLED
+
+    m_pMenuPopup = dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
+    if(m_pMenuPopup != nullptr) {
+        m_pMenuPopup->show_all_children();
+        m_pMenuPopup->popup(ev->button, ev->time);
+    } else {
+        g_warning("menu not found");
+    }//if
+
+    return true;
+}//show_menu
+
+//////////////////////////////
+
+
+#if 0
+
+EntryModule::EntryModule(std::shared_ptr<JackPortFlowCanvas> canvas, const std::string& title, double x, double y, Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_ptr<SequencerEntry> entry_)
+                            //: FlowCanvas::Module(*canvas, title, x, y, true, true)
+{
+    std::cout << "EntryModule() constructor: " << this << std::endl;
+
+    uiXml = uiXml_;
+    entry = entry_;
+}//constructor
+
+EntryModule::~EntryModule()
+{
+    std::cout << "~EntryModule(): " << this << std::endl;
+
+    //Nothing
+}//destructor
+
+void EntryModule::doresize()
+{
+    resize();
+}//doresize
+
+void EntryModule::do_add_port(std::shared_ptr<JackPortBase> port)
+{
+    add_port(port);
+}//do_add_port
 
 void EntryModule::restorePosition()
 {
     if (canvasPositions.entryPositions.find(entry.get()) != canvasPositions.entryPositions.end()) {
         std::pair<unsigned int, unsigned int> lastPos = canvasPositions.entryPositions[entry.get()];
-        FlowCanvas::Module::move(lastPos.first, lastPos.second);
+        move(lastPos.first, lastPos.second);
 
         std::cout << "entry1: " << lastPos.first << " - " << lastPos.second << std::endl;
     } else {
@@ -562,14 +568,14 @@ void EntryModule::restorePosition()
 
         canvasPositions.entryPositions[entry.get()] = std::make_pair(posx, posy);
 
-        FlowCanvas::Module::move(posx, posy);
+        move(posx, posy);
 
         std::cout << "entry2: " << posx << " - " << posy << std::endl;
     }//if
 }//restorePosition
 
 void EntryModule::move(double dx, double dy) {
-    FlowCanvas::Module::move(dx, dy);
+    move(dx, dy);
 
     if (canvasPositions.entryPositions.find(entry.get()) != canvasPositions.entryPositions.end()) {
         std::pair<unsigned int, unsigned int> lastPos = canvasPositions.entryPositions[entry.get()];
@@ -582,7 +588,7 @@ std::shared_ptr<SequencerEntry> EntryModule::getEntry() const
     return entry;
 }//getEntry
 
-void EntryModule::addPortConnection(EntryPort *entryPort, const std::string &jackPortTitle)
+void EntryModule::addPortConnection(std::shared_ptr<EntryPort> entryPort, const std::string &jackPortTitle)
 {
     std::cout << "addPortconnection: " << jackPortTitle << " " << inputConnections.size() << " - " << this << std::endl;
 
@@ -597,7 +603,7 @@ void EntryModule::addPortConnection(EntryPort *entryPort, const std::string &jac
     }//if
 }//addPortConnection
 
-void EntryModule::removePortConnection(EntryPort *entryPort, const std::string &jackPortTitle)
+void EntryModule::removePortConnection(std::shared_ptr<EntryPort> entryPort, const std::string &jackPortTitle)
 {
     if (entryPort->isInput() == true) {
         if (inputConnections.find(jackPortTitle) != inputConnections.end()) {
@@ -612,8 +618,8 @@ void EntryModule::removePortConnection(EntryPort *entryPort, const std::string &
 
 //////////////////////////////
 
-JackPortPort::JackPortPort(JackPortModule *module_, const std::string& title_, bool isInput_, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_)
-                : FlowCanvas::Port(*module_, title_, !isInput_, colour)
+JackPortPort::JackPortPort(std::shared_ptr<JackPortModule> module_, const std::string& title_, bool isInput_, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_)
+//                : FlowCanvas::Port(*module_, title_, !isInput_, colour)
 {
     uiXml = uiXml_;
     module = module_;
@@ -707,8 +713,8 @@ std::string JackPortPort::getTitle() const
 
 //////////////////////////////
 
-EntryPort::EntryPort(EntryModule *module_, const std::string& title_, bool isInput_, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_)
-                : FlowCanvas::Port(*module_, title_, isInput_, colour)
+EntryPort::EntryPort(std::shared_ptr<EntryModule> module_, const std::string& title_, bool isInput_, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_)
+                //: FlowCanvas::Port(*module_, title_, isInput_, colour)
 {
     uiXml = uiXml_;
     entryModule = module_;
@@ -728,140 +734,17 @@ bool EntryPort::isInput() const
 
 /////////////////////////
 
-void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
-{
-    static bool replacedPlaceholder = false;
-
-    if (false == replacedPlaceholder) {        
-        ::flowCanvas = new JackPortFlowCanvas();
-
-        Gtk::Label *label = nullptr;
-        uiXml->get_widget("flowCanvasPlaceholderLabel", label);
-
-        Gtk::Container *parent = label->get_parent();
-        parent->remove(*label);
-
-        parent->add(*flowCanvas);
-    } else {
-        Gtk::Container *parent = ::flowCanvas->get_parent();
-        parent->remove(*flowCanvas);
-
-        ::flowCanvas = new JackPortFlowCanvas();
-
-        parent->add(*flowCanvas);
-    }//if
-
-    flowCanvas->clearModules();
-
-    JackSingleton &jackSingleton = JackSingleton::Instance();
-    std::vector<std::string> inputPorts = jackSingleton.getInputPorts();
-    std::vector<std::string> outputPorts = jackSingleton.getOutputPorts();
-
-    jackInputModule = new JackPortModule(::flowCanvas, "Jack Input", 0, 0, true, uiXml, inputPorts);
-    jackInputModule->set_stacked_border(true);
-
-    jackOutputModule = new JackPortModule(::flowCanvas, "Jack Output", 0, 0, false, uiXml, outputPorts);
-    jackOutputModule->set_stacked_border(true);
-
-    std::map<std::string, JackPortPort *> inputPortNameMap;
-    std::map<std::string, JackPortPort *> outputPortNameMap;
-
-    for (std::string portName : inputPorts) {
-        JackPortPort *port = new JackPortPort(jackInputModule, portName, true, 0x953c02ff, uiXml);
-        jackInputModule->do_add_port(port);
-        inputPortNameMap[portName] = port;
-    }//foreach
-
-    for (std::string portName : outputPorts) {
-        JackPortPort *port = new JackPortPort(jackOutputModule, portName, false, 0x027055ff, uiXml);
-        jackOutputModule->do_add_port(port);
-        outputPortNameMap[portName] = port;
-    }//foreach
-
-    jackInputModule->doresize();
-    jackOutputModule->doresize();
-
-    ::flowCanvas->addModule(jackInputModule);
-    ::flowCanvas->addModule(jackOutputModule);
-
-    jackInputModule->restorePosition();
-    jackOutputModule->restorePosition();
-
-    Globals &globals = Globals::Instance();
-
-    entryModules.clear();
-    auto entryPair = globals.projectData.getSequencer()->getEntryPair();
-
-    std::cout << "setUpFlowCanvas: " << std::distance(entryPair.first, entryPair.second) << " - " << globals.projectData.getSequencer().get() << std::endl;
-
-    for (auto entryMapIter : entryPair) {
-        EntryModule *entryModule = new EntryModule(::flowCanvas, entryMapIter->getTitle(), 0, 0, uiXml, entryMapIter);
-
-        EntryPort *inputPort = new EntryPort(entryModule, "Input", true, 0x953c02ff, uiXml);
-        entryModule->do_add_port(inputPort);
-
-        EntryPort *outputPort = new EntryPort(entryModule, "Output", false, 0x027055ff, uiXml);
-        entryModule->do_add_port(outputPort);
-
-        entryModule->doresize();
-        ::flowCanvas->addModule(entryModule);
-        entryModule->restorePosition();
-
-        entryModules.push_back(entryModule);
-
-        //Set up connections for this module
-        std::set<jack_port_t *> jackInputMap = entryMapIter->getInputPorts();
-        std::set<jack_port_t *> jackOutputMap = entryMapIter->getOutputPorts();
-
-        for (jack_port_t *jackPort : jackInputMap) {
-            std::string portName = jackSingleton.getInputPortName(jackPort);
-            assert(portName.empty() == false);
-
-            JackPortPort *jackPortPort = inputPortNameMap[portName];
-            flowCanvas->connect(jackPortPort, inputPort);
-        }//foreach
-
-        for (jack_port_t *jackPort : jackOutputMap) {
-            std::string portName = jackSingleton.getOutputPortName(jackPort);
-            assert(portName.empty() == false);
-
-            JackPortPort *jackPortPort = outputPortNameMap[portName];
-            flowCanvas->connect(jackPortPort, outputPort);
-        }//foreach
-    }//for
-
-    ::flowCanvas->show_all();
-
-    if (false == replacedPlaceholder) {        
-        std::cout << "HERE ^^^^^^^^^^^^" << std::endl;
-
-        Gtk::ScrolledWindow *scrolledWindow;
-        uiXml->get_widget("jackPortScrolledWindow", scrolledWindow);
-
-        assert(scrolledWindow != nullptr);
-
-        if (scrolledWindow->get_hscrollbar() != nullptr) { //some gtkmm versions return null with get_[hv]scrollbar()
-            scrolledWindow->get_hscrollbar()->set_range(0, 3000);
-            scrolledWindow->get_vscrollbar()->set_range(0, 3000);
-
-            scrolledWindow->get_hscrollbar()->set_value(1200);
-            scrolledWindow->get_vscrollbar()->set_value(1300);        
-        } else {
-            std::cout << "Using buggy gtkmm" << std::endl;
-        }//if
-    }//if
-
-    if (false == replacedPlaceholder) {        
-        replacedPlaceholder = true;
-    }//if
-}//setUpFlowCanvas
-
-}//anonymous namespace
-
 JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
 {
     Gtk::Dialog *portsDialog = nullptr;
     uiXml->get_widget("jackPortDialog", portsDialog);
+    uiXml->get_widget("jackPortDialogDrawingArea", jackPortDialogDrawingArea);
+
+    jackPortDialogDrawingArea->add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK | Gdk::SCROLL_MASK);
+    jackPortDialogDrawingArea->signal_draw().connect ( sigc::mem_fun(*this, &JackPortDialog::updateGraph) );
+    jackPortDialogDrawingArea->signal_button_press_event().connect ( sigc::mem_fun(*this, &JackPortDialog::mouseButtonPressed) );
+    jackPortDialogDrawingArea->signal_button_release_event().connect ( sigc::mem_fun(*this, &JackPortDialog::mouseButtonReleased) );
+    jackPortDialogDrawingArea->signal_motion_notify_event().connect ( sigc::mem_fun(*this, &JackPortDialog::mouseMoved) );
 
     setUpFlowCanvas(uiXml);
 
@@ -876,27 +759,27 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
         jackSingleton.setOutputPorts(outputPorts);
 
         //Store port connections on sequencer entries
-        std::map<EntryModule *, std::shared_ptr<std::set<jack_port_t *> > > entryInputMap;
-        std::map<EntryModule *, std::shared_ptr<std::set<jack_port_t *> > > entryOutputMap;
+        std::map<std::shared_ptr<EntryModule>, std::shared_ptr<std::set<jack_port_t *> > > entryInputMap;
+        std::map<std::shared_ptr<EntryModule>, std::shared_ptr<std::set<jack_port_t *> > > entryOutputMap;
 
         for (auto connection : flowCanvas->connections()) {
-            FlowCanvas::Connectable *sourceConnection = connection->source();
-            FlowCanvas::Connectable *destConnection = connection->dest();
+            std::shared_ptr<Connectable> sourceConnection = connection->source();
+            std::shared_ptr<Connectable> destConnection = connection->dest();
 
             if ((sourceConnection == nullptr) || (destConnection == nullptr)) {
                 continue;
             }//if
 
-            EntryPort *entryPort = dynamic_cast<EntryPort *>(sourceConnection);
-            JackPortPort *jackPort = dynamic_cast<JackPortPort *>(destConnection);
+            std::shared_ptr<EntryPort> entryPort = sourceConnection;
+            std::shared_ptr<JackPortPort> jackPort = destConnection;
             if (entryPort == nullptr) {
-                entryPort = dynamic_cast<EntryPort *>(destConnection);
-                jackPort = dynamic_cast<JackPortPort *>(sourceConnection);
+                entryPort = destConnection;
+                jackPort = sourceConnection;
             }//if
 
             assert((entryPort != nullptr) && (jackPort != nullptr));
 
-            EntryModule *entryModule = dynamic_cast<EntryModule*>(entryPort->module());
+            std::shared_ptr<EntryModule> entryModule = entryPort->module();
             assert(entryModule != nullptr);
 
             if (entryInputMap.find(entryModule) == entryInputMap.end()) {
@@ -944,4 +827,3 @@ JackPortDialog::~JackPortDialog()
 }//destructor
 
 #endif
-

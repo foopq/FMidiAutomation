@@ -841,10 +841,15 @@
                 <property name="min_content_width">3000</property>
                 <property name="min_content_height">3000</property>
                 <child>
-                  <object class="GtkLabel" id="flowCanvasPlaceholderLabel">
+                  <object class="GtkViewport" id="viewport5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">label</property>
+                    <child>
+                      <object class="GtkDrawingArea" id="jackPortDialogDrawingArea">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

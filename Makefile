@@ -11,7 +11,7 @@ MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 LDLIBS=`pkg-config jack alsa gtkmm-3.0 gdkmm-3.0 libxml++-2.6 --libs` -lboost_filesystem-mt -lboost_serialization-mt -lboost_thread-mt -ltcmalloc
 
 # Flags
-CXXFLAGS=-Wall -g `pkg-config jack alsa gtkmm-3.0 gdkmm-3.0 libxml++-2.6 --cflags` -I. -std=c++0x
+CXXFLAGS=-Wall -g `pkg-config jack alsa gtkmm-3.0 gdkmm-3.0 libxml++-2.6 --cflags` -I. -std=c++0x -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
 # Variables
 SRCS = main.cc WindowManager.cc \
