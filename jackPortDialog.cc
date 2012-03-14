@@ -130,7 +130,7 @@ void setUpFlowCanvas(Glib::RefPtr<Gtk::Builder> uiXml)
         std::shared_ptr<EntryPort> outputPort(new EntryPort(entryModule, "Output", false, 0x027055ff, uiXml));
         entryModule->do_add_port(outputPort);
 
-        entryModule->doresize();
+        //entryModule->doresize();
         ::flowCanvas->addModule(entryModule);
         entryModule->restorePosition();
 
@@ -524,9 +524,6 @@ bool JackPortModule::show_menu(GdkEventButton *ev)
 
 //////////////////////////////
 
-
-#if 0
-
 EntryModule::EntryModule(std::shared_ptr<JackPortFlowCanvas> canvas, const std::string& title, double x, double y, Glib::RefPtr<Gtk::Builder> uiXml_, std::shared_ptr<SequencerEntry> entry_)
                             //: FlowCanvas::Module(*canvas, title, x, y, true, true)
 {
@@ -543,14 +540,16 @@ EntryModule::~EntryModule()
     //Nothing
 }//destructor
 
+/*
 void EntryModule::doresize()
 {
     resize();
 }//doresize
+*/
 
 void EntryModule::do_add_port(std::shared_ptr<JackPortBase> port)
 {
-    add_port(port);
+    //add_port(port);
 }//do_add_port
 
 void EntryModule::restorePosition()
@@ -619,10 +618,10 @@ void EntryModule::removePortConnection(std::shared_ptr<EntryPort> entryPort, con
 //////////////////////////////
 
 JackPortPort::JackPortPort(std::shared_ptr<JackPortModule> module_, const std::string& title_, bool isInput_, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_)
-//                : FlowCanvas::Port(*module_, title_, !isInput_, colour)
+                : JackPortBase(module_, title_, isInput_, colour)
 {
     uiXml = uiXml_;
-    module = module_;
+    jackPortModule = module_;
     title = title_;
     isInput = isInput_;
 
@@ -649,21 +648,53 @@ void JackPortPort::create_menu()
 
 bool JackPortPort::show_menu(GdkEventButton *ev)
 {
-    _menu.reset(new Gtk::Menu());
-    Gtk::Menu::MenuList& items = _menu->items();
+    Glib::ustring ui_info =
+                            "<ui>"
+                            "  <popup name='PopupMenu'>"
+                            "    <menuitem action='AddPort'/>"
+                            "    <menuitem action='RenamePort'/>"
+                            "    <separator/>"
+                            "    <menuitem action='RemovePort'/>"
+                            "  </popup>"
+                            "</ui>";
 
-    items.push_back(Gtk::Menu_Helpers::MenuElem("Add Port", sigc::mem_fun(module, &JackPortModule::menu_addPort)));
-    items.push_back(Gtk::Menu_Helpers::MenuElem("Rename Port", sigc::mem_fun(this, &JackPortPort::menu_renamePort)));
-    items.push_back(Gtk::Menu_Helpers::SeparatorElem());
-    items.push_back(Gtk::Menu_Helpers::MenuElem("Remove Port", sigc::mem_fun(this, &JackPortPort::menu_removePort)));
+    m_refActionGroup = Gtk::ActionGroup::create();
+    m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
+    m_refActionGroup->add(Gtk::Action::create("AddPort", "Add Port"), sigc::mem_fun(*jackPortModule, &JackPortModule::menu_addPort));
+    m_refActionGroup->add(Gtk::Action::create("RenamePort", "Rename Port"), sigc::mem_fun(*this, &JackPortPort::menu_renamePort));
+    m_refActionGroup->add(Gtk::Action::create("RemovePort", "Remove Port"), sigc::mem_fun(*this, &JackPortPort::menu_removePort));
 
-    _menu->popup(ev->button, ev->time);
+    m_refUIManager = Gtk::UIManager::create();
+    m_refUIManager->insert_action_group(m_refActionGroup);
+
+    #ifdef GLIBMM_EXCEPTIONS_ENABLED
+    try {
+        m_refUIManager->add_ui_from_string(ui_info);
+    } catch(const Glib::Error& ex) {
+        std::cerr << "building menus failed: " <<  ex.what();
+    } 
+    #else
+    std::auto_ptr<Glib::Error> ex;
+    m_refUIManager->add_ui_from_string(ui_info, ex);
+    if(ex.get()) {
+        std::cerr << "building menus failed: " <<  ex->what();
+    }
+    #endif //GLIBMM_EXCEPTIONS_ENABLED
+
+    m_pMenuPopup = dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
+    if(m_pMenuPopup != nullptr) {
+        m_pMenuPopup->show_all_children();
+        m_pMenuPopup->popup(ev->button, ev->time);
+    } else {
+        g_warning("menu not found");
+    }//if
+
     return true;
 }//show_menu
 
 void JackPortPort::menu_renamePort()
 {
-    module->setCurNamingPorts();
+    jackPortModule->setCurNamingPorts();
 
     Gtk::Entry *entry = nullptr;
     uiXml->get_widget("portNameEntry", entry);
@@ -692,9 +723,9 @@ void JackPortPort::menu_renamePort()
 
             curNamingPorts->push_back(portName);
             title = portName;
-            set_name(portName);
+            //set_name(portName);
 
-            module->doresize();
+            //module->doresize();
         }//if
     }//if
 
@@ -703,7 +734,7 @@ void JackPortPort::menu_renamePort()
 
 void JackPortPort::menu_removePort()
 {
-    module->removePort(title);
+    jackPortModule->removePort(title);
 }//removePort
 
 std::string JackPortPort::getTitle() const
@@ -714,7 +745,7 @@ std::string JackPortPort::getTitle() const
 //////////////////////////////
 
 EntryPort::EntryPort(std::shared_ptr<EntryModule> module_, const std::string& title_, bool isInput_, unsigned int colour, Glib::RefPtr<Gtk::Builder> uiXml_)
-                //: FlowCanvas::Port(*module_, title_, isInput_, colour)
+                : JackPortBase(module_, title_, isInput_, colour)
 {
     uiXml = uiXml_;
     entryModule = module_;
@@ -763,15 +794,15 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
         std::map<std::shared_ptr<EntryModule>, std::shared_ptr<std::set<jack_port_t *> > > entryOutputMap;
 
         for (auto connection : flowCanvas->connections()) {
-            std::shared_ptr<Connectable> sourceConnection = connection->source();
-            std::shared_ptr<Connectable> destConnection = connection->dest();
+            std::shared_ptr<JackPortBase> sourceConnection = connection->source();
+            std::shared_ptr<JackPortBase> destConnection = connection->dest();
 
             if ((sourceConnection == nullptr) || (destConnection == nullptr)) {
                 continue;
             }//if
 
-            std::shared_ptr<EntryPort> entryPort = sourceConnection;
-            std::shared_ptr<JackPortPort> jackPort = destConnection;
+            std::shared_ptr<JackPortBase> entryPort = sourceConnection;
+            std::shared_ptr<JackPortBase> jackPort = destConnection;
             if (entryPort == nullptr) {
                 entryPort = destConnection;
                 jackPort = sourceConnection;
@@ -779,7 +810,7 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
 
             assert((entryPort != nullptr) && (jackPort != nullptr));
 
-            std::shared_ptr<EntryModule> entryModule = entryPort->module();
+            std::shared_ptr<EntryModule> entryModule = std::dynamic_pointer_cast<EntryModule>(entryPort->module());
             assert(entryModule != nullptr);
 
             if (entryInputMap.find(entryModule) == entryInputMap.end()) {
@@ -826,4 +857,3 @@ JackPortDialog::~JackPortDialog()
     //Nothing
 }//destructor
 
-#endif

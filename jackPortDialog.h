@@ -73,6 +73,7 @@ public:
     virtual void add_connection(std::shared_ptr<JackPortBase> port1, std::shared_ptr<JackPortBase> port2, unsigned int colour);
     virtual void remove_connection(std::shared_ptr<JackPortBase> port1, std::shared_ptr<JackPortBase> port2);
 
+    virtual std::vector<std::shared_ptr<JackConnection>> connections();
 private:
     std::set<std::shared_ptr<JackModuleBase>> modules;
 };//JackPortFlowCanvas
@@ -83,6 +84,7 @@ public:
     JackModuleBase();
     virtual ~JackModuleBase();
 
+    std::string name();
 };//JackModuleBase
 
 class JackPortModule : public JackModuleBase, public std::enable_shared_from_this<JackPortModule>
@@ -132,7 +134,7 @@ public:
 
     std::shared_ptr<SequencerEntry> getEntry() const;
 
-    void doresize();
+    //void doresize();
     void do_add_port(std::shared_ptr<JackPortBase> port);
 
     std::vector<std::shared_ptr<JackPortBase>> ports();
@@ -155,6 +157,10 @@ public:
     bool hasConnections();
     std::shared_ptr<JackConnection> getFirstConnection();
     void remove_connection(std::shared_ptr<JackConnection> connection);
+
+    std::shared_ptr<JackPortModule> module();
+    std::string getTitle();
+    bool isInput();
 };//JackPortBase
 
 class JackPortPort : public JackPortBase
@@ -171,8 +177,10 @@ private:
     void menu_renamePort();
     void menu_removePort();
 
-    std::shared_ptr<Gtk::Menu> _menu;
-    std::shared_ptr<JackPortModule> module;
+    Glib::RefPtr<Gtk::UIManager> m_refUIManager;
+    Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
+    Gtk::Menu *m_pMenuPopup; //FIXME: Is this a leak?
+    std::shared_ptr<JackPortModule> jackPortModule;
     std::string title;
     Glib::RefPtr<Gtk::Builder> uiXml;
     bool isInput;
