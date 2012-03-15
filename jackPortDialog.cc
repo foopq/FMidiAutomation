@@ -248,9 +248,9 @@ void JackPortFlowCanvas::disconnect(std::shared_ptr<JackPortBase> c1, std::share
     entryModule->removePortConnection(entryPort, jackPort->getTitle());
 
     if (true == entryPort->isInput()) {
-        flowCanvas->remove_connection(jackPort, entryPort);
+        ////flowCanvas->remove_connection(jackPort, entryPort);
     } else {
-        flowCanvas->remove_connection(entryPort, jackPort);
+        ////flowCanvas->remove_connection(entryPort, jackPort);
     }//if    
 }//disconnect
 
@@ -296,12 +296,17 @@ void JackPortFlowCanvas::connect(std::shared_ptr<JackPortBase> c1, std::shared_p
 
     if (true == entryPort->isInput()) {
         unsigned int colour = 0x953c02ff;
-        flowCanvas->add_connection(jackPort, entryPort, colour);
+        ////flowCanvas->add_connection(jackPort, entryPort, colour);
     } else {
         unsigned int colour = 0x027055ff;
-        flowCanvas->add_connection(entryPort, jackPort, colour);
+        ////flowCanvas->add_connection(entryPort, jackPort, colour);
     }//if
 }//connect
+
+fmaipair<decltype(JackPortFlowCanvas::connectionsList.begin()), decltype(JackPortFlowCanvas::connectionsList.end())> JackPortFlowCanvas::connections()
+{
+    return fmai_make_pair(connectionsList.begin(), connectionsList.end());
+}//connections
 
 //////////////////////////////
 
@@ -335,12 +340,37 @@ void JackPortModule::doresize()
 void JackPortModule::add_port(std::shared_ptr<JackPortBase> port)
 {
     //add_port(port);
+    portLookup[port->getTitle()] = port;
 }//do_add_port
+
+void JackPortModule::remove_port(std::shared_ptr<JackPortBase> port)
+{
+    auto portIter = portLookup.find(port->getTitle());
+    if (portIter != portLookup.end()) {
+        portLookup.erase(portIter);
+    }//if
+}//remove_port
+
+std::shared_ptr<JackPortBase> JackPortModule::get_port(const std::string &title)
+{
+    auto portIter = portLookup.find(title);
+    if (portIter != portLookup.end()) {
+        return portIter->second;
+    } else {
+        return std::shared_ptr<JackPortBase>();
+    }//if
+}//get_port
 
 std::vector<std::string> JackPortModule::getPorts()
 {
     return ports;
 }//getPorts
+
+std::shared_ptr<JackPortBase> get_port(const std::string &title)
+{
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    return std::shared_ptr<JackPortBase>();
+}//get_port
 
 void JackPortModule::restorePosition()
 {
@@ -429,7 +459,7 @@ void JackPortModule::removePort(const std::string &title)
 
     while (port->hasConnections() == false) {
         std::shared_ptr<JackConnection> connection = port->getFirstConnection();
-        flowCanvas->remove_connection(connection->source(), connection->dest());
+        flowCanvas->disconnect(connection->source(), connection->dest());
         port->remove_connection(connection);
     }//foreach
 
@@ -547,6 +577,11 @@ void EntryModule::doresize()
 }//doresize
 */
 
+std::vector<std::shared_ptr<JackPortBase>> EntryModule::ports()
+{
+    return portList;
+}//ports
+
 void EntryModule::do_add_port(std::shared_ptr<JackPortBase> port)
 {
     //add_port(port);
@@ -621,7 +656,6 @@ JackPortPort::JackPortPort(std::shared_ptr<JackPortModule> module_, const std::s
                 : JackPortBase(module_, title_, isInput_, colour)
 {
     uiXml = uiXml_;
-    jackPortModule = module_;
     title = title_;
     isInput = isInput_;
 
@@ -660,7 +694,7 @@ bool JackPortPort::show_menu(GdkEventButton *ev)
 
     m_refActionGroup = Gtk::ActionGroup::create();
     m_refActionGroup->add(Gtk::Action::create("ContextMenu", "Context Menu"));
-    m_refActionGroup->add(Gtk::Action::create("AddPort", "Add Port"), sigc::mem_fun(*jackPortModule, &JackPortModule::menu_addPort));
+    m_refActionGroup->add(Gtk::Action::create("AddPort", "Add Port"), sigc::mem_fun(*std::dynamic_pointer_cast<JackPortModule>(module()), &JackPortModule::menu_addPort));
     m_refActionGroup->add(Gtk::Action::create("RenamePort", "Rename Port"), sigc::mem_fun(*this, &JackPortPort::menu_renamePort));
     m_refActionGroup->add(Gtk::Action::create("RemovePort", "Remove Port"), sigc::mem_fun(*this, &JackPortPort::menu_removePort));
 
@@ -694,7 +728,7 @@ bool JackPortPort::show_menu(GdkEventButton *ev)
 
 void JackPortPort::menu_renamePort()
 {
-    jackPortModule->setCurNamingPorts();
+    //module()->setCurNamingPorts();
 
     Gtk::Entry *entry = nullptr;
     uiXml->get_widget("portNameEntry", entry);
@@ -734,7 +768,7 @@ void JackPortPort::menu_renamePort()
 
 void JackPortPort::menu_removePort()
 {
-    jackPortModule->removePort(title);
+    //module()->removePort(title);
 }//removePort
 
 std::string JackPortPort::getTitle() const
@@ -856,4 +890,96 @@ JackPortDialog::~JackPortDialog()
 {
     //Nothing
 }//destructor
+
+/////////////////////////
+
+JackModuleBase::JackModuleBase()
+{
+    //Nothing
+}//constructor
+
+JackModuleBase::~JackModuleBase()
+{
+    //Nothing
+}//destructor
+
+std::string JackModuleBase::name()
+{
+    return nameStr;
+}//name
+
+/////////////////////////
+
+JackPortBase::JackPortBase(std::shared_ptr<JackModuleBase> module, const std::string &name, bool is_input_, uint32_t colour_)
+{
+    title = name;
+    colour = colour_;
+    is_input = is_input_;
+    jackPortModule = module;
+}//constructor
+
+JackPortBase::~JackPortBase()
+{
+    //Nothing
+}//destructor
+
+bool JackPortBase::hasConnections()
+{
+    return !connections.empty();
+}//hasConnections
+
+std::shared_ptr<JackConnection> JackPortBase::getFirstConnection()
+{
+    if (hasConnections() == true) {
+        return connections[0];
+    } else {
+        return std::shared_ptr<JackConnection>();
+    }//if
+}//getFirstConnection
+
+void JackPortBase::remove_connection(std::shared_ptr<JackConnection> connection)
+{
+    auto foundIter = std::find(connections.begin(), connections.end(), connection);
+    if (foundIter != connections.end()) {
+        connections.erase(foundIter);
+    }//if
+}//remove_connection
+
+std::shared_ptr<JackModuleBase> JackPortBase::module()
+{
+    return jackPortModule;
+}//module
+
+std::string JackPortBase::getTitle()
+{
+    return title;
+}//getTitle
+
+bool JackPortBase::isInput()
+{
+    return is_input;
+}//isInput
+
+/////////////////////////
+
+JackConnection::JackConnection()
+{
+    //Nothing
+}//constructor
+
+JackConnection::~JackConnection()
+{
+    //Nothing
+}//destructor
+
+std::shared_ptr<JackPortBase> JackConnection::source()
+{
+    return sourcePort;
+}//source
+
+std::shared_ptr<JackPortBase> JackConnection::dest()
+{
+    return destPort;
+}//dest
+
 

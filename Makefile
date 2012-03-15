@@ -27,7 +27,7 @@ SRCS = main.cc WindowManager.cc \
 	   UI/MouseHandlers/CurveEditor/mouseHandler_CurveEditor_TickMarkerRegion.cc \
        FMidiAutomationGraph.cc FMidiAutomationMainWindow.cc Tempo.cc jack.cc EntryBlockProperties.cc \
        PasteManager.cc EntryProperties.cc FMidiAutomationCurveEditor.cc Animation.cc jackPortDialog.cc ProcessRecordedMidi.cc \
-	   SerializationHelper.cc Config.cc Command_CurveEditor.cc Command_Sequencer.cc Command_Other.cc
+	   SerializationHelper.cc Config.cc Command_CurveEditor.cc Command_Sequencer.cc Command_Other.cc UI/jackPortDialog_UI.cc
 
 
 OBJS = $(SRCS:.cc=.o)

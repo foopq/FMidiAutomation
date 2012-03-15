@@ -9,6 +9,8 @@ License: Released under the GPL version 3 license. See the included LICENSE.
 #include <gtkmm.h>
 #include <memory>
 #include <set>
+#include <map>
+#include "fmaipair.h"
 
 //FIXME: unify calls to base classes
 
@@ -20,6 +22,9 @@ class SequencerEntry;
 
 class JackConnection
 {
+    std::shared_ptr<JackPortBase> sourcePort;
+    std::shared_ptr<JackPortBase> destPort;
+
 public:    
     JackConnection();
     virtual ~JackConnection();
@@ -60,6 +65,9 @@ struct CanvasPositions
 
 class JackPortFlowCanvas
 {
+    std::set<std::shared_ptr<JackModuleBase>> modules;
+    std::vector<std::shared_ptr<JackConnection>> connectionsList;
+
 public:    
     JackPortFlowCanvas();
     virtual ~JackPortFlowCanvas();
@@ -70,16 +78,13 @@ public:
     virtual void connect(std::shared_ptr<JackPortBase> c1, std::shared_ptr<JackPortBase> c2);
     virtual void disconnect(std::shared_ptr<JackPortBase> c1, std::shared_ptr<JackPortBase> c2);
 
-    virtual void add_connection(std::shared_ptr<JackPortBase> port1, std::shared_ptr<JackPortBase> port2, unsigned int colour);
-    virtual void remove_connection(std::shared_ptr<JackPortBase> port1, std::shared_ptr<JackPortBase> port2);
-
-    virtual std::vector<std::shared_ptr<JackConnection>> connections();
-private:
-    std::set<std::shared_ptr<JackModuleBase>> modules;
+    virtual fmaipair<decltype(connectionsList.begin()), decltype(connectionsList.end())> connections();
 };//JackPortFlowCanvas
 
 class JackModuleBase
 {
+    std::string nameStr;
+
 public:
     JackModuleBase();
     virtual ~JackModuleBase();
@@ -117,6 +122,7 @@ private:
     bool inputs;
     Glib::RefPtr<Gtk::Builder> uiXml;
     std::vector<std::string> ports;
+    std::map<std::string, std::shared_ptr<JackPortBase>> portLookup;
 };//JackPortModule
 
 class EntryModule : public JackModuleBase
@@ -149,6 +155,11 @@ private:
 
 class JackPortBase
 {
+    std::string title;
+    bool is_input;
+    uint32_t colour;
+    std::vector<std::shared_ptr<JackConnection>> connections;
+    std::shared_ptr<JackModuleBase> jackPortModule;
 
 public:
     JackPortBase(std::shared_ptr<JackModuleBase> module, const std::string &name, bool is_input, uint32_t colour);
@@ -158,7 +169,7 @@ public:
     std::shared_ptr<JackConnection> getFirstConnection();
     void remove_connection(std::shared_ptr<JackConnection> connection);
 
-    std::shared_ptr<JackPortModule> module();
+    std::shared_ptr<JackModuleBase> module();
     std::string getTitle();
     bool isInput();
 };//JackPortBase
@@ -180,7 +191,6 @@ private:
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
     Gtk::Menu *m_pMenuPopup; //FIXME: Is this a leak?
-    std::shared_ptr<JackPortModule> jackPortModule;
     std::string title;
     Glib::RefPtr<Gtk::Builder> uiXml;
     bool isInput;
