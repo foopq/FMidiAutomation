@@ -66,7 +66,7 @@ void SequencerUI::doInit(const Glib::ustring &entryGlade_, Gtk::VBox *parentWidg
 
 void SequencerUI::updateEntryFocus(unsigned int y)
 {
-    std::cout << "updateEntryFocus: " << y << std::endl;
+    std::cout << "updateEntryFocus: " << y << " - " << entries.size() << std::endl;
 
     for (auto entryIter : entries) {
         auto regionPair = entryIter.first->getUIBounds();

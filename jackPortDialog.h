@@ -36,11 +36,13 @@ public:
 class JackPortDialog
 {
     Gtk::DrawingArea *jackPortDialogDrawingArea;
+    sigc::connection jackPortDialogDrawingAreaDrawSignal;
 
     bool updateGraph(const Cairo::RefPtr<Cairo::Context> &context);
     bool mouseButtonPressed(GdkEventButton *event);
     bool mouseButtonReleased(GdkEventButton *event);
     bool mouseMoved(GdkEventMotion *event);
+    bool handleOnClose(GdkEventAny *);
 
 public:
     JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml);

@@ -1419,7 +1419,7 @@ void FMidiAutomationMainWindow::on_menupasteSEBInstancesToSelectedEntry()
 
 void FMidiAutomationMainWindow::on_menuPorts()
 {
-//    JackPortDialog portsDialog(uiXml);
+    this->jackPortDialog.reset(new JackPortDialog(uiXml));
 }//on_menuPorts
 
 void FMidiAutomationMainWindow::on_menuQuit()

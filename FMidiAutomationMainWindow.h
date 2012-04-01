@@ -31,6 +31,7 @@ struct GraphState;
 struct CurveEditor;
 class SequencerEntryBlockUI;
 class CommandManager;
+class JackPortDialog;
 
 enum class UIThreadOperation : char
 {
@@ -74,6 +75,7 @@ class FMidiAutomationMainWindow : public std::enable_shared_from_this<FMidiAutom
     Gtk::Entry *currentSampledValue;
     Gtk::CheckButton *bpmFrameCheckButton;
     Gtk::MenuItem *menu_pasteSEBToSelectedEntry;
+    std::shared_ptr<JackPortDialog> jackPortDialog;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;

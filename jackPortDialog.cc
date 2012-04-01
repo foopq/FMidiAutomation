@@ -801,19 +801,26 @@ bool EntryPort::isInput() const
 
 JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
 {
-    Gtk::Dialog *portsDialog = nullptr;
+    std::cout << "JackPortDialog: " << this << std::endl;
+
+    Gtk::Window *portsDialog = nullptr;
     uiXml->get_widget("jackPortDialog", portsDialog);
     uiXml->get_widget("jackPortDialogDrawingArea", jackPortDialogDrawingArea);
 
     jackPortDialogDrawingArea->add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK | Gdk::SCROLL_MASK);
-    jackPortDialogDrawingArea->signal_draw().connect ( sigc::mem_fun(*this, &JackPortDialog::updateGraph) );
+    jackPortDialogDrawingAreaDrawSignal = jackPortDialogDrawingArea->signal_draw().connect ( sigc::mem_fun(*this, &JackPortDialog::updateGraph) );
     jackPortDialogDrawingArea->signal_button_press_event().connect ( sigc::mem_fun(*this, &JackPortDialog::mouseButtonPressed) );
     jackPortDialogDrawingArea->signal_button_release_event().connect ( sigc::mem_fun(*this, &JackPortDialog::mouseButtonReleased) );
     jackPortDialogDrawingArea->signal_motion_notify_event().connect ( sigc::mem_fun(*this, &JackPortDialog::mouseMoved) );
+    jackPortDialogDrawingArea->signal_delete_event().connect(sigc::mem_fun(*this, &JackPortDialog::handleOnClose));
 
     setUpFlowCanvas(uiXml);
 
-    int result = portsDialog->run();
+    portsDialog->present();
+
+/*    
+    int result = -1;
+    //int result = portsDialog->getResult();
 
     if (result == 0) { //OK
         std::vector<std::string> inputPorts = jackInputModule->getPorts();
@@ -883,13 +890,28 @@ JackPortDialog::JackPortDialog(Glib::RefPtr<Gtk::Builder> uiXml)
         }//for
     }//if
 
+    std::cout << "window hide" << std::endl;
+
     portsDialog->hide();
+*/
+
 }//constructor
 
 JackPortDialog::~JackPortDialog()
 {
-    //Nothing
+    std::cout << "~JackPortDialog: " << this << std::endl;
+
+    jackPortDialogDrawingAreaDrawSignal.disconnect();
+    jackPortDialogDrawingArea = nullptr;
 }//destructor
+
+bool JackPortDialog::handleOnClose(GdkEventAny *)
+{
+    std::cout << "JackPortDialog::handleOnClose: " << this << std::endl;
+
+    jackPortDialogDrawingArea = nullptr;
+    return false;
+}//handleOnClose
 
 /////////////////////////
 
