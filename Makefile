@@ -3,7 +3,7 @@
 TARGET=FMidiAutomation
 
 # Compiler name
-CXX=/bin/g++
+CXX=/usr/bin/g++
 CXX2=/usr/bin/g++
 MAKEDEPEND=gcc -M $(CXXFLAGS) -o $*.d $<
 
